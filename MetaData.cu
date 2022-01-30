@@ -24,6 +24,8 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
 	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 13, 0, 0, 0, false);
 	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 14, 0, 0, 0, false);
 	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 15, 0, 0, 0, false);
+	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 16, 0, 0, 0, false);
+	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 17, 0, 0, 0, false);
 
 
 

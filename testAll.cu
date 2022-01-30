@@ -59,9 +59,9 @@ extern "C" inline void testMainPasswes() {
 	int i, j, k, value = 0;
 	int*** forDebugArr;
 
-	const int dXLength = metaXLength;
-	const int dYLength = MetaYLength;
-	const int dZLength = MetaZLength;
+	const int dXLength = 8000;
+	const int dYLength = 1;
+	const int dZLength = 1;
 
 
 	const int mainXLength = dbXLength * metaXLength;
@@ -147,7 +147,7 @@ extern "C" inline void testMainPasswes() {
 	int resultListWidth = 5;
 	//allocating to semiarbitrrary size 
 	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
-	auto resultListPointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, resultListWidth, 1);
+	auto resultListPointer = alloc_tensorToZeros<int>(workQueueAndRLLength, resultListWidth, 1);
 	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
 	metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
 
@@ -206,18 +206,18 @@ extern "C" inline void testMainPasswes() {
 	auto arrSegmObj = forFullBoolPrepArgs.segmArr;
 
 	// 2 planes with distance 7 relative to each other
-	for (int x = 10; x < 50; x++) {
-		for (int y = 10; y < 50; y++) {
+	for (int x = 31; x < 80; x++) {
+		for (int y = 12; y < 62; y++) {
 
-			setArrCPU(arrGoldObj,8, x, y, 2);
+			setArrCPU(arrGoldObj, x, y,31 ,2);
 
-			setArrCPU(arrSegmObj,19, x, y, 2);
+			setArrCPU(arrSegmObj,x, y,41 , 2);
 
 		}
 	
 	}
 
-
+	printf("\n aaa \n");
 	mainKernelsRun(forFullBoolPrepArgs);
 
 
@@ -236,6 +236,55 @@ extern "C" inline void testMainPasswes() {
 
 		ii  = 13;
 	 	printf("globalIterationNumb %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+		ii = 17;
+		printf("suum debug %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+		//minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]
+
+		//int sumDebug = 0;
+		//for (int ji = 0; ji < 8000; ji++) {
+		//	if (forDebugArr[0][0][ji]==1) {
+		//		sumDebug += forDebugArr[0][0][ji];
+		//		//printf("for debug %d i %d \n", forDebugArr[0][0][ji],ji);
+		//	}
+		//}
+		//printf("\n sumDebug %d \n", sumDebug);
+
+
+
+
+		for (int ji = 0; ji < minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]; ji++) {
+    if (forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji] + forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji]  > 0) {
+   	 int x = forFullBoolPrepArgs.metaData.resultList.arrP[0][0][ji];
+	 int y = forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji];
+	 int z = forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji];
+	 int isGold = forFullBoolPrepArgs.metaData.resultList.arrP[0][3][ji];
+	 int iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[0][4][ji];
+
+	 //uint16_t x = forFullBoolPrepArgs.metaData.resultList.arrP[ji][0][0];
+	 //uint16_t y = forFullBoolPrepArgs.metaData.resultList.arrP[ji][1][0];
+	 //uint16_t z = forFullBoolPrepArgs.metaData.resultList.arrP[ji][2][0];
+	 //uint16_t isGold = forFullBoolPrepArgs.metaData.resultList.arrP[ji][3][0];
+	 //uint16_t iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[ji][4][0];
+
+
+   	 if (iternumb!=9) {
+   		 printf("result  in point  %d %d %d isGold %d iteration %d \n "
+   			 , x
+   			 , y
+   			 , z
+   			 , isGold
+   			 , iternumb);
+   	 }
+   	 else {
+   		 printf("**");
+   	 }
+
+    }
+}
+
+
+
+
 
 	 //for (int i = 0; i < workQueueAndRLLength; i++) {
 
@@ -251,15 +300,7 @@ extern "C" inline void testMainPasswes() {
 
 	 //}
 
-	 for (int ji = 0; ji < 5; ji++) {
-		 if (forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji] + forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji]  > 0) {
-			 printf("result  in point  %d %d %d isGold %d iteration %d \n ", forFullBoolPrepArgs.metaData.resultList.arrP[0][0][ji]
-				 , forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji]
-				 , forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji]
-				 , forFullBoolPrepArgs.metaData.resultList.arrP[0][3][ji]
-				 , forFullBoolPrepArgs.metaData.resultList.arrP[0][4][ji]);
-		 }
-	 }
+
 
 
 

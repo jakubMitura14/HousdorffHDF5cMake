@@ -688,30 +688,73 @@ inline __device__ void validateAndUpMetaCounter(ForBoolKernelArgs<TXTOIO> fbArgs
 
                 //if (localWorkQueue[i][3] == 1) { old = atomicAdd(&(localFpConter[0]), 1) + resultfnOffset[0]; };
                 //if (localWorkQueue[i][3] == 0) { old = atomicAdd(&(localFnConter[0]), 1) + resultfpOffset[0]; };
-              /*  printf("in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d  fpLocCounter %d  fnLocCounter %d   resultfpOffset %d  resultfnOffset %d  xMeta %d yMeta %d zMeta %d isGold %d \n ",
-                   
-                    localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x,
-                    localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y,
-                    localWorkQueue[i][2],
-                    localWorkQueue[i][3],
-                    iterationNumb[0]
-                    ,old
-                    , localFpConter[0]
-                    , localFnConter[0]
-                    , resultfnOffset[0]
-                    , resultfpOffset[0]
-                    , localWorkQueue[i][0]
-                    , localWorkQueue[i][1]
-                    , localWorkQueue[i][2]
-                    , localWorkQueue[i][3]
-                    
-                );*/
 
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[old] = localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x;
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[old] = localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y;
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[old] = localWorkQueue[i][2] * fbArgs.dbZLength + bitPos;
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[old] = localWorkQueue[i][3];
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old] = iterationNumb[0];
+                //if (((localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x)<31
+                //    || (localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x)>80
+                //    || (localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y)<12
+                //    || (localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y)>62)
+                //   // ||(localWorkQueue[i][2] * fbArgs.dbZLength + bitPos)!=31    ||  (localWorkQueue[i][2] * fbArgs.dbZLength + bitPos)!=41 
+                //    ) {
+                //    printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d  fpLocCounter %d  fnLocCounter %d   resultfpOffset %d  resultfnOffset %d  xMeta %d yMeta %d zMeta %d isGold %d \n ",
+
+                //        localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x,
+                //        localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y,
+                //        localWorkQueue[i][2] * fbArgs.dbZLength + bitPos,
+                //        localWorkQueue[i][3],
+                //        iterationNumb[0]
+                //        , old
+                //        , localFpConter[0]
+                //        , localFnConter[0]
+                //        , resultfnOffset[0]
+                //        , resultfpOffset[0]
+                //        , localWorkQueue[i][0]
+                //        , localWorkQueue[i][1]
+                //        , localWorkQueue[i][2]
+                //        , localWorkQueue[i][3]
+
+                //    );
+                //}
+                //else {
+                //    printf(" *** ");
+                //}
+                 
+                //TODO remove
+                //getTensorRow<int>(tensorslice, fbArgs.forDebugArr, fbArgs.forDebugArr.Ny, 0, 0)[old] += 1;
+
+
+
+
+ /*               getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[old] = int(localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x);
+                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[old] = int(localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y);
+                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[old] = int(localWorkQueue[i][2] * fbArgs.dbZLength + bitPos);
+                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[old] = int(localWorkQueue[i][3]);*/
+                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old] = int(iterationNumb[0]);
+            
+            
+    //            if (getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old] !=9) {
+    //    printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d  fpLocCounter %d  fnLocCounter %d   resultfpOffset %d  resultfnOffset %d  xMeta %d yMeta %d zMeta %d isGold %d \n ",
+
+    //        getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[old],
+    //        getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[old],
+    //        getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[old],
+    //        getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[old],
+    //        getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old]
+    //        , old
+    //        , localFpConter[0]
+    //        , localFnConter[0]
+    //        , resultfnOffset[0]
+    //        , resultfpOffset[0]
+    //        , localWorkQueue[i][0]
+    //        , localWorkQueue[i][1]
+    //        , localWorkQueue[i][2]
+    //        , localWorkQueue[i][3]
+
+    //    );
+    //}
+    //else {
+    //    printf(" *** ");
+    //}
+            
             }
         }
         sync(cta);

@@ -277,7 +277,31 @@ extern "C" inline bool runAfterOneLoop(ForBoolKernelArgs<int> gpuArgs, ForFullBo
 //}
 //
 
+template <typename TKKI>
+inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
+    char* tensorslice;
+    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 5000; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+                    if (getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[linIdexMeta] !=9) {
 
+        //printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
+
+        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[linIdexMeta],
+        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[linIdexMeta],
+        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[linIdexMeta],
+        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[linIdexMeta],
+        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[linIdexMeta]
+        //    , linIdexMeta
+
+
+        //);
+    }
+    else {
+        printf(" *** ");
+        atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[17]), 1);
+
+    }
+    }
+}
 
 #pragma once
 extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
@@ -344,12 +368,13 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
        // checkCuda(cudaDeviceSynchronize(), "bb");
         cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
    }
+    //checkCuda(cudaDeviceSynchronize(), "cc");
 
-    //mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
+    ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-
-    //sync
-    checkCuda(cudaDeviceSynchronize(), "cc");
+    //testKernel << <10,512>> > (fbArgs);
+    ////sync
+    //checkCuda(cudaDeviceSynchronize(), "cc");
 
 
 

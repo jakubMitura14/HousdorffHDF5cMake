@@ -82,6 +82,36 @@ int main(void){
         //    (unsigned long)(dims_out[2]) << endl;
 
 
+        ///*
+        // * Get class of datatype and print message if it's an integer.
+        // */
+        //if (type_class == H5T_INTEGER)
+        //{
+        //    cout << "Data set has INTEGER type" << endl;
+        //    /*
+        // * Get the integer datatype
+        //     */
+        //    IntType intype = dataset.getIntType();
+        //    /*
+        //     * Get order of datatype and print message if it's a little endian.
+        //     */
+        //    H5std_string order_string;
+        //    H5T_order_t order = intype.getOrder(order_string);
+        //    cout << order_string << endl;
+        //    /*
+        //     * Get size of the data element stored in file and print it.
+        //     */
+        //    size_t size = intype.getSize();
+        //    cout << "Data size is " << size << endl;
+        //}
+
+
+
+
+
+
+
+
         //hsize_t memdim = dims_out[0] * dims_out[1] * dims_out[2];;
 
         //std::vector<float> data_out(memdim);
@@ -148,7 +178,7 @@ int main(void){
          */
  
 
-    testMainPasswes();
+   testMainPasswes();
 
 
     return 0;  // successfully terminated
