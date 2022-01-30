@@ -206,8 +206,8 @@ extern "C" inline void testMainPasswes() {
 	auto arrSegmObj = forFullBoolPrepArgs.segmArr;
 
 	// 2 planes with distance 7 relative to each other
-	for (int x = 10; x < 20; x++) {
-		for (int y = 10; y < 20; y++) {
+	for (int x = 10; x < 50; x++) {
+		for (int y = 10; y < 50; y++) {
 
 			setArrCPU(arrGoldObj,8, x, y, 2);
 
