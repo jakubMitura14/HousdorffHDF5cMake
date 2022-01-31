@@ -58,23 +58,6 @@ Data
 */
 
 
-/**
-CPU part of the loop - where we copy data required to know wheather next loop should be executed and to increment the iteration number
-*/
-extern "C" inline bool runAfterOneLoop(ForBoolKernelArgs<int> gpuArgs, ForFullBoolPrepArgs<int> cpuArgs, unsigned int& cpuIterNumb) {
-    cpuIterNumb += 1;
-
-    //copy on cpu
-    copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
-    //read an modify
-    cpuArgs.metaData.minMaxes.arrP[0][0][13]= cpuIterNumb;
-    //copy back on gpu
-    copyHostToDevice(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
-    // returning true - so signal that we need to loop on only when we did not reach yet the required percent of covered voxels
-    return ((  ceil(cpuArgs.metaData.minMaxes.arrP[0][0][7] * cpuArgs.robustnessPercent)> cpuArgs.metaData.minMaxes.arrP[0][0][10]) 
-            || (ceil(cpuArgs.metaData.minMaxes.arrP[0][0][8] * cpuArgs.robustnessPercent) > cpuArgs.metaData.minMaxes.arrP[0][0][11]));
-
-}
 // runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
 
 
@@ -277,23 +260,43 @@ extern "C" inline bool runAfterOneLoop(ForBoolKernelArgs<int> gpuArgs, ForFullBo
 //}
 //
 
+
+
+/**
+CPU part of the loop - where we copy data required to know wheather next loop should be executed and to increment the iteration number
+*/
+template <typename TKKI>
+inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs<TKKI> cpuArgs, unsigned int& cpuIterNumb) {
+    cpuIterNumb += 1;
+
+    //copy on cpu
+    copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
+    //read an modify
+    cpuArgs.metaData.minMaxes.arrP[0][0][13] = cpuIterNumb;
+    //copy back on gpu
+    copyHostToDevice(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
+    // returning true - so signal that we need to loop on only when we did not reach yet the required percent of covered voxels
+    return ((ceil(cpuArgs.metaData.minMaxes.arrP[0][0][7] * cpuArgs.robustnessPercent) > cpuArgs.metaData.minMaxes.arrP[0][0][10])
+        || (ceil(cpuArgs.metaData.minMaxes.arrP[0][0][8] * cpuArgs.robustnessPercent) > cpuArgs.metaData.minMaxes.arrP[0][0][11]));
+
+}
+
 template <typename TKKI>
 inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     char* tensorslice;
     for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 5000; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-                    if (getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[linIdexMeta] !=9) {
+        if (fbArgs.metaData.resultList[linIdexMeta *5+4] !=9 && fbArgs.metaData.resultList[linIdexMeta * 5 ]>0) {
 
-        //printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
+        printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
+            fbArgs.metaData.resultList[linIdexMeta * 5 ]
+            ,fbArgs.metaData.resultList[linIdexMeta * 5 + 1]
+            ,fbArgs.metaData.resultList[linIdexMeta * 5 + 2]
+            ,fbArgs.metaData.resultList[linIdexMeta * 5 + 3]
+            ,fbArgs.metaData.resultList[linIdexMeta * 5 + 4]
+            , linIdexMeta
 
-        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[linIdexMeta],
-        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[linIdexMeta],
-        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[linIdexMeta],
-        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[linIdexMeta],
-        //    getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[linIdexMeta]
-        //    , linIdexMeta
 
-
-        //);
+        );
     }
     else {
         printf(" *** ");
@@ -302,6 +305,32 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     }
     }
 }
+
+/*
+becouse we need a lot of the additional memory spaces to minimize memory consumption allocations will be postponed after first kernel run enabling 
+*/
+#pragma once
+template <typename ZZR>
+inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void* resultListPointer) {
+    //copy on cpu
+    copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
+    //read an modify
+    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
+    //7)global FP count; 8)global FN count
+   unsigned int fpPlusFn=  cpuArgs.metaData.minMaxes.arrP[0][0][7] + cpuArgs.metaData.minMaxes.arrP[0][0][8];
+
+    size_t size = sizeof(uint16_t)*5*fpPlusFn+1;
+    cudaMallocAsync(&resultListPointer, size,0);
+    gpuArgs.metaData.resultList = resultListPointer;
+
+
+   // cudaFreeAsync(gpuArgs.metaData.resultList, 0);
+
+    //cudaFree(resultListPointer);
+
+
+};
+
 
 #pragma once
 extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
@@ -333,9 +362,6 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
 
 
-
-
-
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
 
     ////preparation kernel
@@ -345,8 +371,24 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaGetDeviceProperties(&deviceProp, device);
     // initialize, then launch
 
+
+
     void* kernel_args[] = { &fbArgs };
     cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
+    
+
+
+
+
+
+    unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
+    uint16_t* resultListPointer;
+    size_t size = sizeof(uint16_t) * 5 * fpPlusFn + 1;
+    cudaMallocAsync(&resultListPointer, size, 0);
+    fbArgs.metaData.resultList = resultListPointer;
+
+    //allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+    
 
     cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
 
@@ -355,26 +397,58 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
 
-   // for (int i = 0; i < 30; i++) {
-    while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
-
+    for (int i = 0; i < 100; i++) {
+  //  while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
+        runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);
+       
         cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-        //checkCuda(cudaDeviceSynchronize(), "bb");
+
+        checkCuda(cudaDeviceSynchronize(), "bb");
+        printf("mainDilatation %d  \n", cpuIterNumb);
+        syncErr = cudaGetLastError();
+        asyncErr = cudaDeviceSynchronize();
+        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+
+
         cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
 
-        //checkCuda(cudaDeviceSynchronize(), "bb");
+        checkCuda(cudaDeviceSynchronize(), "bb");
+        printf("getWorkQueeueFromIsToBeActivated %d  \n", cpuIterNumb);
+        syncErr = cudaGetLastError();
+        asyncErr = cudaDeviceSynchronize();
+        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+
         cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
 
-       // checkCuda(cudaDeviceSynchronize(), "bb");
+
+        checkCuda(cudaDeviceSynchronize(), "bb");
+        printf("paddingDilatation %d  \n", cpuIterNumb);
+        syncErr = cudaGetLastError();
+        asyncErr = cudaDeviceSynchronize();
+        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+
         cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+
+        checkCuda(cudaDeviceSynchronize(), "bb");
+        printf("getWorkQueeueFromActive_mainPass %d  \n", cpuIterNumb);
+        syncErr = cudaGetLastError();
+        asyncErr = cudaDeviceSynchronize();
+        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
    }
-    //checkCuda(cudaDeviceSynchronize(), "cc");
+    checkCuda(cudaDeviceSynchronize(), "cc");
+
+
+
 
     ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-    //testKernel << <10,512>> > (fbArgs);
+   // testKernel << <10,512>> > (fbArgs);
     ////sync
-    //checkCuda(cudaDeviceSynchronize(), "cc");
+    checkCuda(cudaDeviceSynchronize(), "cc");
 
 
 
@@ -409,6 +483,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFree(reducedGoldPrev.arrPStr.ptr);
     cudaFree(reducedSegmPrev.arrPStr.ptr);
 
+    cudaFreeAsync(resultListPointer, 0);
 
     freeMetaDataGPU(fbArgs.metaData);
 
@@ -421,11 +496,6 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
        syncErr = cudaGetLastError();
        asyncErr = cudaDeviceSynchronize();
-
-       /*
-        * Print errors should they exist.
-        */
-
        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
 

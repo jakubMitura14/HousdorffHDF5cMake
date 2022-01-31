@@ -724,13 +724,24 @@ inline __device__ void validateAndUpMetaCounter(ForBoolKernelArgs<TXTOIO> fbArgs
 
 
 
- /*               getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[old] = int(localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x);
-                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[old] = int(localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y);
-                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[old] = int(localWorkQueue[i][2] * fbArgs.dbZLength + bitPos);
-                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[old] = int(localWorkQueue[i][3]);*/
-                getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old] = int(iterationNumb[0]);
+
+                fbArgs.metaData.resultList[old*5]= (localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x);
+                fbArgs.metaData.resultList[old*5+1]= (localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y);
+                fbArgs.metaData.resultList[old*5+2]= (localWorkQueue[i][2] * fbArgs.dbZLength + bitPos);
+                fbArgs.metaData.resultList[old*5+3]= (localWorkQueue[i][3]);
+                fbArgs.metaData.resultList[old*5+4]= (iterationNumb[0]);
+
+                //getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 0, 0)[old] = int(localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x);
+                //getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 1, 0)[old] = int(localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y);
+                //getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 2, 0)[old] = int(localWorkQueue[i][2] * fbArgs.dbZLength + bitPos);
+                //getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 3, 0)[old] = int(localWorkQueue[i][3]);
+                //getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old] = int(iterationNumb[0]);
             
             
+
+
+
+
     //            if (getTensorRow<int>(tensorslice, fbArgs.metaData.resultList, fbArgs.metaData.resultList.Ny, 4, 0)[old] !=9) {
     //    printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d  fpLocCounter %d  fnLocCounter %d   resultfpOffset %d  resultfnOffset %d  xMeta %d yMeta %d zMeta %d isGold %d \n ",
 

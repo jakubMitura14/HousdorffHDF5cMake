@@ -56,7 +56,7 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
 	res.isToBeValidatedFn = allocate3dInGPU(metaDataCPU.isToBeValidatedFn);
 
 	res.workQueue = allocate3dInGPU(metaDataCPU.workQueue);
-	res.resultList = allocate3dInGPU(metaDataCPU.resultList);
+	//res.resultList = allocate3dInGPU(metaDataCPU.resultList);
 
 	res.metaXLength = res.fpCount.Nx;
 	res.MetaYLength = res.fpCount.Ny;
@@ -93,7 +93,7 @@ inline void copyMetaDataToCPU(MetaDataCPU metaDataCPU, MetaDataGPU metaDataGPU) 
 	copyDeviceToHost3d(metaDataGPU.isToBeActivatedSegm, metaDataCPU.isToBeActivatedSegm);
 
 	copyDeviceToHost3d(metaDataGPU.workQueue, metaDataCPU.workQueue);
-	copyDeviceToHost3d(metaDataGPU.resultList, metaDataCPU.resultList);
+	//copyDeviceToHost3d(metaDataGPU.resultList, metaDataCPU.resultList);
 
 	copyDeviceToHost3d(metaDataGPU.isToBeValidatedFp, metaDataCPU.isToBeValidatedFp);
 	copyDeviceToHost3d(metaDataGPU.isToBeValidatedFn, metaDataCPU.isToBeValidatedFn);
@@ -127,8 +127,12 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
 
 	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
-
-	cudaFree(metaDataGPU.resultList.arrPStr.ptr);
+	
+	
+	//cudaFree(metaDataGPU.resultList);
+	
+	//cudaFreeAsync(metaDataGPU.resultList,0);
+	//cudaFree(metaDataGPU.resultList.arrPStr.ptr);
 
 	cudaFree(metaDataGPU.isToBeValidatedFp.arrPStr.ptr);
 	cudaFree(metaDataGPU.isToBeValidatedFn.arrPStr.ptr);

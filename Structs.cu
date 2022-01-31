@@ -80,7 +80,7 @@ extern "C" struct MetaDataCPU {
     //in practice it is matrix of length the same as FP+FN global count +1 and width of 5
          //1) xMeta; 2)yMeta 3)zMeta 4)isGold 5)iteration number  
     //we use one single long rewsult list - in order to avoid overwriting each block each block has established offset where it would write it's results 
-    array3dWithDimsCPU<int> resultList;
+    uint16_t* resultList;
 
 };
 
@@ -120,7 +120,7 @@ extern "C" struct MetaDataGPU {
     array3dWithDimsGPU isToBeValidatedFn;
 
     array3dWithDimsGPU workQueue;
-    array3dWithDimsGPU resultList;
+    uint16_t* resultList;
 
 
 };

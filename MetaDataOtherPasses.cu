@@ -141,6 +141,8 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
 
         //given fp is non zero we need to  add this to local queue
         if (isToBeActivated) {
+                   //     printf("to be activated pass putting to work queue xMeta %d yMeta %d zMeta %d isGold %d \n", xMeta,yMeta, zMeta, 0 );
+
             //we need to establish where to put the entry in the local queue
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
             //we check weather we still have space in shared memory
@@ -197,6 +199,8 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
             
         if (isToBeActivated) {
             getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedGold, fbArgs.metaData.isToBeActivatedGold.Ny, yMeta, zMeta)[xMeta] = false;
+            getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveGold, fbArgs.metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta] = true;
+
         }
         //segmPass
         isToBeActivated = isSegmPassToContinue[0] && (getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedSegm, fbArgs.metaData.isToBeActivatedSegm.Ny, yMeta, zMeta)[xMeta]
@@ -205,6 +209,8 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
        
         //given fp is non zero we need to  add this to local queue
         if (isToBeActivated) {
+          //  printf("to be activated pass putting to work queue xMeta %d yMeta %d zMeta %d isGold %d \n", xMeta, yMeta, zMeta, 0);
+
             //we need to establish where to put the entry in the local queue
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
             //we check weather we still have space in shared memory
@@ -258,6 +264,7 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
 
         if (isToBeActivated) {
             getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedSegm, fbArgs.metaData.isToBeActivatedSegm.Ny, yMeta, zMeta)[xMeta] = false;
+            getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm, fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta] = true;
 
             //printf("\n found to be actvated xMeta %d yMeta %d zMeta %d isGold  %d isSegmPassToContinue[0] %d  isActive %d isFull %d \n ", xMeta, yMeta, zMeta, 0, isSegmPassToContinue[0], getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm
             //    , fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta], getTensorRow<bool>(tensorslice, fbArgs.metaData.isFullSegm, fbArgs.metaData.isFullSegm.Ny, yMeta, zMeta)[xMeta]);
@@ -340,6 +347,7 @@ inline __global__ void getWorkQueeueFromActive_mainPass(ForBoolKernelArgs<PYO> f
         if (isToBeActivated) {
             //we need to establish where to put the entry in the local queue
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
+            //printf("main pass putting to work queue xMeta %d yMeta %d zMeta %d isGold %d \n", xMeta, yMeta, zMeta, 1);
             //we check weather we still have space in shared memory
             if (old < 2990) {// so we still have space in shared memory
                 localWorkAndOffsetQueue[old][0] = xMeta;
@@ -391,6 +399,7 @@ inline __global__ void getWorkQueeueFromActive_mainPass(ForBoolKernelArgs<PYO> f
         if (isToBeActivated) {
             //we need to establish where to put the entry in the local queue
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
+           // printf("main pass putting to work queue xMeta %d yMeta %d zMeta %d isGold %d \n", xMeta,yMeta, zMeta, 0 );
             //we check weather we still have space in shared memory
             if (old < 2990) {// so we still have space in shared memory
                 localWorkAndOffsetQueue[old][0] = xMeta;

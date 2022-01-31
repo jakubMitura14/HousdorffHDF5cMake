@@ -59,7 +59,7 @@ extern "C" inline void testMainPasswes() {
 	int i, j, k, value = 0;
 	int*** forDebugArr;
 
-	const int dXLength = 8000;
+	const int dXLength = 8;
 	const int dYLength = 1;
 	const int dZLength = 1;
 
@@ -147,9 +147,9 @@ extern "C" inline void testMainPasswes() {
 	int resultListWidth = 5;
 	//allocating to semiarbitrrary size 
 	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
-	auto resultListPointer = alloc_tensorToZeros<int>(workQueueAndRLLength, resultListWidth, 1);
+	//auto resultListPointer = alloc_tensorToZeros<int>(workQueueAndRLLength, resultListWidth, 1);
 	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
-	metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
+	//metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
 
 
 	forDebugArr = alloc_tensorToZeros<int>(dXLength, dYLength, dZLength);
@@ -206,12 +206,12 @@ extern "C" inline void testMainPasswes() {
 	auto arrSegmObj = forFullBoolPrepArgs.segmArr;
 
 	// 2 planes with distance 7 relative to each other
-	for (int x = 31; x < 80; x++) {
-		for (int y = 12; y < 62; y++) {
+	for (int x = 31; x < 32; x++) {
+		for (int y = 12; y < 13; y++) {
 
-			setArrCPU(arrGoldObj, x, y,31 ,2);
+			setArrCPU(arrGoldObj, x, y,100 ,2);
 
-			setArrCPU(arrSegmObj,x, y,41 , 2);
+			setArrCPU(arrSegmObj,x, y,300 , 2);
 
 		}
 	
@@ -238,6 +238,52 @@ extern "C" inline void testMainPasswes() {
 	 	printf("globalIterationNumb %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
 		ii = 17;
 		printf("suum debug %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+
+
+
+
+
+
+		i, j, k, value = 0;
+		i = 31;
+		j = 12;
+				for (k = 0; k < MetaZLength; k++) {
+					//goldArr[k][j][i] = 1;
+					if (reducedGold[k][j][i] > 0) {
+						for (int tt = 0; tt < 32; tt++) {
+							if ((reducedGold[k][j][i] & (1 << (tt)))) {
+								printf("found in reduced fp  [%d]\n", k * 32 + tt);
+
+							}
+						}
+
+					}
+				}
+	
+
+		//		i, j, k, value = 0;
+		//for (i = 0; i < mainXLength; i++) {
+		//	for (j = 0; j < mainYLength; j++) {
+		//		for (k = 0; k < MetaZLength; k++) {
+		//			//goldArr[k][j][i] = 1;
+		//			if (reducedGold[k][j][i] > 0) {
+		//				for (int tt = 0; tt < 32; tt++) {
+		//					if ((reducedGold[k][j][i] & (1 << (tt)))) {
+		//						printf("found in reduced fp  [%d][%d][%d]\n", i, j, k * 32 + tt);
+
+		//					}
+		//				}
+
+		//			}
+		//		}
+		//	}
+		//}
+
+
+
+
+
+
 		//minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]
 
 		//int sumDebug = 0;
@@ -250,37 +296,38 @@ extern "C" inline void testMainPasswes() {
 		//printf("\n sumDebug %d \n", sumDebug);
 
 
-
-
-		for (int ji = 0; ji < minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]; ji++) {
-    if (forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji] + forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji]  > 0) {
-   	 int x = forFullBoolPrepArgs.metaData.resultList.arrP[0][0][ji];
-	 int y = forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji];
-	 int z = forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji];
-	 int isGold = forFullBoolPrepArgs.metaData.resultList.arrP[0][3][ji];
-	 int iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[0][4][ji];
-
-	 //uint16_t x = forFullBoolPrepArgs.metaData.resultList.arrP[ji][0][0];
-	 //uint16_t y = forFullBoolPrepArgs.metaData.resultList.arrP[ji][1][0];
-	 //uint16_t z = forFullBoolPrepArgs.metaData.resultList.arrP[ji][2][0];
-	 //uint16_t isGold = forFullBoolPrepArgs.metaData.resultList.arrP[ji][3][0];
-	 //uint16_t iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[ji][4][0];
-
-
-   	 if (iternumb!=9) {
-   		 printf("result  in point  %d %d %d isGold %d iteration %d \n "
-   			 , x
-   			 , y
-   			 , z
-   			 , isGold
-   			 , iternumb);
-   	 }
-   	 else {
-   		 printf("**");
-   	 }
-
-    }
-}
+//
+//
+//	//	for (int ji = 0; ji < minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]; ji++) {
+//		for (int ji = 0; ji < 10; ji++) {
+//    if (forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji] + forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji]  > 0) {
+//   	 int x = forFullBoolPrepArgs.metaData.resultList.arrP[0][0][ji];
+//	 int y = forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji];
+//	 int z = forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji];
+//	 int isGold = forFullBoolPrepArgs.metaData.resultList.arrP[0][3][ji];
+//	 int iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[0][4][ji];
+//
+//	 //uint16_t x = forFullBoolPrepArgs.metaData.resultList.arrP[ji][0][0];
+//	 //uint16_t y = forFullBoolPrepArgs.metaData.resultList.arrP[ji][1][0];
+//	 //uint16_t z = forFullBoolPrepArgs.metaData.resultList.arrP[ji][2][0];
+//	 //uint16_t isGold = forFullBoolPrepArgs.metaData.resultList.arrP[ji][3][0];
+//	 //uint16_t iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[ji][4][0];
+//
+//
+//   	 if (iternumb!=9) {
+//   		 printf("result  in point  %d %d %d isGold %d iteration %d \n "
+//   			 , x
+//   			 , y
+//   			 , z
+//   			 , isGold
+//   			 , iternumb);
+//   	 }
+//   	 else {
+//   		 printf("**");
+//   	 }
+//
+//    }
+//}
 
 
 
@@ -324,7 +371,7 @@ extern "C" inline void testMainPasswes() {
 	free(metaData.isFullSegm.arrP);
 
 	free(workQueuePointer);
-	free(resultListPointer);
+//	free(resultListPointer);
 
 	free(isToBeActivatedGoldPointer);
 	free(isToBeActivatedSegmPointer);

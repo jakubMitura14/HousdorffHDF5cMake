@@ -118,3 +118,7 @@ inline void setArrCPU(array3dWithDimsCPU<ZZ> arrCPU, int x, int y, int z, ZZ val
     }
     arrCPU.arrP[z][y][x] = value;
 };
+
+
+
+
