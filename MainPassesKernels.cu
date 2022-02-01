@@ -150,16 +150,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-    ////reduced arrays
-    array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
-    array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
 
-    array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
-    array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
-
-
-    array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
-    array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
 
 
 
