@@ -7,62 +7,45 @@
 copy from host to device
 */
 #pragma once
-inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
+inline MetaDataGPU allocateMetaDataOnGPU(unsigned int Nx, unsigned int Ny, unsigned int Nz) {
 	MetaDataGPU res;
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 1, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 2, 0, 0, 1000, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 3, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 4, 0, 0, 1000, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 5, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 6, 0, 0, 1000, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 7, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 8, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 9, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 10, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 11, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 12, 0, 0, 1, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 13, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 14, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 15, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 16, 0, 0, 0, false);
-	setArrCPU<unsigned int>(metaDataCPU.minMaxes, 17, 0, 0, 0, false);
-
-
-
-
 	//!! x and z intentionally mixed !!
-	res.fpCount = allocate3dInGPU(metaDataCPU.fpCount);
-	res.fnCount = allocate3dInGPU(metaDataCPU.fnCount);
-	res.minMaxes = allocate3dInGPU(metaDataCPU.minMaxes);
+	res.fpCount = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	res.fnCount = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	//res.minMaxes = allocate3dInGPU(metaDataCPU.minMaxes);
 
-	res.fpCount = allocate3dInGPU(metaDataCPU.fpCount);
-	res.fnCount = allocate3dInGPU(metaDataCPU.fnCount);
-	res.fpCounter = allocate3dInGPU(metaDataCPU.fpCounter);
-	res.fnCounter = allocate3dInGPU(metaDataCPU.fnCounter);
-	res.fpOffset = allocate3dInGPU(metaDataCPU.fpOffset);
-	res.fnOffset = allocate3dInGPU(metaDataCPU.fnOffset);
+	res.fpCount = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	res.fnCount = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	res.fpCounter = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	res.fnCounter = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	res.fpOffset = getArrGpu<unsigned int>(Nx, Ny, Nz);
+	res.fnOffset = getArrGpu<unsigned int>(Nx, Ny, Nz);
 
-	res.isActiveGold = allocate3dInGPU(metaDataCPU.isActiveGold);
-	res.isFullGold = allocate3dInGPU(metaDataCPU.isFullGold);
-	res.isActiveSegm = allocate3dInGPU(metaDataCPU.isActiveSegm);
-	res.isFullSegm = allocate3dInGPU(metaDataCPU.isFullSegm);
+	res.isActiveGold = getArrGpu<bool>(Nx, Ny, Nz);
+	res.isFullGold = getArrGpu<bool>(Nx, Ny, Nz);
+	res.isActiveSegm = getArrGpu<bool>(Nx, Ny, Nz);
+	res.isFullSegm = getArrGpu<bool>(Nx, Ny, Nz);
 
-	res.isToBeActivatedGold = allocate3dInGPU(metaDataCPU.isToBeActivatedGold);
-	res.isToBeActivatedSegm = allocate3dInGPU(metaDataCPU.isToBeActivatedSegm);
+	res.isToBeActivatedGold = getArrGpu<bool>(Nx, Ny, Nz);
+	res.isToBeActivatedSegm = getArrGpu<bool>(Nx, Ny, Nz);
 
 
+	uint16_t* workQueue;
+	size_t size = (Nx * Ny * Nz)*4 +5;
+	cudaMallocAsync(&workQueue, size, 0);
+	res.workQueue = workQueue;
 
-	res.isToBeValidatedFp = allocate3dInGPU(metaDataCPU.isToBeValidatedFp);
-	res.isToBeValidatedFn = allocate3dInGPU(metaDataCPU.isToBeValidatedFn);
+	//res.isToBeValidatedFp = allocate3dInGPU(metaDataCPU.isToBeValidatedFp);
+	//res.isToBeValidatedFn = allocate3dInGPU(metaDataCPU.isToBeValidatedFn);
 
-	res.workQueue = allocate3dInGPU(metaDataCPU.workQueue);
+	//res.workQueue = allocate3dInGPU(metaDataCPU.workQueue);
 	//res.resultList = allocate3dInGPU(metaDataCPU.resultList);
 
 	res.metaXLength = res.fpCount.Nx;
 	res.MetaYLength = res.fpCount.Ny;
 	res.MetaZLength = res.fpCount.Nz;
 
-	res.totalMetaLength = metaDataCPU.totalMetaLength;
+	res.totalMetaLength = (Nx*Ny*Nz);
 	//allocating on GPU and copying  cpu data onto GPU
 
 	return res;

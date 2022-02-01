@@ -76,7 +76,7 @@ extern "C" struct MetaDataCPU {
     //work queue -  workqueue counter already present in minMaxes as entry 9 
     //in practice it is matrix of length the same as FP+FN global count +1 and width of 4 
         //1) xMeta; 2)yMeta 3)zMeta 4)isGold
-    array3dWithDimsCPU<uint16_t> workQueue;
+    uint16_t* workQueue;
     //in practice it is matrix of length the same as FP+FN global count +1 and width of 5
          //1) xMeta; 2)yMeta 3)zMeta 4)isGold 5)iteration number  
     //we use one single long rewsult list - in order to avoid overwriting each block each block has established offset where it would write it's results 
@@ -119,8 +119,9 @@ extern "C" struct MetaDataGPU {
     array3dWithDimsGPU isToBeValidatedFp;
     array3dWithDimsGPU isToBeValidatedFn;
 
-    array3dWithDimsGPU workQueue;
+    //array3dWithDimsGPU workQueue;
     uint16_t* resultList;
+    uint16_t* workQueue;
 
 
 };
