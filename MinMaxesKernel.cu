@@ -88,6 +88,45 @@ __device__ void fillReduCedArr(ForBoolKernelArgs<TPI> fbArgs,
     //    printf("pppppppp  fp x %d y %d z %d    xMeta [%d] yMeta [%d] zMeta [%d]  \n", x, y, z, xMeta, yMeta, zMeta);
     //}
 
+
+
+//(sharedForGold[xLoc][yLoc] & (goldBool << (zLoc)));
+//(sharedForSegm[xLoc][yLoc] & (segmBool << (zLoc)));
+
+//if (goldBool) {
+//    printf("goldBool x %d y %d z %d    xMeta [%d] yMeta [%d] zMeta [%d]  \n", x, y, z, xMeta, yMeta, zMeta);
+//}
+//if (segmBool) {
+//    printf("segmBool x %d y %d z %d    xMeta [%d] yMeta [%d] zMeta [%d]  \n", x, y, z, xMeta, yMeta, zMeta);
+//}
+// 
+//uint32_t numb = 0;
+//int pos1 = 2;
+//int pos2 = 8;
+//int pos3 = 22;
+
+//std::cout << "pre" << std::endl;
+//std::cout << (numb & (1 << (pos1))) << std::endl;
+//std::cout << (numb & (1 << (pos2))) << std::endl;
+//std::cout << (numb & (1 << (pos3))) << std::endl;
+
+
+//numb |= 1 << pos1;
+//numb |= 1 << pos2;
+//numb |= 1 << pos3;
+
+
+//std::cout << "post" << std::endl;
+//std::cout << ((numb & (1 << (pos1))) > 0) << std::endl;
+//std::cout << ((numb & (1 << (pos2))) > 0) << std::endl;
+//std::cout << ((numb & (1 << (pos3))) > 0) << std::endl;
+
+//std::cout << ((numb & (1 << (3))) > 0) << std::endl;
+//std::cout << ((numb & (1 << (7))) > 0) << std::endl;
+//std::cout << ((numb & (1 << (30))) > 0) << std::endl;
+
+
+ //tensorrow[x] += 1
 }
 
 

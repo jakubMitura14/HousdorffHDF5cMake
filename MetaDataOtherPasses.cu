@@ -114,7 +114,7 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
     __shared__ unsigned int localWorkQueueCounter[1];
     //according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes so it will give us 1600 length of shared memory
     //so here we will store locally the calculated offsets and coordinates of meta data block of intrest marking also wheather we are  talking about gold or segmentation pass (fp or fn )
-    __shared__ uint8_t localWorkAndOffsetQueue[3000][4];
+    __shared__ uint8_t localWorkAndOffsetQueue[2000][4];
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
         fpFnLocCounter[0] = 0;
     }
@@ -146,7 +146,7 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
             //we need to establish where to put the entry in the local queue
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
             //we check weather we still have space in shared memory
-            if (old < 2990) {// so we still have space in shared memory
+            if (old < 1990) {// so we still have space in shared memory
       /*          printf( "\naaaa adding to shmem to be activated xMeta %d yMeta %d zMeta %d localWorkQueueCounter %d     \n"
                 , xMeta, yMeta, zMeta, localWorkQueueCounter[0] );
 */
@@ -214,7 +214,7 @@ inline __global__ void getWorkQueeueFromIsToBeActivated(ForBoolKernelArgs<PYO> f
             //we need to establish where to put the entry in the local queue
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
             //we check weather we still have space in shared memory
-            if (old < 2990) {// so we still have space in shared memory
+            if (old < 1990) {// so we still have space in shared memory
                 localWorkAndOffsetQueue[old][0] = xMeta;
                 localWorkAndOffsetQueue[old][1] = yMeta;
                 localWorkAndOffsetQueue[old][2] = zMeta;
@@ -317,7 +317,7 @@ inline __global__ void getWorkQueeueFromActive_mainPass(ForBoolKernelArgs<PYO> f
     __shared__ unsigned int localWorkQueueCounter[1];
     //according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes so it will give us 1600 length of shared memory
     //so here we will store locally the calculated offsets and coordinates of meta data block of intrest marking also wheather we are  talking about gold or segmentation pass (fp or fn )
-    __shared__ uint8_t localWorkAndOffsetQueue[3000][4];
+    __shared__ uint8_t localWorkAndOffsetQueue[2000][4];
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
         fpFnLocCounter[0] = 0;
     }
@@ -349,7 +349,7 @@ inline __global__ void getWorkQueeueFromActive_mainPass(ForBoolKernelArgs<PYO> f
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
             //printf("main pass putting to work queue xMeta %d yMeta %d zMeta %d isGold %d \n", xMeta, yMeta, zMeta, 1);
             //we check weather we still have space in shared memory
-            if (old < 2990) {// so we still have space in shared memory
+            if (old < 1990) {// so we still have space in shared memory
                 localWorkAndOffsetQueue[old][0] = xMeta;
                 localWorkAndOffsetQueue[old][1] = yMeta;
                 localWorkAndOffsetQueue[old][2] = zMeta;
@@ -401,7 +401,7 @@ inline __global__ void getWorkQueeueFromActive_mainPass(ForBoolKernelArgs<PYO> f
             unsigned int old = atomicAdd(&localWorkQueueCounter[0], 1);
            // printf("main pass putting to work queue xMeta %d yMeta %d zMeta %d isGold %d \n", xMeta,yMeta, zMeta, 0 );
             //we check weather we still have space in shared memory
-            if (old < 2990) {// so we still have space in shared memory
+            if (old < 1990) {// so we still have space in shared memory
                 localWorkAndOffsetQueue[old][0] = xMeta;
                 localWorkAndOffsetQueue[old][1] = yMeta;
                 localWorkAndOffsetQueue[old][2] = zMeta;

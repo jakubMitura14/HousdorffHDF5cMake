@@ -45,9 +45,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 13;
-	const int MetaYLength = 13;
-	const int MetaZLength = 13;
+	const int metaXLength = 2;
+	const int MetaYLength = 2;
+	const int MetaZLength = 10;
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -206,12 +206,12 @@ extern "C" inline void testMainPasswes() {
 	auto arrSegmObj = forFullBoolPrepArgs.segmArr;
 
 	// 2 planes with distance 7 relative to each other
-	for (int x = 31; x < 32; x++) {
-		for (int y = 12; y < 13; y++) {
+	for (int x = 1; x < 5; x++) {
+		for (int y = 1; y < 5; y++) {
 
-			setArrCPU(arrGoldObj, x, y,100 ,2);
+			setArrCPU(arrGoldObj, x, y,1 ,2);
 
-			setArrCPU(arrSegmObj,x, y,300 , 2);
+			setArrCPU(arrSegmObj,x, y,15 , 2);
 
 		}
 	

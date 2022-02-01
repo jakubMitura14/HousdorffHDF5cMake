@@ -58,208 +58,6 @@ Data
 */
 
 
-// runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
-
-
-
-//#pragma once
-//extern "C" inline bool mainKernelsTestRun(ForFullBoolPrepArgs<int> fFArgs, forTestPointStruct allPointsA[]
-//    , forTestMetaDataStruct allMetas[], int pointsNumber, int metasNumber) {
-//
-//
-//    cudaError_t syncErr;
-//    cudaError_t asyncErr;
-//
-//    unsigned int cpuIterNumb = -1;
-//    int device = 0;
-//    cudaDeviceProp deviceProp;
-//    cudaGetDeviceProperties(&deviceProp, device);
-//
-//
-//    for debugging
-//    array3dWithDimsGPU forDebug = allocate3dInGPU(fFArgs.forDebugArr);
-//    main arrays allocations
-//    array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
-//
-//    array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-//    //reduced arrays
-//    array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
-//    array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
-//
-//    array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
-//    array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
-//
-//
-//    array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
-//    array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
-//
-//
-//
-//
-//
-//
-//    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
-//    void* kernel_args[] = { &fbArgs };
-//
-//    //preparation kernel
-//    cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
-//    //sync
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//
-//     bool test
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//    forBoolKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//
-//       //here threads one dimensionsonal !!
-//       //TODO() reallocate memory - make reduced arrs and metadata smaller - allocate work queue, padding store, result list ...
-//
-//    cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
-//
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//
-//    firstMetaPassKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
-//
-//
-//
-//    runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
-//
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//
-//
-//
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//
-//    deviceTohost
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//
-//
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//
-//    mainPassKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber
-//        , fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength, fFArgs.metaData.MetaZLength, goldArr.Ny, goldArr.Nx);
-//
-//
-//
-//    runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//
-//
-//
-//    deviceTohost
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//
-//
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//
-//    checkAfterSecondDil(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
-//
-//
-//
-//    
-//
-//
-//
-//    sync
-//
-//
-//    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-//    cudaGetLastError();
-//
-//    cudaFree(forDebug.arrPStr.ptr);
-//    cudaFree(goldArr.arrPStr.ptr);
-//    cudaFree(segmArr.arrPStr.ptr);
-//    cudaFree(reducedGold.arrPStr.ptr);
-//    cudaFree(reducedSegm.arrPStr.ptr);
-//    cudaFree(reducedGoldPrev.arrPStr.ptr);
-//    cudaFree(reducedSegmPrev.arrPStr.ptr);
-//
-//
-//    freeMetaDataGPU(fbArgs.metaData);
-//
-//
-//       /*
-//    * Catch errors for both the kernel launch above and any
-//    * errors that occur during the asynchronous `doubleElements`
-//    * kernel execution.
-//    */
-//
-//       syncErr = cudaGetLastError();
-//       asyncErr = cudaDeviceSynchronize();
-//
-//       /*
-//        * Print errors should they exist.
-//        */
-//
-//       if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-//       if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
-//
-//
-//
-//    return true;
-//}
-//
-
 
 
 /**
@@ -284,8 +82,8 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 template <typename TKKI>
 inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     char* tensorslice;
-    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 5000; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-        if (fbArgs.metaData.resultList[linIdexMeta *5+4] !=9 && fbArgs.metaData.resultList[linIdexMeta * 5 ]>0) {
+    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+        if (fbArgs.metaData.resultList[linIdexMeta *5+4] !=131 && fbArgs.metaData.resultList[linIdexMeta * 5 ]>0) {
 
         printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
             fbArgs.metaData.resultList[linIdexMeta * 5 ]
@@ -338,7 +136,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     cudaError_t syncErr;
     cudaError_t asyncErr;
-
+    cudaDeviceReset();
 
 
 
@@ -397,47 +195,56 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
 
-    for (int i = 0; i < 100; i++) {
-  //  while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
-        runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);
-       
-        cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+   // for (int i = 0; i < 205; i++) {
+    while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
+       // runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);
 
-        checkCuda(cudaDeviceSynchronize(), "bb");
-        printf("mainDilatation %d  \n", cpuIterNumb);
-        syncErr = cudaGetLastError();
+      /*  checkCuda(cudaDeviceSynchronize(), "bb");
+        printf("mainDilatation %d  \n", cpuIterNumb);*/
+
+        //cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+        mainDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
+
+      /*  syncErr = cudaGetLastError();
         asyncErr = cudaDeviceSynchronize();
         if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
 
 
-        cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+        //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+        getWorkQueeueFromIsToBeActivated << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
-        checkCuda(cudaDeviceSynchronize(), "bb");
+
+       /* checkCuda(cudaDeviceSynchronize(), "bb");
         printf("getWorkQueeueFromIsToBeActivated %d  \n", cpuIterNumb);
         syncErr = cudaGetLastError();
         asyncErr = cudaDeviceSynchronize();
         if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
 
-        cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+        paddingDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
-
+        //cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
         checkCuda(cudaDeviceSynchronize(), "bb");
+
+
+        /*checkCuda(cudaDeviceSynchronize(), "bb");
         printf("paddingDilatation %d  \n", cpuIterNumb);
         syncErr = cudaGetLastError();
         asyncErr = cudaDeviceSynchronize();
         if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
 
-        cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+        //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+        getWorkQueeueFromActive_mainPass << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
-        checkCuda(cudaDeviceSynchronize(), "bb");
+
+  /*      checkCuda(cudaDeviceSynchronize(), "bb");
         printf("getWorkQueeueFromActive_mainPass %d  \n", cpuIterNumb);
         syncErr = cudaGetLastError();
         asyncErr = cudaDeviceSynchronize();
         if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
    }
     checkCuda(cudaDeviceSynchronize(), "cc");
 
@@ -446,7 +253,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   // testKernel << <10,512>> > (fbArgs);
+    testKernel << <10,512>> > (fbArgs);
     ////sync
     checkCuda(cudaDeviceSynchronize(), "cc");
 
@@ -839,3 +646,207 @@ __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 */
+
+
+// runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
+
+
+
+//#pragma once
+//extern "C" inline bool mainKernelsTestRun(ForFullBoolPrepArgs<int> fFArgs, forTestPointStruct allPointsA[]
+//    , forTestMetaDataStruct allMetas[], int pointsNumber, int metasNumber) {
+//
+//
+//    cudaError_t syncErr;
+//    cudaError_t asyncErr;
+//
+//    unsigned int cpuIterNumb = -1;
+//    int device = 0;
+//    cudaDeviceProp deviceProp;
+//    cudaGetDeviceProperties(&deviceProp, device);
+//
+//
+//    for debugging
+//    array3dWithDimsGPU forDebug = allocate3dInGPU(fFArgs.forDebugArr);
+//    main arrays allocations
+//    array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
+//
+//    array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
+//    //reduced arrays
+//    array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
+//    array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
+//
+//    array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
+//    array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
+//
+//
+//    array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
+//    array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
+//
+//
+//
+//
+//
+//
+//    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
+//    void* kernel_args[] = { &fbArgs };
+//
+//    //preparation kernel
+//    cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
+//    //sync
+//    checkCuda(cudaDeviceSynchronize(), "aa");
+//
+//     bool test
+//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
+//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
+//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
+//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
+//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
+//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
+//
+//    checkCuda(cudaDeviceSynchronize(), "aa");
+//    forBoolKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
+//    checkCuda(cudaDeviceSynchronize(), "aa");
+//
+//       //here threads one dimensionsonal !!
+//       //TODO() reallocate memory - make reduced arrs and metadata smaller - allocate work queue, padding store, result list ...
+//
+//    cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
+//
+//    checkCuda(cudaDeviceSynchronize(), "aa");
+//
+//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
+//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
+//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
+//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
+//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
+//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
+//
+//    firstMetaPassKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
+//
+//
+//
+//    runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
+//
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//
+//
+//
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//
+//    deviceTohost
+//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
+//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+//
+//
+//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
+//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
+//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
+//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
+//
+//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
+//
+//    mainPassKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber
+//        , fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength, fFArgs.metaData.MetaZLength, goldArr.Ny, goldArr.Nx);
+//
+//
+//
+//    runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//
+//
+//
+//    deviceTohost
+//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
+//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+//
+//
+//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
+//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
+//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
+//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
+//
+//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
+//    checkCuda(cudaDeviceSynchronize(), "bb");
+//
+//    checkAfterSecondDil(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
+//
+//
+//
+//    
+//
+//
+//
+//    sync
+//
+//
+//    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
+//    cudaGetLastError();
+//
+//    cudaFree(forDebug.arrPStr.ptr);
+//    cudaFree(goldArr.arrPStr.ptr);
+//    cudaFree(segmArr.arrPStr.ptr);
+//    cudaFree(reducedGold.arrPStr.ptr);
+//    cudaFree(reducedSegm.arrPStr.ptr);
+//    cudaFree(reducedGoldPrev.arrPStr.ptr);
+//    cudaFree(reducedSegmPrev.arrPStr.ptr);
+//
+//
+//    freeMetaDataGPU(fbArgs.metaData);
+//
+//
+//       /*
+//    * Catch errors for both the kernel launch above and any
+//    * errors that occur during the asynchronous `doubleElements`
+//    * kernel execution.
+//    */
+//
+//       syncErr = cudaGetLastError();
+//       asyncErr = cudaDeviceSynchronize();
+//
+//       /*
+//        * Print errors should they exist.
+//        */
+//
+//       if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+//       if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+//
+//
+//
+//    return true;
+//}
+//
+
