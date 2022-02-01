@@ -11,6 +11,7 @@
 #include "UnitTestUtils.cu"
 #include "MetaDataOtherPasses.cu"
 #include "DilatationKernels.cu"
+#include "MinMaxesKernel.cu"
 
 using namespace cooperative_groups;
 
@@ -136,8 +137,10 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     cudaError_t syncErr;
     cudaError_t asyncErr;
-    cudaDeviceReset();
-
+    int device = 0;
+    unsigned int cpuIterNumb = -1;
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, device);
 
 
 
@@ -163,20 +166,19 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
 
     ////preparation kernel
-    int device = 0;
-    unsigned int cpuIterNumb = -1;
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, device);
+
     // initialize, then launch
 
 
+    checkCuda(cudaDeviceSynchronize(), "bb");
 
     void* kernel_args[] = { &fbArgs };
-    cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
     
+    getMinMaxes << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
 
 
+    //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 
 
     unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
@@ -187,73 +189,78 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     //allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
     
+    //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
 
-    cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
+
+    //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
 
     checkCuda(cudaDeviceSynchronize(), "bb");
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
 
-   // for (int i = 0; i < 205; i++) {
-    while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
-       // runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);
+  // // for (int i = 0; i < 205; i++) {
+  //  while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
+  //     // runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);
 
-      /*  checkCuda(cudaDeviceSynchronize(), "bb");
-        printf("mainDilatation %d  \n", cpuIterNumb);*/
+  //    /*  checkCuda(cudaDeviceSynchronize(), "bb");
+  //      printf("mainDilatation %d  \n", cpuIterNumb);*/
 
-        //cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-        mainDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
+  //      //cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+  //      mainDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
-      /*  syncErr = cudaGetLastError();
-        asyncErr = cudaDeviceSynchronize();
-        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-
-
-        //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-        getWorkQueeueFromIsToBeActivated << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
+  //    /*  syncErr = cudaGetLastError();
+  //      asyncErr = cudaDeviceSynchronize();
+  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
 
 
-       /* checkCuda(cudaDeviceSynchronize(), "bb");
-        printf("getWorkQueeueFromIsToBeActivated %d  \n", cpuIterNumb);
-        syncErr = cudaGetLastError();
-        asyncErr = cudaDeviceSynchronize();
-        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-
-        paddingDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
-
-        //cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-        checkCuda(cudaDeviceSynchronize(), "bb");
+  //      //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+  //      getWorkQueeueFromIsToBeActivated << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
 
-        /*checkCuda(cudaDeviceSynchronize(), "bb");
-        printf("paddingDilatation %d  \n", cpuIterNumb);
-        syncErr = cudaGetLastError();
-        asyncErr = cudaDeviceSynchronize();
-        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
+  //     /* checkCuda(cudaDeviceSynchronize(), "bb");
+  //      printf("getWorkQueeueFromIsToBeActivated %d  \n", cpuIterNumb);
+  //      syncErr = cudaGetLastError();
+  //      asyncErr = cudaDeviceSynchronize();
+  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
 
-        //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-        getWorkQueeueFromActive_mainPass << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
+  //      paddingDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
-
-  /*      checkCuda(cudaDeviceSynchronize(), "bb");
-        printf("getWorkQueeueFromActive_mainPass %d  \n", cpuIterNumb);
-        syncErr = cudaGetLastError();
-        asyncErr = cudaDeviceSynchronize();
-        if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-        if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-   }
-    checkCuda(cudaDeviceSynchronize(), "cc");
+  //      //cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+  //      checkCuda(cudaDeviceSynchronize(), "bb");
 
 
+  //      /*checkCuda(cudaDeviceSynchronize(), "bb");
+  //      printf("paddingDilatation %d  \n", cpuIterNumb);
+  //      syncErr = cudaGetLastError();
+  //      asyncErr = cudaDeviceSynchronize();
+  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
+
+  //      //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
+  //      getWorkQueeueFromActive_mainPass << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
 
-    ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
+  ///*      checkCuda(cudaDeviceSynchronize(), "bb");
+  //      printf("getWorkQueeueFromActive_mainPass %d  \n", cpuIterNumb);
+  //      syncErr = cudaGetLastError();
+  //      asyncErr = cudaDeviceSynchronize();
+  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
+  // }
+  //  checkCuda(cudaDeviceSynchronize(), "cc");
 
-    testKernel << <10,512>> > (fbArgs);
+
+
+
+  //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
+
+  //  testKernel << <10,512>> > (fbArgs);
+ 
+
+
     ////sync
     checkCuda(cudaDeviceSynchronize(), "cc");
 

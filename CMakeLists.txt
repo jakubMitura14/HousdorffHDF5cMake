@@ -6,7 +6,7 @@ enable_language(CUDA)
 find_package(hdf5 CONFIG REQUIRED)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo  -rdc=true -lcudadevrt")
 
-add_executable(hello hello.cu  "dirent.h")
+add_executable(hello hello.cu  )
 include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})

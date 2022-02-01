@@ -45,8 +45,8 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 2;
-	const int MetaYLength = 2;
+	const int metaXLength = 6;
+	const int MetaYLength = 6;
 	const int MetaZLength = 10;
 
 
@@ -206,20 +206,50 @@ extern "C" inline void testMainPasswes() {
 	auto arrSegmObj = forFullBoolPrepArgs.segmArr;
 
 	// 2 planes with distance 7 relative to each other
-	for (int x = 1; x < 5; x++) {
-		for (int y = 1; y < 5; y++) {
+	//for (int x = 33; x < 71; x++) {
+	//	for (int y = 1; y < 40; y++) {
 
-			setArrCPU(arrGoldObj, x, y,1 ,2);
+	//		setArrCPU(arrGoldObj, x, y,70 ,2);
 
-			setArrCPU(arrSegmObj,x, y,15 , 2);
+	//		setArrCPU(arrSegmObj,x, y,100 , 2);
 
-		}
-	
-	}
+	//	}
+	//
+	//}
+
+	setArrCPU(arrGoldObj, 33, 1, 70, 2);
+	setArrCPU(arrGoldObj, 75, 20, 70, 2);
+
+	setArrCPU(arrGoldObj, 33, 1, 110, 2);
+	setArrCPU(arrGoldObj, 75, 20, 161, 2);
+
+	/*
+	maxX 2  [1]
+minX 1  [2]
+maxY 1  [3]
+minY 0  [4]
+maxZ 5  [5]
+minZ 2  [6]
+	*/
+
 
 	printf("\n aaa \n");
 	mainKernelsRun(forFullBoolPrepArgs);
 
+
+
+		i = 1;
+	printf("maxX %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	i = 2;
+	printf("minX %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	i = 3;
+	printf("maxY %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	i = 4;
+	printf("minY %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	i = 5;
+	printf("maxZ %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	i = 6;
+	printf("minZ %d  [%d]\n", minMaxes.arrP[0][0][i], i);
 
 		 int ii = 7;
 	 	printf("global FP count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
