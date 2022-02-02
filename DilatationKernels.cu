@@ -8,8 +8,6 @@
 #include "MainPassFunctions.cu"
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include <cooperative_groups/memcpy_async.h>
-
 #include "UnitTestUtils.cu"
 #include "MetaDataOtherPasses.cu"
 
