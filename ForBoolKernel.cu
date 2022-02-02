@@ -56,6 +56,9 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunA
     resMeta.minMaxes = allocate3dInGPU(metaDataCPU.minMaxes);
 
     res.metaData = resMeta;
+<<<<<<< HEAD
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
     res.forDebugArr = forDebugArr;
     res.goldArr = goldArr;
