@@ -110,8 +110,13 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
 
 	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
+<<<<<<< HEAD
 
 
+=======
+	
+	
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 	//cudaFree(metaDataGPU.resultList);
 
 	//cudaFreeAsync(metaDataGPU.resultList,0);

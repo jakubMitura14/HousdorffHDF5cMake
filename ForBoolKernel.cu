@@ -27,7 +27,36 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunA
 ) {
 
     ForBoolKernelArgs<TCC> res;
+<<<<<<< HEAD
    // res.metaData = allocateMetaDataOnGPU(mainFunArgs.metaData);
+=======
+    MetaDataGPU resMeta;
+
+
+
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 1, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 2, 0, 0, 1000, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 3, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 4, 0, 0, 1000, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 5, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 6, 0, 0, 1000, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 7, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 8, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 9, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 10, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 11, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 12, 0, 0, 1, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 13, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 14, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 15, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 16, 0, 0, 0, false);
+    setArrCPU<unsigned int>(metaDataCPU.minMaxes, 17, 0, 0, 0, false);
+
+
+    resMeta.minMaxes = allocate3dInGPU(metaDataCPU.minMaxes);
+
+    res.metaData = resMeta;
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
     res.forDebugArr = forDebugArr;
     res.goldArr = goldArr;
     res.segmArr = segmArr;
@@ -340,6 +369,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
         zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
         yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
         //iterating over data block
+<<<<<<< HEAD
         dataBlockIter(fbArgs, cta, tile, minMaxesInShmem, sumFp, sumFn, isNotEmptyRef
             , xMeta, yMeta, zMeta, tensorslice, refZ, refY, refX
             , goldBoolRef, segmBoolRef, sharedForGold, sharedForSegm, fpSFnS, anyInGold, anyInSegm);
@@ -371,6 +401,105 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
 
            //printf("metaCudaTensor[%d][%d][%d] = %d\n", i, j, k, tensorrow[i]);
    */
+=======
+        //now we need to iterate over the data in the data block voxel by voxel
+        for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
+            uint16_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
+            for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
+                uint16_t y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
+                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
+
+                    // resetting 
+                    sharedForGold[xLoc][yLoc] = 0;
+                    sharedForSegm[xLoc][yLoc] = 0;
+                    isNotEmpty = false;
+                    sumFp = 0;
+                    sumFn = 0;
+                    anyInGold[0] = false;
+                    anyInSegm[0] = false;
+
+                    for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
+                        uint16_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
+                        if (z < fbArgs.goldArr.Nx) {
+                            //first array gold
+                            uint8_t& zLocRef = zLoc; uint8_t& yLocRef = yLoc; uint8_t& xLocRef = xLoc;
+
+                            goldBool = (getTensorRow<TYI>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor);
+
+                            // now segmentation  array
+                            segmBool = (getTensorRow<TYI>(tensorslice, fbArgs.segmArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor);
+                            // setting bits
+                             //setting  bits for reduced representation 
+                            sharedForGold[xLoc][yLoc] |= goldBool << zLoc;
+                            sharedForSegm[xLoc][yLoc] |= segmBool << zLoc;
+                            // setting value of local boolean marking that any of the entries was evaluated to true in either of arrays
+                            isNotEmpty = (isNotEmpty || (goldBool || segmBool));
+                            sumFp += (!goldBool && segmBool);
+                            sumFn += (goldBool && !segmBool);
+                            if (goldBool)  anyInGold[0] = true;
+                            if (segmBool)  anyInSegm[0] = true;
+                        }
+                    }
+                    ////after we streamed over all z layers we need to save it into reduced representation arrays
+                    //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGold, fbArgs.reducedGold.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
+                    //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegm, fbArgs.reducedSegm.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
+                    //// TODO() establish is it faster that way or better at the end do mempcy async
+                    //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGoldRef, fbArgs.reducedGoldRef.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
+                    //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegmRef, fbArgs.reducedSegmRef.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
+
+                    getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGoldPrev, fbArgs.reducedGoldPrev.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
+                    getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegmPrev, fbArgs.reducedSegmPrev.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
+                    //we establish wheather this block is not empty if it is not - we will mark it as active
+                    isNotEmpty = __syncthreads_or(isNotEmpty);
+
+
+                    /////adding the block and total number of the Fp's and Fn's 
+                    sumFp = reduce(tile, sumFp, plus<uint16_t>());
+                    sumFn = reduce(tile, sumFn, plus<uint16_t>());
+                    //reusing shared memory and adding accumulated values from tiles
+                    if (tile.thread_rank() == 0) {
+                        sharedForGold[0][tile.meta_group_rank()] = sumFp;
+                        sharedForSegm[0][tile.meta_group_rank()] = sumFn;
+                    }
+                    sync(cta);//waiting so shared memory will be loaded evrywhere
+                    //on single thread we do last sum reduction
+                    auto active = coalesced_threads();
+                    //gold
+                    if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty) {
+                        //if (isToBeExecutedOnActive(active, 0) && isNotEmpty) {
+                        sharedForGold[1][0] = 0;//reset
+                        for (int i = 0; i < tile.meta_group_size(); i += 1) {
+                            sharedForGold[1][0] += sharedForGold[0][i];
+                        };
+                        fpSFnS[0] += sharedForGold[1][0];// will be needed later for global set
+                        getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
+                    }
+                    //segm
+                   // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
+                    if ((threadIdx.x == 0) && (threadIdx.y == 1) && isNotEmpty) {
+                        sharedForSegm[1][0] = 0;//reset
+                        for (uint8_t i = 0; i < tile.meta_group_size(); i += 1) {
+                            sharedForSegm[1][0] += sharedForSegm[0][i];
+                        };
+                        fpSFnS[1] += sharedForSegm[1][0];// will be needed later for global set
+                        //setting metadata
+                        getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCount, fbArgs.metaData.fnCount.Ny, yMeta, zMeta)[xMeta] = sharedForSegm[1][0];
+
+                    }
+                    /////////////////// setting min and maxes
+
+                    //marking as active 
+    //FP pass
+                    if (isToBeExecutedOnActive(active, 8) && isNotEmpty && anyInGold[0]) {  //&& anyInGold[0]
+                        getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveGold, fbArgs.metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta] = true;
+
+                    };
+                    //FN pass
+                    if (isToBeExecutedOnActive(active, 9) && isNotEmpty && anyInSegm[0]) { // && anyInSegm[0]
+                        getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm, fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta] = true;
+
+                    };
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 
     }
     sync(cta);

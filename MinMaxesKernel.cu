@@ -33,7 +33,11 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
 
 
     //shared memory
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
     __shared__ bool anyInGold[1];
     //__shared__ uint32_t reduction_s[32];
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
@@ -85,6 +89,7 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
 
                     }
                 }
+<<<<<<< HEAD
 
                 sync(cta);//waiting so shared memory will be loaded evrywhere
                 //on single thread we do last sum reduction
@@ -102,6 +107,25 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
                 if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
                 if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
 
+=======
+
+                sync(cta);//waiting so shared memory will be loaded evrywhere
+                //on single thread we do last sum reduction
+
+                /////////////////// setting min and maxes
+//    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
+                auto active = coalesced_threads();
+
+                if (isToBeExecutedOnActive(active, 2) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
+                if (isToBeExecutedOnActive(active, 3) && anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
+
+                if (isToBeExecutedOnActive(active, 4) && anyInGold[0]) { minMaxesInShmem[3] = max(yMeta, minMaxesInShmem[3]); };
+                if (isToBeExecutedOnActive(active, 5) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
+
+                if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
+                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
+
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
                 sync(cta); // just to reduce the warp divergence
                 anyInGold[0] = false;
 
@@ -113,7 +137,11 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
 
     }
     sync(cta);
+<<<<<<< HEAD
 
+=======
+   
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
     auto active = coalesced_threads();
     if (isToBeExecutedOnActive(active, 0)) {
         //printf("in minMaxes internal  %d \n", minMaxesInShmem[0]);
