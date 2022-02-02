@@ -51,13 +51,6 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
 	res.isToBeActivatedSegm = allocate3dInGPU(metaDataCPU.isToBeActivatedSegm);
 
 
-<<<<<<< HEAD
-	uint16_t* workQueue;
-	size_t size = (Nx * Ny * Nz) * 4 + 5;
-	cudaMallocAsync(&workQueue, size, 0);
-	//res.workQueue = workQueue;
-=======
->>>>>>> parent of d530140 (up)
 
 	res.isToBeValidatedFp = allocate3dInGPU(metaDataCPU.isToBeValidatedFp);
 	res.isToBeValidatedFn = allocate3dInGPU(metaDataCPU.isToBeValidatedFn);
@@ -69,11 +62,7 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
 	res.MetaYLength = res.fpCount.Ny;
 	res.MetaZLength = res.fpCount.Nz;
 
-<<<<<<< HEAD
-	res.totalMetaLength = (Nx * Ny * Nz);
-=======
 	res.totalMetaLength = metaDataCPU.totalMetaLength;
->>>>>>> parent of d530140 (up)
 	//allocating on GPU and copying  cpu data onto GPU
 
 	return res;
@@ -138,25 +127,8 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
 
 	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 
-=======
-=======
->>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
-=======
->>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
-=======
->>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
-=======
->>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
-	
-	
->>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 	//cudaFree(metaDataGPU.resultList);
 
 	//cudaFreeAsync(metaDataGPU.resultList,0);
