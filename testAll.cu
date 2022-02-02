@@ -148,7 +148,7 @@ extern "C" inline void testMainPasswes() {
 	//allocating to semiarbitrrary size 
 	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
 	//auto resultListPointer = alloc_tensorToZeros<int>(workQueueAndRLLength, resultListWidth, 1);
-	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
+//	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
 	//metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
 
 

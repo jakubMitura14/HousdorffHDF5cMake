@@ -9,8 +9,11 @@
 #pragma once
 inline cudaError_t checkCuda(cudaError_t result, std::string description)
 {
+    std::cout << description;
+    std::cout <<"\n";
+
     if (result != cudaSuccess) {
-        printf("%d", description);
+       // printf("%d", description);
         fprintf(stderr, "CUDA Runtime Error in %d : %s\n", description, cudaGetErrorString(result));
         assert(result == cudaSuccess);
     }

@@ -75,7 +75,7 @@ inline void copyMetaDataToCPU(MetaDataCPU metaDataCPU, MetaDataGPU metaDataGPU) 
 	copyDeviceToHost3d(metaDataGPU.isToBeActivatedGold, metaDataCPU.isToBeActivatedGold);
 	copyDeviceToHost3d(metaDataGPU.isToBeActivatedSegm, metaDataCPU.isToBeActivatedSegm);
 
-	copyDeviceToHost3d(metaDataGPU.workQueue, metaDataCPU.workQueue);
+	//copyDeviceToHost3d(metaDataGPU.workQueue, metaDataCPU.workQueue);
 	//copyDeviceToHost3d(metaDataGPU.resultList, metaDataCPU.resultList);
 
 	copyDeviceToHost3d(metaDataGPU.isToBeValidatedFp, metaDataCPU.isToBeValidatedFp);
@@ -109,7 +109,7 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 	cudaFree(metaDataGPU.isToBeActivatedGold.arrPStr.ptr);
 	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
 
-	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
+	cudaFree(metaDataGPU.workQueue);
 	
 	
 	//cudaFree(metaDataGPU.resultList);
