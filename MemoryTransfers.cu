@@ -89,6 +89,19 @@ inline array3dWithDimsGPU allocate3dInGPU(array3dWithDimsCPU<TAL> arrCPU) {
 };
 
 
+template <typename TALGG>
+inline array3dWithDimsGPU getArrGpu(int Nx, int Ny, int Nz) {
+    array3dWithDimsGPU res;
+    struct cudaPitchedPtr resStrPointer;
+    cudaMalloc3D(&resStrPointer, make_cudaExtent(Nx * sizeof(TALGG), Ny, Nz));
+    //cudaMalloc3D(&resStrPointer, make_cudaExtent(8 * 4, 9, 10));
+    res.arrPStr = resStrPointer;
+    //!!!!!!!!!!!!!!! intentionally swithing x and z dimensions to make iterations possible ...
+    res.Nz = Nx;
+    res.Ny = Ny;
+    res.Nx = Nz;
+    return res;
+}
 
 template <typename TALGG>
 inline cudaPitchedPtr allocate3dInGPUSimple(TALGG*** cpuArr, int Nx, int Ny, int Nz) {
@@ -114,7 +127,7 @@ inline void copyDeviceToHost3dSimple(TADHDF*** hostTensor, cudaPitchedPtr device
 template <typename ZZ>
 inline void setArrCPU(array3dWithDimsCPU<ZZ> arrCPU, int x, int y, int z, ZZ value, bool toPrint = true) {
     if (toPrint) {
-      //  printf(" set imn meta gold %d  %d  %d \n", x, y, z);
+        //  printf(" set imn meta gold %d  %d  %d \n", x, y, z);
     }
     arrCPU.arrP[z][y][x] = value;
 };

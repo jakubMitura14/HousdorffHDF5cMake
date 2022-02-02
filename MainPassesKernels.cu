@@ -140,7 +140,19 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     int device = 0;
     unsigned int cpuIterNumb = -1;
     cudaDeviceProp deviceProp;
+    cudaGetDevice(&device);
     cudaGetDeviceProperties(&deviceProp, device);
+    int blockSize; // The launch configurator returned block size
+    int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
+    int gridSize; // The actual grid size needed, based on input size
+    
+    // for min maxes kernel 
+    cudaOccupancyMaxPotentialBlockSize(
+        &minGridSize,
+        &blockSize,
+        (void*)getMinMaxes<int>,
+        0);
+    int warpsNumbForMinMax = blockSize/32;
 
 
 
@@ -174,18 +186,18 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     void* kernel_args[] = { &fbArgs };
 
-    getMinMaxes << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
+    getMinMaxes << <minGridSize, dim3(warpsNumbForMinMax) >> > (fbArgs);
 
 
 
     //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 
 
-    unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
+   /* unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
     uint16_t* resultListPointer;
     size_t size = sizeof(uint16_t) * 5 * fpPlusFn + 1;
     cudaMallocAsync(&resultListPointer, size, 0);
-    fbArgs.metaData.resultList = resultListPointer;
+    fbArgs.metaData.resultList = resultListPointer;*/
 
     //allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
 
@@ -297,7 +309,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFree(reducedGoldPrev.arrPStr.ptr);
     cudaFree(reducedSegmPrev.arrPStr.ptr);
 
-    cudaFreeAsync(resultListPointer, 0);
+//    cudaFreeAsync(resultListPointer, 0);
 
     freeMetaDataGPU(fbArgs.metaData);
 
