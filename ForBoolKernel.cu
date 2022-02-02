@@ -57,6 +57,9 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunA
 
     res.metaData = resMeta;
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)

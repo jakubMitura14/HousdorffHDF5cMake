@@ -112,9 +112,12 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 
 =======
+=======
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 	
