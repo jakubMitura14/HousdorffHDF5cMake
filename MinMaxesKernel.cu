@@ -37,7 +37,7 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
     __shared__ bool anyInGold[1];
     //__shared__ uint32_t reduction_s[32];
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
-    __shared__ int minMaxesInShmem[7];
+    __shared__ unsigned int minMaxesInShmem[7];
 
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) { minMaxesInShmem[1] = 0; };
     if ((threadIdx.x == 2) && (threadIdx.y == 0)) { minMaxesInShmem[2] = 1000; };
@@ -100,7 +100,7 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
                 if (isToBeExecutedOnActive(active, 5) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
 
                 if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
-                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
+                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) {                 minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
 
                 sync(cta); // just to reduce the warp divergence
                 anyInGold[0] = false;
@@ -118,32 +118,32 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
     if (isToBeExecutedOnActive(active, 0)) {
         //printf("in minMaxes internal  %d \n", minMaxesInShmem[0]);
         //getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, fbArgs.metaData.minMaxes.Ny, 0, 0)[0] = 61;
-        atomicMax(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[1]), minMaxesInShmem[1]);
+        atomicMax(&fbArgs.metaData.minMaxes[1], minMaxesInShmem[1]);
     };
 
     if (isToBeExecutedOnActive(active, 1)) {
 
-        atomicMin(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[2]), minMaxesInShmem[2]);
+        atomicMin(&fbArgs.metaData.minMaxes[2], minMaxesInShmem[2]);
     };
 
     if (isToBeExecutedOnActive(active, 2)) {
-        atomicMax(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[3]), minMaxesInShmem[3]);
+        atomicMax(&fbArgs.metaData.minMaxes[3], minMaxesInShmem[3]);
     };
 
     if (isToBeExecutedOnActive(active, 3)) {
-        atomicMin(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[4]), minMaxesInShmem[4]);
+        atomicMin(&fbArgs.metaData.minMaxes[4], minMaxesInShmem[4]);
     };
 
 
 
     if (isToBeExecutedOnActive(active, 4)) {
-        atomicMax(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[5]), minMaxesInShmem[5]);
+        atomicMax(&fbArgs.metaData.minMaxes[5], minMaxesInShmem[5]);
     };
 
     if (isToBeExecutedOnActive(active, 5)) {
-        atomicMin(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[6]), minMaxesInShmem[6]);
-    };
+        atomicMin(&fbArgs.metaData.minMaxes[6], minMaxesInShmem[6]);
 
+    };
 
 
 

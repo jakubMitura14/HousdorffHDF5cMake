@@ -113,26 +113,31 @@ extern "C" inline void testMainPasswes() {
 	auto isToBeValidatedFp = get3dArrCPU(isToBeValidatedFpPointer, metaXLength, MetaYLength, MetaZLength);
 	auto isToBeValidatedFn = get3dArrCPU(isToBeValidatedFnPointer, metaXLength, MetaYLength, MetaZLength);
 
-	metaData.fpCount = fpC;
-	metaData.fnCount = fnC;
-	metaData.minMaxes = minMaxes;
 
-	metaData.fpCounter = get3dArrCPU(fpCounterPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.fnCounter = get3dArrCPU(fnCounterPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.fpOffset = get3dArrCPU(fpOffsetPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.fnOffset = get3dArrCPU(fnOffsetPointer, metaXLength, MetaYLength, MetaZLength);;
+	size_t size = sizeof(unsigned int) * 20;
+	unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
+	metaData.minMaxes = minMaxesCPU;
 
-	metaData.isActiveGold = get3dArrCPU(isActiveGoldPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.isFullGold = get3dArrCPU(isFullGoldPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.isActiveSegm = get3dArrCPU(isActiveSegmPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.isFullSegm = get3dArrCPU(isFullSegmPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.fpCount = fpC;
+	//metaData.fnCount = fnC;
+	////metaData.minMaxes = minMaxes;
 
-	metaData.isToBeActivatedGold = get3dArrCPU(isToBeActivatedGoldPointer, metaXLength, MetaYLength, MetaZLength);;
-	metaData.isToBeActivatedSegm = get3dArrCPU(isToBeActivatedSegmPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.fpCounter = get3dArrCPU(fpCounterPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.fnCounter = get3dArrCPU(fnCounterPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.fpOffset = get3dArrCPU(fpOffsetPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.fnOffset = get3dArrCPU(fnOffsetPointer, metaXLength, MetaYLength, MetaZLength);;
+
+	//metaData.isActiveGold = get3dArrCPU(isActiveGoldPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.isFullGold = get3dArrCPU(isFullGoldPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.isActiveSegm = get3dArrCPU(isActiveSegmPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.isFullSegm = get3dArrCPU(isFullSegmPointer, metaXLength, MetaYLength, MetaZLength);;
+
+	//metaData.isToBeActivatedGold = get3dArrCPU(isToBeActivatedGoldPointer, metaXLength, MetaYLength, MetaZLength);;
+	//metaData.isToBeActivatedSegm = get3dArrCPU(isToBeActivatedSegmPointer, metaXLength, MetaYLength, MetaZLength);;
 
 
-	metaData.isToBeValidatedFp = isToBeValidatedFp;
-	metaData.isToBeValidatedFn = isToBeValidatedFn;
+	//metaData.isToBeValidatedFp = isToBeValidatedFp;
+	//metaData.isToBeValidatedFn = isToBeValidatedFn;
 
 
 	//int paddingStoreX = metaXLength * 32;
@@ -239,66 +244,35 @@ minZ 2  [6]
 
 
 	i = 1;
-	printf("maxX %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	printf("maxX %d  [%d]\n", minMaxesCPU[i], i);
 	i = 2;
-	printf("minX %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	printf("minX %d  [%d]\n", minMaxesCPU[i], i);
 	i = 3;
-	printf("maxY %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	printf("maxY %d  [%d]\n", minMaxesCPU[i], i);
 	i = 4;
-	printf("minY %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	printf("minY %d  [%d]\n", minMaxesCPU[i], i);
 	i = 5;
-	printf("maxZ %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	printf("maxZ %d  [%d]\n", minMaxesCPU[i], i);
 	i = 6;
-	printf("minZ %d  [%d]\n", minMaxes.arrP[0][0][i], i);
+	printf("minZ %d  [%d]\n", minMaxesCPU[i], i);
 
 	int ii = 7;
-	printf("global FP count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("global FP count %d  [%d]\n", minMaxesCPU[ii], ii);
 	ii = 8;
-	printf("global FN count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("global FN count %d  [%d]\n", minMaxesCPU[ii], ii);
 	ii = 9;
-	printf("workQueueCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("workQueueCounter %d  [%d]\n", minMaxesCPU[ii], ii);
 	ii = 10;
-	printf("resultFP globalCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("resultFP globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
 	ii = 11;
-	printf("resultFn globalCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("resultFn globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
 	ii = 12;
-	printf("global offset counter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("global offset counter %d  [%d]\n", minMaxesCPU[ii], ii);
 
 	ii = 13;
-	printf("globalIterationNumb %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	printf("globalIterationNumb %d  [%d]\n", minMaxesCPU[ii], ii);
 	ii = 17;
-	printf("suum debug %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-
-	//i = 1;
-	//printf("maxX %d  [%d]\n", metaData.minMaxes[i], i);
-	//i = 2;
-	//printf("minX %d  [%d]\n", metaData.minMaxes[i], i);
-	//i = 3;
-	//printf("maxY %d  [%d]\n", metaData.minMaxes[i], i);
-	//i = 4;
-	//printf("minY %d  [%d]\n", metaData.minMaxes[i], i);
-	//i = 5;
-	//printf("maxZ %d  [%d]\n", metaData.minMaxes[i], i);
-	//i = 6;
-	//printf("minZ %d  [%d]\n", metaData.minMaxes[i], i);
-
-	//int ii = 7;
-	//printf("global FP count %d  [%d]\n", metaData.minMaxes[ii], ii);
-	//ii = 8;
-	//printf("global FN count %d  [%d]\n", metaData.minMaxes[ii], ii);
-	//ii = 9;
-	//printf("workQueueCounter %d  [%d]\n", metaData.minMaxes[ii], ii);
-	//ii = 10;
-	//printf("resultFP globalCounter %d  [%d]\n", metaData.minMaxes[ii], ii);
-	//ii = 11;
-	//printf("resultFn globalCounter %d  [%d]\n", metaData.minMaxes[ii], ii);
-	//ii = 12;
-	//printf("global offset counter %d  [%d]\n", metaData.minMaxes[ii], ii);
-
-	//ii = 13;
-	//printf("globalIterationNumb %d  [%d]\n", metaData.minMaxes[ii], ii);
-	//ii = 17;
-	//printf("suum debug %d  [%d]\n", metaData.minMaxes[ii], ii);
+	printf("suum debug %d  [%d]\n", minMaxesCPU[ii], ii);
 
 
 
@@ -414,9 +388,9 @@ minZ 2  [6]
 
 	printf("cleaaning");
 
-	free(isToBeValidatedFpPointer);
-	free(isToBeValidatedFnPointer);
-	free(metaData.minMaxes.arrP);
+	//free(isToBeValidatedFpPointer);
+	//free(isToBeValidatedFnPointer);
+	/*free(metaData.minMaxes);
 	free(metaData.fpCount.arrP);
 	free(metaData.fnCount.arrP);
 	free(metaData.fpCounter.arrP);
@@ -428,13 +402,13 @@ minZ 2  [6]
 	free(metaData.isFullGold.arrP);
 
 	free(metaData.isActiveSegm.arrP);
-	free(metaData.isFullSegm.arrP);
+	free(metaData.isFullSegm.arrP);*/
 
 	free(workQueuePointer);
 	//	free(resultListPointer);
 
-	free(isToBeActivatedGoldPointer);
-	free(isToBeActivatedSegmPointer);
+	//free(isToBeActivatedGoldPointer);
+	//free(isToBeActivatedSegmPointer);
 
 
 	free(forDebugArr);

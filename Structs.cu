@@ -44,7 +44,9 @@ extern "C" struct MetaDataCPU {
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ - minimal and maximum coordinates of blocks with some entries of intrest
     //7)global FP count; 8)global FN count  9) workQueueCounter 10)resultFP globalCounter 11) resultFn globalCounter 
      //12) global FPandFn offset 13)globalIterationNumb
-    array3dWithDimsCPU<unsigned int> minMaxes;
+    //array3dWithDimsCPU<unsigned int> minMaxes;
+    unsigned int* minMaxes;
+
     ////// counts of false positive and false negatives in given metadata blocks
 
     array3dWithDimsCPU<unsigned int> fpCount;
@@ -95,7 +97,7 @@ extern "C" struct MetaDataGPU {
     //7)global FP count; 8)global FN count 9) workQueueCounter 10)resultFP globalCounter 11) resultFn globalCounter
     //12) global FPandFn offset 13)globalIterationNumb
 
-    array3dWithDimsGPU minMaxes;
+    unsigned int* minMaxes;
 
     array3dWithDimsGPU fpCount;
     array3dWithDimsGPU fnCount;

@@ -84,7 +84,54 @@ template <typename TKKI>
 inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     char* tensorslice;
     for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-        if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
+        if (linIdexMeta<13) {
+            if (linIdexMeta == 1) {
+                printf("maxX %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+            }
+    if(linIdexMeta == 2) {
+    printf("minX %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 3) {
+    printf("maxY %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 4) {
+    printf("minY %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 5) {
+    printf("maxZ %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 6) {
+    printf("minZ %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+
+    if(linIdexMeta == 7) {
+    printf("global FP count %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 8) {
+    printf("global FN count %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 9) {
+    printf("workQueueCounter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 10) {
+    printf("resultFP globalCounter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 11) {
+    printf("resultFn globalCounter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 12) {
+    printf("global offset counter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+
+    if(linIdexMeta == 13) {
+    printf("globalIterationNumb %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+    if(linIdexMeta == 17) {
+    printf("suum debug %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    }
+        }
+
+     /*   if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
 
             printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
                 fbArgs.metaData.resultList[linIdexMeta * 5]
@@ -101,7 +148,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             printf(" *** ");
             atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[17]), 1);
 
-        }
+        }*/
     }
 }
 
@@ -162,32 +209,33 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-    ////reduced arrays
-    array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
-    array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
+    //////reduced arrays
+    //array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
+    //array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
 
-    array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
-    array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
-
-
-    array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
-    array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
+    //array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
+    //array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
 
 
+    //array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
+    //array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
 
-    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
+
+
+    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr);
 
     ////preparation kernel
 
     // initialize, then launch
 
 
-    checkCuda(cudaDeviceSynchronize(), "bb");
+    checkCuda(cudaDeviceSynchronize(), "a1");
 
     void* kernel_args[] = { &fbArgs };
 
     getMinMaxes << <minGridSize, dim3(warpsNumbForMinMax) >> > (fbArgs);
 
+    checkCuda(cudaDeviceSynchronize(), "a2");
 
 
     //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
@@ -269,7 +317,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-  //  testKernel << <10,512>> > (fbArgs);
+  //testKernel << <10,512>> > (fbArgs);
 
 
 
@@ -287,11 +335,11 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     copyDeviceToHost3d(goldArr, fFArgs.goldArr);
     copyDeviceToHost3d(segmArr, fFArgs.segmArr);
 
-    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+    //copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+    //copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
 
-    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
+    //copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
+    //copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
 
 
     copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
@@ -304,14 +352,14 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFree(forDebug.arrPStr.ptr);
     cudaFree(goldArr.arrPStr.ptr);
     cudaFree(segmArr.arrPStr.ptr);
-    cudaFree(reducedGold.arrPStr.ptr);
+ /*   cudaFree(reducedGold.arrPStr.ptr);
     cudaFree(reducedSegm.arrPStr.ptr);
     cudaFree(reducedGoldPrev.arrPStr.ptr);
-    cudaFree(reducedSegmPrev.arrPStr.ptr);
+    cudaFree(reducedSegmPrev.arrPStr.ptr);*/
 
 //    cudaFreeAsync(resultListPointer, 0);
 
-    freeMetaDataGPU(fbArgs.metaData);
+//    freeMetaDataGPU(fbArgs.metaData);
 
 
     /*

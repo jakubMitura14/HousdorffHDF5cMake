@@ -10,7 +10,8 @@
 inline cudaError_t checkCuda(cudaError_t result, std::string description)
 {
     if (result != cudaSuccess) {
-        printf("%d", description);
+        std::cout << description;
+       // printf("%d", description);
         fprintf(stderr, "CUDA Runtime Error in %d : %s\n", description, cudaGetErrorString(result));
         assert(result == cudaSuccess);
     }

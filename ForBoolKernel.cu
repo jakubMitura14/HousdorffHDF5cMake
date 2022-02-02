@@ -17,12 +17,12 @@ template <typename TCC>
 inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunArgs, array3dWithDimsGPU forDebugArr
     , array3dWithDimsGPU goldArr
     , array3dWithDimsGPU segmArr
-    , array3dWithDimsGPU reducedGold
-    , array3dWithDimsGPU reducedSegm
-    , array3dWithDimsGPU reducedGoldRef
-    , array3dWithDimsGPU reducedSegmRef
-    , array3dWithDimsGPU reducedGoldPrev
-    , array3dWithDimsGPU reducedSegmPrev
+    //, array3dWithDimsGPU reducedGold
+    //, array3dWithDimsGPU reducedSegm
+    //, array3dWithDimsGPU reducedGoldRef
+    //, array3dWithDimsGPU reducedSegmRef
+    //, array3dWithDimsGPU reducedGoldPrev
+    //, array3dWithDimsGPU reducedSegmPrev
 
 ) {
 
@@ -32,13 +32,13 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunA
     res.goldArr = goldArr;
     res.segmArr = segmArr;
     //allocate the reduced arrays
-    res.reducedGold = reducedGold;
-    res.reducedSegm = reducedSegm;
-    res.reducedGoldPrev = reducedGoldPrev;
-    res.reducedSegmPrev = reducedSegmPrev;
+    //res.reducedGold = reducedGold;
+    //res.reducedSegm = reducedSegm;
+    //res.reducedGoldPrev = reducedGoldPrev;
+    //res.reducedSegmPrev = reducedSegmPrev;
 
-    res.reducedGoldRef = reducedGoldRef;
-    res.reducedSegmRef = reducedSegmRef;
+    //res.reducedGoldRef = reducedGoldRef;
+    //res.reducedSegmRef = reducedSegmRef;
 
     res.numberToLookFor = mainFunArgs.numberToLookFor;
     res.dbXLength = mainFunArgs.dbXLength;
