@@ -10,8 +10,6 @@
 #include <cstdint>
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include <cooperative_groups/memcpy_async.h>
-
 using namespace cooperative_groups;
 
 
@@ -88,7 +86,18 @@ inline __device__ void loadDataToShmem(ForBoolKernelArgs<TXI> fbArgs, char* tens
     //}
 }
 
-
+/*
+in order to be later able to analyze paddings we will save copy of the currently dilatated array 
+(before dilatation) to global memory
+*/
+//template <typename TPYXI>
+//inline __device__ void fromShmemToGlobal(ForBoolKernelArgs<TPYXI> fbArgs, char* tensorslice, uint32_t sourceShared[32][32], array3dWithDimsGPU target
+//    , uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i
+//) {
+//    
+//    getTensorRow<uint32_t>(tensorslice, target, target.Ny, yMeta * fbArgs.dbYLength + threadIdx.y, zMeta)[xMeta * fbArgs.dbXLength + threadIdx.x]= sourceShared[threadIdx.x][ threadIdx.y];
+//}
+//
 
 
 /*
