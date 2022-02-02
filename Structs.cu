@@ -5,7 +5,7 @@
 constexpr auto localWorkQueLength = 32;
 constexpr auto localWorkQueLengthDiv32 = 1;
 // includes localWorkQueLength and source and res shmem
-constexpr auto totalCombinedShmemWorkQueue = (8*32)+ localWorkQueLength;
+constexpr auto totalCombinedShmemWorkQueue = (8 * 32) + localWorkQueLength;
 
 /**
 In order to be able to use cuda malloc 3d we will implemnt it as a series
@@ -46,7 +46,7 @@ extern "C" struct MetaDataCPU {
      //12) global FPandFn offset 13)globalIterationNumb
     array3dWithDimsCPU<unsigned int> minMaxes;
     ////// counts of false positive and false negatives in given metadata blocks
-    
+
     array3dWithDimsCPU<unsigned int> fpCount;
     array3dWithDimsCPU<unsigned int> fnCount;
     //variables needed to add result to correct spot and keep information about it
@@ -67,16 +67,16 @@ extern "C" struct MetaDataCPU {
     array3dWithDimsCPU<bool> isToBeActivatedGold;
     array3dWithDimsCPU<bool> isToBeActivatedSegm;
 
-    
+
     array3dWithDimsCPU<bool> isToBeValidatedFp;
     array3dWithDimsCPU<bool> isToBeValidatedFn;
 
     ///// sizes of array below will be established on the basis of fp and fn values known after boolKernel finished execution
-    
+
     //work queue -  workqueue counter already present in minMaxes as entry 9 
     //in practice it is matrix of length the same as FP+FN global count +1 and width of 4 
         //1) xMeta; 2)yMeta 3)zMeta 4)isGold
-    uint16_t* workQueue;
+    array3dWithDimsCPU<uint16_t> workQueue;
     //in practice it is matrix of length the same as FP+FN global count +1 and width of 5
          //1) xMeta; 2)yMeta 3)zMeta 4)isGold 5)iteration number  
     //we use one single long rewsult list - in order to avoid overwriting each block each block has established offset where it would write it's results 
@@ -119,9 +119,8 @@ extern "C" struct MetaDataGPU {
     array3dWithDimsGPU isToBeValidatedFp;
     array3dWithDimsGPU isToBeValidatedFn;
 
-    //array3dWithDimsGPU workQueue;
+    array3dWithDimsGPU workQueue;
     uint16_t* resultList;
-    uint16_t* workQueue;
 
 
 };

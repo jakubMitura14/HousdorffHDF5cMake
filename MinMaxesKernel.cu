@@ -27,30 +27,28 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
     ////////////some initializations
     thread_block cta = this_thread_block();
     thread_block_tile<32> tile = tiled_partition<32>(cta);
-     
+
 
     char* tensorslice;
 
 
     //shared memory
-    bool isNotEmpty = false;
+
     __shared__ bool anyInGold[1];
     //__shared__ uint32_t reduction_s[32];
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
-    __shared__ uint8_t minMaxesInShmem[8];
-    __shared__ uint8_t minXInShmem[1];
-    //__shared__ bool [2000];
+    __shared__ int minMaxesInShmem[7];
 
-    if ((threadIdx.x == 1)) { minMaxesInShmem[1] = 0; };
-    if ((threadIdx.x == 2)) { minMaxesInShmem[2] = 1000; };
+    if ((threadIdx.x == 1) && (threadIdx.y == 0)) { minMaxesInShmem[1] = 0; };
+    if ((threadIdx.x == 2) && (threadIdx.y == 0)) { minMaxesInShmem[2] = 1000; };
 
-    if ((threadIdx.x == 3)) { minMaxesInShmem[3] = 0; };
-    if ((threadIdx.x == 4) ) { minMaxesInShmem[4] = 1000; };
+    if ((threadIdx.x == 3) && (threadIdx.y == 0)) { minMaxesInShmem[3] = 0; };
+    if ((threadIdx.x == 4) && (threadIdx.y == 0)) { minMaxesInShmem[4] = 1000; };
 
-    if ((threadIdx.x == 5) ) { minMaxesInShmem[5] = 0; };
-    if ((threadIdx.x == 0)) { minMaxesInShmem[6] = 1000; };
+    if ((threadIdx.x == 5) && (threadIdx.y == 0)) { minMaxesInShmem[5] = 0; };
+    if ((threadIdx.x == 0) && (threadIdx.y == 1)) { minMaxesInShmem[6] = 1000; };
 
-    //if ((threadIdx.x == 3) && (threadIdx.y == 1)) { anyInGold[1] = false; };
+    if ((threadIdx.x == 3) && (threadIdx.y == 1)) { anyInGold[1] = false; };
 
     __syncthreads();
 
@@ -59,20 +57,10 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
 
     //main metadata iteration
     for (auto linIdexMeta = blockIdx.x; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += gridDim.x) {
-        //if (threadIdx.x == 0) { anyInGold[0] = false; };
         //we get from linear index  the coordinates of the metadata block of intrest
         uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
         uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
         uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
-         isNotEmpty = __syncthreads_or(isNotEmpty);;
-        if (threadIdx.x == 0) {
-            printf("linIdexMeta %d xMeta %d yMeta %d zMeta %d metaXLength %d MetaYLength %d totalMetaLength %d anyInGold[0] %d gold Nx %d nY %d nZ %d segm Nx %d Ny %d Nz %d    \n "
-                , linIdexMeta, xMeta, yMeta, zMeta, fbArgs.metaData.metaXLength, fbArgs.metaData.MetaYLength, fbArgs.metaData.totalMetaLength, isNotEmpty
-            , fbArgs.goldArr.Nx, fbArgs.goldArr.Ny, fbArgs.goldArr.Nz , fbArgs.segmArr.Nx, fbArgs.segmArr.Ny, fbArgs.segmArr.Nz
-            );
-        }
-        sync(cta);
-        isNotEmpty = false;
         //iterating over data block
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
             uint16_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
@@ -80,69 +68,51 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
                 uint16_t  y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
                 if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
 
-                //   //  resetting 
+                    // resetting 
 
 
                     for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
                         uint16_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
                         if (z < fbArgs.goldArr.Nx) {
                             //first array gold
+                            uint8_t& zLocRef = zLoc; uint8_t& yLocRef = yLoc; uint8_t& xLocRef = xLoc;
+
                             // setting bits
-
-                            if ((getTensorRow<TYU>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor)
-                                || (getTensorRow<TYU>(tensorslice, fbArgs.segmArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor)) {
-                                isNotEmpty = true;
+                            if ((getTensorRow<TYU>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor) || (getTensorRow<TYU>(tensorslice, fbArgs.segmArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor)) {
+                                anyInGold[0] = true;
                             }
-
-                            if (threadIdx.x == 0 && isNotEmpty) {
-                                printf("x %d y%d z %d linIdexMeta %d xMeta %d yMeta %d zMeta %d metaXLength %d MetaYLength %d totalMetaLength %d anyInGold[0] \n "
-                                    , x, y, z, linIdexMeta, xMeta, yMeta, zMeta, fbArgs.metaData.metaXLength, fbArgs.metaData.MetaYLength, fbArgs.metaData.totalMetaLength, isNotEmpty
-                                    , fbArgs.goldArr.Nx, fbArgs.goldArr.Ny, fbArgs.goldArr.Nz, fbArgs.segmArr.Nx, fbArgs.segmArr.Ny, fbArgs.segmArr.Nz
-                                );
-                            }
-
-
                         }
 
                     }
-
                 }
+
+                sync(cta);//waiting so shared memory will be loaded evrywhere
+                //on single thread we do last sum reduction
+
+                /////////////////// setting min and maxes
+//    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
+                auto active = coalesced_threads();
+
+                if (isToBeExecutedOnActive(active, 2) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
+                if (isToBeExecutedOnActive(active, 3) && anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
+
+                if (isToBeExecutedOnActive(active, 4) && anyInGold[0]) { minMaxesInShmem[3] = max(yMeta, minMaxesInShmem[3]); };
+                if (isToBeExecutedOnActive(active, 5) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
+
+                if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
+                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
+
+                sync(cta); // just to reduce the warp divergence
+                anyInGold[0] = false;
+
+
+
+
             }
         }
 
-
-
-      //  isNotEmpty = __syncthreads_or(isNotEmpty);
-
-
-
-        ///////////////// setting min and maxes
-    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
-       // if (((threadIdx.x == 0)) && anyInGold[0]) { minXInShmem[0] = xMeta; }
-                //if (((threadIdx.x == 0)) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
-                //if (((threadIdx.x == 1)) && anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
-
-                //if (((threadIdx.x == 2)) && anyInGold[0]) { minMaxesInShmem[3] = max(yMeta, minMaxesInShmem[3]); };
-                //if (((threadIdx.x == 3) ) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
-
-                //if (((threadIdx.x == 4) ) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
-                //if (((threadIdx.x == 5) ) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
-
-                //if (((threadIdx.x == 6)) && anyInGold[0]) { anyInGold[0] = false; };
-
-                //if (anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
-                //if ( anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
-
-                //if (anyInGold[0]) { minMaxesInShmem[3] = max(yMeta, minMaxesInShmem[3]); };
-                //if (anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
-
-                //if (anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
-                //if (anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
-                //if (isNotEmpty) { isNotEmpty = false; };
-                //sync(cta);
- }
+    }
     sync(cta);
-
 
     auto active = coalesced_threads();
     if (isToBeExecutedOnActive(active, 0)) {

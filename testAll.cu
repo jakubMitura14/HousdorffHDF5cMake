@@ -148,7 +148,7 @@ extern "C" inline void testMainPasswes() {
 	//allocating to semiarbitrrary size 
 	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
 	//auto resultListPointer = alloc_tensorToZeros<int>(workQueueAndRLLength, resultListWidth, 1);
-//	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
+	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
 	//metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
 
 
@@ -238,7 +238,7 @@ minZ 2  [6]
 
 
 
-		i = 1;
+	i = 1;
 	printf("maxX %d  [%d]\n", minMaxes.arrP[0][0][i], i);
 	i = 2;
 	printf("minX %d  [%d]\n", minMaxes.arrP[0][0][i], i);
@@ -251,79 +251,79 @@ minZ 2  [6]
 	i = 6;
 	printf("minZ %d  [%d]\n", minMaxes.arrP[0][0][i], i);
 
-		 int ii = 7;
-	 	printf("global FP count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-		ii = 8;
-	 	printf("global FN count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-		ii = 9;
-	 	printf("workQueueCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-		ii = 10;
-	 	printf("resultFP globalCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-		ii = 11;
-	 	printf("resultFn globalCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-		ii = 12;
-		printf("global offset counter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	int ii = 7;
+	printf("global FP count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	ii = 8;
+	printf("global FN count %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	ii = 9;
+	printf("workQueueCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	ii = 10;
+	printf("resultFP globalCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	ii = 11;
+	printf("resultFn globalCounter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	ii = 12;
+	printf("global offset counter %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
 
-		ii  = 13;
-	 	printf("globalIterationNumb %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-		ii = 17;
-		printf("suum debug %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
-
-
+	ii = 13;
+	printf("globalIterationNumb %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
+	ii = 17;
+	printf("suum debug %d  [%d]\n", minMaxes.arrP[0][0][ii], ii);
 
 
 
 
-		i, j, k, value = 0;
-		i = 31;
-		j = 12;
-				for (k = 0; k < MetaZLength; k++) {
-					//goldArr[k][j][i] = 1;
-					if (reducedGold[k][j][i] > 0) {
-						for (int tt = 0; tt < 32; tt++) {
-							if ((reducedGold[k][j][i] & (1 << (tt)))) {
-								printf("found in reduced fp  [%d]\n", k * 32 + tt);
 
-							}
-						}
 
-					}
+	i, j, k, value = 0;
+	i = 31;
+	j = 12;
+	for (k = 0; k < MetaZLength; k++) {
+		//goldArr[k][j][i] = 1;
+		if (reducedGold[k][j][i] > 0) {
+			for (int tt = 0; tt < 32; tt++) {
+				if ((reducedGold[k][j][i] & (1 << (tt)))) {
+					printf("found in reduced fp  [%d]\n", k * 32 + tt);
+
 				}
-	
+			}
 
-		//		i, j, k, value = 0;
-		//for (i = 0; i < mainXLength; i++) {
-		//	for (j = 0; j < mainYLength; j++) {
-		//		for (k = 0; k < MetaZLength; k++) {
-		//			//goldArr[k][j][i] = 1;
-		//			if (reducedGold[k][j][i] > 0) {
-		//				for (int tt = 0; tt < 32; tt++) {
-		//					if ((reducedGold[k][j][i] & (1 << (tt)))) {
-		//						printf("found in reduced fp  [%d][%d][%d]\n", i, j, k * 32 + tt);
-
-		//					}
-		//				}
-
-		//			}
-		//		}
-		//	}
-		//}
+		}
+	}
 
 
+	//		i, j, k, value = 0;
+	//for (i = 0; i < mainXLength; i++) {
+	//	for (j = 0; j < mainYLength; j++) {
+	//		for (k = 0; k < MetaZLength; k++) {
+	//			//goldArr[k][j][i] = 1;
+	//			if (reducedGold[k][j][i] > 0) {
+	//				for (int tt = 0; tt < 32; tt++) {
+	//					if ((reducedGold[k][j][i] & (1 << (tt)))) {
+	//						printf("found in reduced fp  [%d][%d][%d]\n", i, j, k * 32 + tt);
+
+	//					}
+	//				}
+
+	//			}
+	//		}
+	//	}
+	//}
 
 
 
 
-		//minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]
 
-		//int sumDebug = 0;
-		//for (int ji = 0; ji < 8000; ji++) {
-		//	if (forDebugArr[0][0][ji]==1) {
-		//		sumDebug += forDebugArr[0][0][ji];
-		//		//printf("for debug %d i %d \n", forDebugArr[0][0][ji],ji);
-		//	}
-		//}
-		//printf("\n sumDebug %d \n", sumDebug);
+
+	//minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]
+
+	//int sumDebug = 0;
+	//for (int ji = 0; ji < 8000; ji++) {
+	//	if (forDebugArr[0][0][ji]==1) {
+	//		sumDebug += forDebugArr[0][0][ji];
+	//		//printf("for debug %d i %d \n", forDebugArr[0][0][ji],ji);
+	//	}
+	//}
+	//printf("\n sumDebug %d \n", sumDebug);
 
 
 //
@@ -401,7 +401,7 @@ minZ 2  [6]
 	free(metaData.isFullSegm.arrP);
 
 	free(workQueuePointer);
-//	free(resultListPointer);
+	//	free(resultListPointer);
 
 	free(isToBeActivatedGoldPointer);
 	free(isToBeActivatedSegmPointer);

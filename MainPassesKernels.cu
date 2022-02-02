@@ -12,7 +12,6 @@
 #include "MetaDataOtherPasses.cu"
 #include "DilatationKernels.cu"
 #include "MinMaxesKernel.cu"
-#include "MainKernelMetaHelpers.cu"
 
 using namespace cooperative_groups;
 
@@ -85,14 +84,7 @@ template <typename TKKI>
 inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     char* tensorslice;
     for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-    
-        //if (fbArgs.metaData.workQueue[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
-        //
-        //}
-        
-        
-        
-        /*    if (fbArgs.metaData.resultList[linIdexMeta *5+4] !=131 && fbArgs.metaData.resultList[linIdexMeta * 5 ]>0) {
+        if (fbArgs.metaData.resultList[linIdexMeta *5+4] !=131 && fbArgs.metaData.resultList[linIdexMeta * 5 ]>0) {
 
         printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
             fbArgs.metaData.resultList[linIdexMeta * 5 ]
@@ -109,25 +101,45 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         printf(" *** ");
         atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[17]), 1);
 
-    }*/
+    }
     }
 }
 
+/*
+becouse we need a lot of the additional memory spaces to minimize memory consumption allocations will be postponed after first kernel run enabling 
+*/
+#pragma once
+template <typename ZZR>
+inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void* resultListPointer) {
+    //copy on cpu
+    copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
+    //read an modify
+    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
+    //7)global FP count; 8)global FN count
+   unsigned int fpPlusFn=  cpuArgs.metaData.minMaxes.arrP[0][0][7] + cpuArgs.metaData.minMaxes.arrP[0][0][8];
+
+    size_t size = sizeof(uint16_t)*5*fpPlusFn+1;
+    cudaMallocAsync(&resultListPointer, size,0);
+    gpuArgs.metaData.resultList = resultListPointer;
 
 
+   // cudaFreeAsync(gpuArgs.metaData.resultList, 0);
+
+    //cudaFree(resultListPointer);
+
+
+};
 
 
 #pragma once
 extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
-    //cudaDeviceReset();
 
     cudaError_t syncErr;
     cudaError_t asyncErr;
     int device = 0;
     unsigned int cpuIterNumb = -1;
     cudaDeviceProp deviceProp;
-    cudaGetDevice(&device);
     cudaGetDeviceProperties(&deviceProp, device);
 
 
@@ -141,56 +153,39 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
 
 
-    uint16_t* resultListPointer;
-   // uint16_t*& resultListPointerRef= resultListPointer;
 
-    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr);
+    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
 
     ////preparation kernel
 
     // initialize, then launch
 
 
-    checkCuda(cudaDeviceSynchronize(), "a1");
+    checkCuda(cudaDeviceSynchronize(), "bb");
 
     void* kernel_args[] = { &fbArgs };
     
+    getMinMaxes << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
 
 
-    cudaGetDevice(&device);
-    cudaGetDeviceProperties(&deviceProp, device);
-    int blockSize; // The launch configurator returned block size
-    int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
-    int gridSize; // The actual grid size needed, based on input size
-    cudaOccupancyMaxPotentialBlockSize(
-        &minGridSize,
-        &blockSize,
-        (void*)getMinMaxes<int>,
-        0);
+    //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 
 
+    unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
+    uint16_t* resultListPointer;
+    size_t size = sizeof(uint16_t) * 5 * fpPlusFn + 1;
+    cudaMallocAsync(&resultListPointer, size, 0);
+    fbArgs.metaData.resultList = resultListPointer;
 
-    getMinMaxes << <minGridSize, blockSize >> > (fbArgs);
-
-    checkCuda(cudaDeviceSynchronize(), "a2");
-
-
-   // allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs);
-
-   // checkCuda(cudaDeviceSynchronize(), "a3");
-
-   //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
-
-   //checkCuda(cudaDeviceSynchronize(), "a4");
-   // allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
-   // 
-   // //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
+    //allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+    
+    //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
 
 
-   // //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
+    //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
 
-   // checkCuda(cudaDeviceSynchronize(), "bb");
+    checkCuda(cudaDeviceSynchronize(), "bb");
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
@@ -268,10 +263,17 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
 
 
-    //copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-    //copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
 
-    //copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
+    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
+    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
+
+    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
+    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
+
+
+    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
 
 
 
@@ -281,12 +283,12 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFree(forDebug.arrPStr.ptr);
     cudaFree(goldArr.arrPStr.ptr);
     cudaFree(segmArr.arrPStr.ptr);
-    cudaFree(fbArgs.reducedGold.arrPStr.ptr);
-    cudaFree(fbArgs.reducedSegm.arrPStr.ptr);
-    cudaFree(fbArgs.reducedGoldPrev.arrPStr.ptr);
-    cudaFree(fbArgs.reducedSegmPrev.arrPStr.ptr);
+    cudaFree(reducedGold.arrPStr.ptr);
+    cudaFree(reducedSegm.arrPStr.ptr);
+    cudaFree(reducedGoldPrev.arrPStr.ptr);
+    cudaFree(reducedSegmPrev.arrPStr.ptr);
 
-  //  cudaFreeAsync(resultListPointer, 0);
+    cudaFreeAsync(resultListPointer, 0);
 
     freeMetaDataGPU(fbArgs.metaData);
 

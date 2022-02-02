@@ -31,9 +31,9 @@ inline MetaDataGPU allocateMetaDataOnGPU(unsigned int Nx, unsigned int Ny, unsig
 
 
 	uint16_t* workQueue;
-	size_t size = (Nx * Ny * Nz)*4 +5;
+	size_t size = (Nx * Ny * Nz) * 4 + 5;
 	cudaMallocAsync(&workQueue, size, 0);
-	res.workQueue = workQueue;
+	//res.workQueue = workQueue;
 
 	//res.isToBeValidatedFp = allocate3dInGPU(metaDataCPU.isToBeValidatedFp);
 	//res.isToBeValidatedFn = allocate3dInGPU(metaDataCPU.isToBeValidatedFn);
@@ -45,7 +45,7 @@ inline MetaDataGPU allocateMetaDataOnGPU(unsigned int Nx, unsigned int Ny, unsig
 	res.MetaYLength = res.fpCount.Ny;
 	res.MetaZLength = res.fpCount.Nz;
 
-	res.totalMetaLength = (Nx*Ny*Nz);
+	res.totalMetaLength = (Nx * Ny * Nz);
 	//allocating on GPU and copying  cpu data onto GPU
 
 	return res;
@@ -75,7 +75,7 @@ inline void copyMetaDataToCPU(MetaDataCPU metaDataCPU, MetaDataGPU metaDataGPU) 
 	copyDeviceToHost3d(metaDataGPU.isToBeActivatedGold, metaDataCPU.isToBeActivatedGold);
 	copyDeviceToHost3d(metaDataGPU.isToBeActivatedSegm, metaDataCPU.isToBeActivatedSegm);
 
-	//copyDeviceToHost3d(metaDataGPU.workQueue, metaDataCPU.workQueue);
+	copyDeviceToHost3d(metaDataGPU.workQueue, metaDataCPU.workQueue);
 	//copyDeviceToHost3d(metaDataGPU.resultList, metaDataCPU.resultList);
 
 	copyDeviceToHost3d(metaDataGPU.isToBeValidatedFp, metaDataCPU.isToBeValidatedFp);
@@ -109,11 +109,11 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 	cudaFree(metaDataGPU.isToBeActivatedGold.arrPStr.ptr);
 	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
 
-	cudaFree(metaDataGPU.workQueue);
-	
-	
+	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
+
+
 	//cudaFree(metaDataGPU.resultList);
-	
+
 	//cudaFreeAsync(metaDataGPU.resultList,0);
 	//cudaFree(metaDataGPU.resultList.arrPStr.ptr);
 
