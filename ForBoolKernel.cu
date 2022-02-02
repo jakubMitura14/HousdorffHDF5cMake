@@ -28,6 +28,7 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunA
 
     ForBoolKernelArgs<TCC> res;
 <<<<<<< HEAD
+<<<<<<< HEAD
    // res.metaData = allocateMetaDataOnGPU(mainFunArgs.metaData);
 =======
     MetaDataGPU resMeta;
@@ -69,6 +70,9 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<int> mainFunA
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
+    res.metaData = allocateMetaDataOnGPU(mainFunArgs.metaData);
+>>>>>>> parent of d530140 (up)
     res.forDebugArr = forDebugArr;
     res.goldArr = goldArr;
     res.segmArr = segmArr;
@@ -109,7 +113,11 @@ __device__ void fillReduCedArr(ForBoolKernelArgs<TPI> fbArgs,
     , uint16_t& z, uint16_t& y, uint16_t& x, bool& goldBool, bool& segmBool
     , uint32_t sharedForGold[32][32], uint32_t sharedForSegm[32][32]
     , uint8_t& xLoc, uint8_t& yLoc, uint8_t& zLoc
+<<<<<<< HEAD
     , bool anyInGold[1], bool anyInSegm[1]) {
+=======
+, bool anyInGold[1], bool anyInSegm[1]) {
+>>>>>>> parent of d530140 (up)
 
     //setting  bits for reduced representation 
     sharedForGold[xLoc][yLoc] |= goldBool << zLoc;
@@ -120,7 +128,11 @@ __device__ void fillReduCedArr(ForBoolKernelArgs<TPI> fbArgs,
     sumFn += (goldBool && !segmBool);
     if (goldBool)  anyInGold[0] = true;
     if (segmBool)  anyInSegm[0] = true;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> parent of d530140 (up)
 
     //if (goldBool && !segmBool) {
     //    printf("nnnnnnnnnnnn  fn x %d y %d z %d    xMeta [%d] yMeta [%d] zMeta [%d]  \n", x, y, z, xMeta, yMeta, zMeta);
@@ -143,7 +155,11 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
     bool& isNotEmpty, uint8_t xMeta, uint8_t yMeta, uint8_t zMeta, char* tensorslice
     , uint16_t& z, uint16_t& y, uint16_t& x, bool& goldBool, bool& segmBool
     , uint32_t sharedForGold[32][32], uint32_t sharedForSegm[32][32], uint32_t fpSFnS[2]
+<<<<<<< HEAD
     , bool anyInGold[1], bool anyInSegm[1]
+=======
+    ,bool anyInGold[1], bool anyInSegm[1]
+>>>>>>> parent of d530140 (up)
 ) {
     //now we need to iterate over the data in the data block voxel by voxel
     for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
@@ -174,7 +190,11 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
                         // setting bits
                         fillReduCedArr(fbArgs, minMaxesInShmem, sumFp, sumFn, isNotEmpty, xMeta, yMeta, zMeta
                             , tensorslice, z, y, x, goldBool, segmBool, sharedForGold, sharedForSegm
+<<<<<<< HEAD
                             , xLocRef, yLocRef, zLocRef, anyInGold, anyInSegm);
+=======
+                            , xLocRef, yLocRef, zLocRef,anyInGold, anyInSegm);
+>>>>>>> parent of d530140 (up)
                     }
                 }
                 //after we streamed over all z layers we need to save it into reduced representation arrays
@@ -189,10 +209,17 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
                 //we establish wheather this block is not empty if it is not - we will mark it as active
                 isNotEmpty = __syncthreads_or(isNotEmpty);
 
+<<<<<<< HEAD
 
                 /////adding the block and total number of the Fp's and Fn's 
                 sumFp = reduce(tile, sumFp, plus<uint16_t>());
                 sumFn = reduce(tile, sumFn, plus<uint16_t>());
+=======
+          
+                /////adding the block and total number of the Fp's and Fn's 
+                sumFp=reduce(tile, sumFp, plus<uint16_t>());
+                sumFn=reduce(tile, sumFn, plus<uint16_t>());
+>>>>>>> parent of d530140 (up)
                 //reusing shared memory and adding accumulated values from tiles
                 if (tile.thread_rank() == 0) {
                     sharedForGold[0][tile.meta_group_rank()] = sumFp;
@@ -203,6 +230,7 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
                 auto active = coalesced_threads();
                 //gold
                 if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty) {
+<<<<<<< HEAD
                     //if (isToBeExecutedOnActive(active, 0) && isNotEmpty) {
                     sharedForGold[1][0] = 0;//reset
                     for (int i = 0; i < tile.meta_group_size(); i += 1) {
@@ -217,14 +245,36 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
                     //printf("\n in bool kernel fp count  x %d y %d z %d fp %d \n ", xMeta, yMeta, zMeta, sharedForGold[1][0]);
 
                     getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
+=======
+                //if (isToBeExecutedOnActive(active, 0) && isNotEmpty) {
+                    sharedForGold[1][0] = 0;//reset
+                        for (int i = 0; i < tile.meta_group_size(); i += 1) {
+                            sharedForGold[1][0] += sharedForGold[0][i];
+                        };
+                         fpSFnS[0] += sharedForGold[1][0];// will be needed later for global set
+                        // printf("adding fps %d  xMeta [%d] yMeta [%d] zMeta [%d]  \n", sharedForGold[1][0], xMeta, yMeta, zMeta);
+
+                    //     printf("locMeta x %d y %d z %d fp %d \n ", xMeta, yMeta, zMeta, sharedForGold[1][0]);
+
+                         //setting metadata
+                         //printf("\n in bool kernel fp count  x %d y %d z %d fp %d \n ", xMeta, yMeta, zMeta, sharedForGold[1][0]);
+
+                         getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
+>>>>>>> parent of d530140 (up)
                 }
                 //segm
                // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
                 if ((threadIdx.x == 0) && (threadIdx.y == 1) && isNotEmpty) {
                     sharedForSegm[1][0] = 0;//reset
+<<<<<<< HEAD
                     for (int i = 0; i < tile.meta_group_size(); i += 1) {
                         sharedForSegm[1][0] += sharedForSegm[0][i];
                     };
+=======
+                        for (int i = 0; i < tile.meta_group_size(); i += 1) {
+                            sharedForSegm[1][0] += sharedForSegm[0][i];
+                        };
+>>>>>>> parent of d530140 (up)
                     fpSFnS[1] += sharedForSegm[1][0];// will be needed later for global set
                     //setting metadata
 
@@ -256,7 +306,11 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
                     getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm, fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta] = true;
 
                 };
+<<<<<<< HEAD
 
+=======
+           
+>>>>>>> parent of d530140 (up)
 
 
 
@@ -382,6 +436,9 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
         yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
         //iterating over data block
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> parent of d530140 (up)
         dataBlockIter(fbArgs, cta, tile, minMaxesInShmem, sumFp, sumFn, isNotEmptyRef
             , xMeta, yMeta, zMeta, tensorslice, refZ, refY, refX
             , goldBoolRef, segmBoolRef, sharedForGold, sharedForSegm, fpSFnS, anyInGold, anyInSegm);
@@ -413,6 +470,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
 
            //printf("metaCudaTensor[%d][%d][%d] = %d\n", i, j, k, tensorrow[i]);
    */
+<<<<<<< HEAD
 =======
         //now we need to iterate over the data in the data block voxel by voxel
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
@@ -512,6 +570,8 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
 
                     };
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
+>>>>>>> parent of d530140 (up)
 
     }
     sync(cta);
@@ -558,13 +618,20 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
         atomicMin(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[6]), minMaxesInShmem[6]);
     };
 
+<<<<<<< HEAD
     //setting global fp and fn
     if (isToBeExecutedOnActive(active, 6)) {
         //printf("internal last fp  %d \n", fpSFnS[0]);
+=======
+//setting global fp and fn
+    if (isToBeExecutedOnActive(active, 6)) {
+       //printf("internal last fp  %d \n", fpSFnS[0]);
+>>>>>>> parent of d530140 (up)
         atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[7]), fpSFnS[0]);
     };
 
     if (isToBeExecutedOnActive(active, 7)) {
+<<<<<<< HEAD
         //if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
        //if (active.thread_rank() == 7 && active.meta_group_rank() == 0) {
        //     printf("internal last fn  %d idX %d  idY %d tile meta size %d \n", fpSFnS[1], threadIdx.x, threadIdx.y, tile.meta_group_size());
@@ -572,6 +639,15 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs) {
         atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[8]), fpSFnS[1]);
 
     };
+=======
+    //if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
+   //if (active.thread_rank() == 7 && active.meta_group_rank() == 0) {
+   //     printf("internal last fn  %d idX %d  idY %d tile meta size %d \n", fpSFnS[1], threadIdx.x, threadIdx.y, tile.meta_group_size());
+
+            atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[8]), fpSFnS[1]);
+    
+};
+>>>>>>> parent of d530140 (up)
 
 
 

@@ -115,6 +115,7 @@ template <typename ZZR>
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void* resultListPointer) {
 =======
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void*& resultListPointer) {
@@ -131,6 +132,9 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 =======
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void*& resultListPointer) {
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
+inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void* resultListPointer) {
+>>>>>>> parent of d530140 (up)
     //copy on cpu
     copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
     //read an modify
@@ -213,6 +217,7 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 
 
+<<<<<<< HEAD
 
 
 #pragma once
@@ -259,6 +264,8 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 
 
 
+=======
+>>>>>>> parent of d530140 (up)
 #pragma once
 template <typename ZZR>
 inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs,  array3dWithDimsGPU reducedGold
@@ -321,6 +328,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
+<<<<<<< HEAD
     ////reduced arrays
     array3dWithDimsGPU reducedGold ;
     array3dWithDimsGPU reducedSegm;
@@ -334,11 +342,12 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 =======
 =======
 =======
+=======
+>>>>>>> parent of d530140 (up)
 
-    array3dWithDimsGPU reducedGoldRef;
-    array3dWithDimsGPU reducedSegmRef ;
 
 
+<<<<<<< HEAD
     array3dWithDimsGPU reducedGoldPrev ;
     array3dWithDimsGPU reducedSegmPrev;
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
@@ -381,6 +390,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 
+=======
+
+>>>>>>> parent of d530140 (up)
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
 
     ////preparation kernel
@@ -394,8 +406,8 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     
     getMinMaxes << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
 
-    , reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -434,10 +446,19 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
     //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
+=======
+>>>>>>> parent of d530140 (up)
+
+    //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 
 
+    unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
+    uint16_t* resultListPointer;
+    size_t size = sizeof(uint16_t) * 5 * fpPlusFn + 1;
+    cudaMallocAsync(&resultListPointer, size, 0);
+    fbArgs.metaData.resultList = resultListPointer;
 
-
+<<<<<<< HEAD
     allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
@@ -449,6 +470,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 =======
     allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
+    //allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+>>>>>>> parent of d530140 (up)
     
     //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
 
