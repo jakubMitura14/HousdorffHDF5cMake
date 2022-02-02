@@ -46,9 +46,9 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
     if ((threadIdx.x == 4) && (threadIdx.y == 0)) { minMaxesInShmem[4] = 1000; };
 
     if ((threadIdx.x == 5) && (threadIdx.y == 0)) { minMaxesInShmem[5] = 0; };
-    if ((threadIdx.x == 0) && (threadIdx.y == 1)) { minMaxesInShmem[6] = 1000; };
+    if ((threadIdx.x == 6) && (threadIdx.y == 0)) { minMaxesInShmem[6] = 1000; };
 
-    if ((threadIdx.x == 3) && (threadIdx.y == 1)) { anyInGold[1] = false; };
+    if ((threadIdx.x == 7) && (threadIdx.y == 0)) { anyInGold[1] = false; };
 
     __syncthreads();
 
@@ -80,18 +80,22 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
                             // setting bits
                             if ((getTensorRow<TYU>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor) || (getTensorRow<TYU>(tensorslice, fbArgs.segmArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor)) {
                                 anyInGold[0] = true;
+                                //printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta,zMeta);
+
                             }
                         }
 
                     }
                 }
 
-                sync(cta);//waiting so shared memory will be loaded evrywhere
+              //  __syncthreads();
+                //waiting so shared memory will be loaded evrywhere
                 //on single thread we do last sum reduction
 
                 /////////////////// setting min and maxes
 //    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
                 auto active = coalesced_threads();
+                active.sync();
 
                 if (isToBeExecutedOnActive(active, 2) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
                 if (isToBeExecutedOnActive(active, 3) && anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
@@ -100,9 +104,11 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
                 if (isToBeExecutedOnActive(active, 5) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
 
                 if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
-                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) {                 minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]); };
-
-                sync(cta); // just to reduce the warp divergence
+                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]);
+               // printf("local fifth %d  \n", minMaxesInShmem[6]);
+                };
+                active.sync();
+               // sync(cta); // just to reduce the warp divergence
                 anyInGold[0] = false;
 
 
