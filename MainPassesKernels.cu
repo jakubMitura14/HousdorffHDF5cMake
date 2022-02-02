@@ -113,7 +113,11 @@ template <typename ZZR>
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void* resultListPointer) {
+=======
+inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void*& resultListPointer) {
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void*& resultListPointer) {
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
@@ -137,7 +141,10 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
@@ -151,7 +158,10 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 };
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 
@@ -192,6 +202,9 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 
 };
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
@@ -264,12 +277,22 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     ////reduced arrays
     array3dWithDimsGPU reducedGold ;
     array3dWithDimsGPU reducedSegm;
+<<<<<<< HEAD
 
     array3dWithDimsGPU reducedGoldRef;
     array3dWithDimsGPU reducedSegmRef ;
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
+=======
+
+    array3dWithDimsGPU reducedGoldRef;
+    array3dWithDimsGPU reducedSegmRef ;
+
+
+    array3dWithDimsGPU reducedGoldPrev ;
+    array3dWithDimsGPU reducedSegmPrev;
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
@@ -288,6 +311,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     uint16_t* resultListPointer;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
@@ -312,9 +338,13 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 
+=======
+    //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
     //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
@@ -332,6 +362,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
@@ -341,6 +372,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
 
 
+    allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
     allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======

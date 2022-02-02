@@ -113,9 +113,12 @@ inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 
 =======
+=======
+>>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
 =======
