@@ -329,6 +329,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
 <<<<<<< HEAD
+<<<<<<< HEAD
     ////reduced arrays
     array3dWithDimsGPU reducedGold ;
     array3dWithDimsGPU reducedSegm;
@@ -368,6 +369,18 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 =======
 
 >>>>>>> parent of ebdf6ce (up not working min maxes for some reason)
+=======
+    ////reduced arrays
+    array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
+    array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
+
+    array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
+    array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
+
+
+    array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
+    array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
+>>>>>>> parent of aa22199 (before simplifying bool kernel)
 
     array3dWithDimsGPU reducedGoldPrev ;
     array3dWithDimsGPU reducedSegmPrev;

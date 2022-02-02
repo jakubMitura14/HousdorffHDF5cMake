@@ -201,11 +201,11 @@ __device__ void dataBlockIter(ForBoolKernelArgs<TYI> fbArgs, thread_block cta, t
                 getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGold, fbArgs.reducedGold.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
                 getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegm, fbArgs.reducedSegm.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
                 // TODO() establish is it faster that way or better at the end do mempcy async
-                //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGoldRef, fbArgs.reducedGoldRef.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
-                //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegmRef, fbArgs.reducedSegmRef.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
+                getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGoldRef, fbArgs.reducedGoldRef.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
+                getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegmRef, fbArgs.reducedSegmRef.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
 
-                //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGoldPrev, fbArgs.reducedGoldPrev.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
-                //getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegmPrev, fbArgs.reducedSegmPrev.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
+                getTensorRow<uint32_t>(tensorslice, fbArgs.reducedGoldPrev, fbArgs.reducedGoldPrev.Ny, y, zMeta)[x] = sharedForGold[xLoc][yLoc];
+                getTensorRow<uint32_t>(tensorslice, fbArgs.reducedSegmPrev, fbArgs.reducedSegmPrev.Ny, y, zMeta)[x] = sharedForSegm[xLoc][yLoc];
                 //we establish wheather this block is not empty if it is not - we will mark it as active
                 isNotEmpty = __syncthreads_or(isNotEmpty);
 
