@@ -49,40 +49,14 @@ extern "C" struct MetaDataCPU {
 
     ////// counts of false positive and false negatives in given metadata blocks
 
-    array3dWithDimsCPU<unsigned int> fpCount;
-    array3dWithDimsCPU<unsigned int> fnCount;
-    //variables needed to add result to correct spot and keep information about it
-    //counts how many fps or fns had been already covered in this data block
-    array3dWithDimsCPU<unsigned int> fpCounter;
-    array3dWithDimsCPU<unsigned int> fnCounter;
-    //tells  what is the offset in result list where space for this data block is given
-    array3dWithDimsCPU<unsigned int> fpOffset;
-    array3dWithDimsCPU<unsigned int> fnOffset;
-
-    // variables neded to establish is block should be put into workqueue
-    array3dWithDimsCPU<bool> isActiveGold;
-    array3dWithDimsCPU<bool> isFullGold;
-
-    array3dWithDimsCPU<bool> isActiveSegm;
-    array3dWithDimsCPU<bool> isFullSegm;
-
-    array3dWithDimsCPU<bool> isToBeActivatedGold;
-    array3dWithDimsCPU<bool> isToBeActivatedSegm;
-
-
-    array3dWithDimsCPU<bool> isToBeValidatedFp;
-    array3dWithDimsCPU<bool> isToBeValidatedFn;
-
     ///// sizes of array below will be established on the basis of fp and fn values known after boolKernel finished execution
 
     //work queue -  workqueue counter already present in minMaxes as entry 9 
-    //in practice it is matrix of length the same as FP+FN global count +1 and width of 4 
-        //1) xMeta; 2)yMeta 3)zMeta 4)isGold
-    array3dWithDimsCPU<uint16_t> workQueue;
+    uint32_t* workQueue;
     //in practice it is matrix of length the same as FP+FN global count +1 and width of 5
          //1) xMeta; 2)yMeta 3)zMeta 4)isGold 5)iteration number  
     //we use one single long rewsult list - in order to avoid overwriting each block each block has established offset where it would write it's results 
-    uint16_t* resultList;
+    uint32_t* resultList;
 
 };
 
@@ -99,30 +73,8 @@ extern "C" struct MetaDataGPU {
 
     unsigned int* minMaxes;
 
-    array3dWithDimsGPU fpCount;
-    array3dWithDimsGPU fnCount;
-
-    array3dWithDimsGPU fpCounter;
-    array3dWithDimsGPU fnCounter;
-
-    array3dWithDimsGPU fpOffset;
-    array3dWithDimsGPU fnOffset;
-
-
-    array3dWithDimsGPU isActiveGold;
-    array3dWithDimsGPU isFullGold;
-    array3dWithDimsGPU isActiveSegm;
-    array3dWithDimsGPU isFullSegm;
-
-    array3dWithDimsGPU isToBeActivatedGold;
-    array3dWithDimsGPU isToBeActivatedSegm;
-
-
-    array3dWithDimsGPU isToBeValidatedFp;
-    array3dWithDimsGPU isToBeValidatedFn;
-
-    array3dWithDimsGPU workQueue;
-    uint16_t* resultList;
+    uint32_t* workQueue;
+    uint32_t* resultList;
 
 
 };
@@ -134,16 +86,9 @@ extern "C" struct MetaDataGPU {
 #pragma once
 template <typename TFF>
 struct ForFullBoolPrepArgs {
-    //pointer to reduced arrays holders will be used for dilatation
-    array3dWithDimsCPU<uint32_t> reducedGold;
-    array3dWithDimsCPU<uint32_t> reducedSegm;
-    //will be used as reference - will not be dilatated
-    array3dWithDimsCPU<uint32_t> reducedGoldRef;
-    array3dWithDimsCPU<uint32_t> reducedSegmRef;
-    // space in global memory where one can store padding information
-    array3dWithDimsCPU<uint32_t> reducedGoldPrev;
-    array3dWithDimsCPU<uint32_t> reducedSegmPrev;
-    int reducedArrsZdim;// x and y dimensions are like normal arrays but z dimension gets reduced
+
+
+
     //metadata struct
     MetaDataCPU metaData;
     //pointer to the array used to debug
@@ -201,15 +146,57 @@ struct ForBoolKernelArgs {
     array3dWithDimsGPU segmArr;
     TFB numberToLookFor;
 
-    //pointer to reduced arrays holders
-    array3dWithDimsGPU reducedGold;
-    array3dWithDimsGPU reducedSegm;
 
-    array3dWithDimsGPU reducedGoldRef;
-    array3dWithDimsGPU reducedSegmRef;
+    /*
+main array with all required data  organized in sections for each metadata block
+x-  is block dimx times block dimy
+now what occupies what positions
+0-x : reducedGold
+(x+1) - 2x : reducedSegm
+(2x+1) - 3x : reducedGoldRef
+(3x+1) - 4x : reducedSegmRef
+(4x+1) - 5x : reducedGoldPrev
+(5x+1) - 6x : reducedSegmPrev
+6x+1 :fpCount
+6x+2 :fnCount
+6x+3 :fpCounter
+6x+4 :fnCounter
+6x+5 :fpOffset
+6x+6 :fnOffset
+6x+7 :isActiveGold
+6x+8 :isFullGold
+6x+9 :isActiveSegm
+6x+10 :isFullSegm
+6x+11 :isToBeActivatedGold
+6x+12 :isToBeActivatedSegm
+6x+12 :isToBeActivatedSegm
+//now linear indexes of the blocks in all sides - if there is no block in given direction it will equal UINT32_MAX
+6x+13 : top
+6x+14 : bottom
+6x+15 : left
+6x+16 : right
+6x+17 : anterior
+6x+18 : posterior
+*/
+    uint32_t* mainArr;
+    //represents x from description above
+    unsigned int mainArrXLength;
+    //have length 6x+18
+    unsigned int mainArrSectionLength;
+    //have length 6x 
+    unsigned int metaDataOffset;
+    // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
+        //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
+    unsigned int maxX;
+    unsigned int minX;
+    unsigned int maxY;
+    unsigned int minY;
+    unsigned int maxZ;
+    unsigned int minZ;
 
-    array3dWithDimsGPU reducedGoldPrev;
-    array3dWithDimsGPU reducedSegmPrev;
+
+
+
     float robustnessPercent = 0.95;
 
 };

@@ -79,94 +79,21 @@ extern "C" inline void testMainPasswes() {
 	metaData.MetaYLength = MetaYLength;
 	metaData.MetaZLength = MetaZLength;
 	metaData.totalMetaLength = totalLength;
-	auto fpCPointer = alloc_tensorToZeros<unsigned int>(metaXLength, MetaYLength, MetaZLength);
-	auto fnCPointer = alloc_tensorToZeros<unsigned int>(metaXLength, MetaYLength, MetaZLength);
-
-	auto fpCounterPointer = alloc_tensorToZeros<unsigned int>(metaXLength, MetaYLength, MetaZLength);
-	auto fnCounterPointer = alloc_tensorToZeros<unsigned int>(metaXLength, MetaYLength, MetaZLength);
-
-	auto fpOffsetPointer = alloc_tensorToZeros<unsigned int>(metaXLength, MetaYLength, MetaZLength);
-	auto fnOffsetPointer = alloc_tensorToZeros<unsigned int>(metaXLength, MetaYLength, MetaZLength);
-
-
-	auto minMaxesPointer = alloc_tensorToZeros<unsigned int>(minMaxesLength, 1, 1);
-
-	auto isActiveGoldPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-	auto isFullGoldPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-	auto isActiveSegmPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-	auto isFullSegmPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-
-	auto isToBeActivatedGoldPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-	auto isToBeActivatedSegmPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-
-
-
-	auto isToBeValidatedFpPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-	auto isToBeValidatedFnPointer = alloc_tensorToZeros<bool>(metaXLength, MetaYLength, MetaZLength);
-
-
-
-	auto fpC = get3dArrCPU(fpCPointer, metaXLength, MetaYLength, MetaZLength);
-	auto fnC = get3dArrCPU(fnCPointer, metaXLength, MetaYLength, MetaZLength);
-	auto minMaxes = get3dArrCPU(minMaxesPointer, minMaxesLength, 1, 1);
-
-	auto isToBeValidatedFp = get3dArrCPU(isToBeValidatedFpPointer, metaXLength, MetaYLength, MetaZLength);
-	auto isToBeValidatedFn = get3dArrCPU(isToBeValidatedFnPointer, metaXLength, MetaYLength, MetaZLength);
 
 
 	size_t size = sizeof(unsigned int) * 20;
 	unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
 	metaData.minMaxes = minMaxesCPU;
 
-	//metaData.fpCount = fpC;
-	//metaData.fnCount = fnC;
-	////metaData.minMaxes = minMaxes;
-
-	//metaData.fpCounter = get3dArrCPU(fpCounterPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.fnCounter = get3dArrCPU(fnCounterPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.fpOffset = get3dArrCPU(fpOffsetPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.fnOffset = get3dArrCPU(fnOffsetPointer, metaXLength, MetaYLength, MetaZLength);;
-
-	//metaData.isActiveGold = get3dArrCPU(isActiveGoldPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.isFullGold = get3dArrCPU(isFullGoldPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.isActiveSegm = get3dArrCPU(isActiveSegmPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.isFullSegm = get3dArrCPU(isFullSegmPointer, metaXLength, MetaYLength, MetaZLength);;
-
-	//metaData.isToBeActivatedGold = get3dArrCPU(isToBeActivatedGoldPointer, metaXLength, MetaYLength, MetaZLength);;
-	//metaData.isToBeActivatedSegm = get3dArrCPU(isToBeActivatedSegmPointer, metaXLength, MetaYLength, MetaZLength);;
-
-
-	//metaData.isToBeValidatedFp = isToBeValidatedFp;
-	//metaData.isToBeValidatedFn = isToBeValidatedFn;
-
-
-	//int paddingStoreX = metaXLength * 32;
-	//int paddingStoreY = MetaYLength * 32;
-	//int paddingStoreZ = MetaZLength;
-
-	//auto paddingsStoreGoldPointer = alloc_tensorToZeros<uint8_t>(paddingStoreX, paddingStoreY, paddingStoreZ);
-	//auto paddingsStoreSegmPointer = alloc_tensorToZeros<uint8_t>(paddingStoreX, paddingStoreY, paddingStoreZ);
-
 	int workQueueAndRLLength = 200;
 	int workQueueWidth = 4;
 	int resultListWidth = 5;
 	//allocating to semiarbitrrary size 
 	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
-	//auto resultListPointer = alloc_tensorToZeros<int>(workQueueAndRLLength, resultListWidth, 1);
-	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
-	//metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
 
 
 	forDebugArr = alloc_tensorToZeros<int>(dXLength, dYLength, dZLength);
 
-	uint32_t*** reducedGold = alloc_tensorToZeros<uint32_t>(mainXLength, mainYLength, mainZLength);
-	uint32_t*** reducedSegm = alloc_tensorToZeros<uint32_t>(mainXLength, mainYLength, mainZLength);
-
-	uint32_t*** reducedGoldRef = alloc_tensorToZeros<uint32_t>(mainXLength, mainYLength, mainZLength);
-	uint32_t*** reducedSegmRef = alloc_tensorToZeros<uint32_t>(mainXLength, mainYLength, mainZLength);
-
-	uint32_t*** reducedGoldPrevPointer = alloc_tensorToZeros<uint32_t>(mainXLength, mainYLength, mainZLength);
-	uint32_t*** reducedSegmPrevPointer = alloc_tensorToZeros<uint32_t>(mainXLength, mainYLength, mainZLength);
 
 	// arguments to pass
 	ForFullBoolPrepArgs<int> forFullBoolPrepArgs;
@@ -178,17 +105,6 @@ extern "C" inline void testMainPasswes() {
 	forFullBoolPrepArgs.dbZLength = dbZLength;
 	forFullBoolPrepArgs.goldArr = get3dArrCPU(goldArr, mainXLength, mainYLength, mainZLength);
 	forFullBoolPrepArgs.segmArr = get3dArrCPU(segmArr, mainXLength, mainYLength, mainZLength);
-
-	forFullBoolPrepArgs.reducedGold = get3dArrCPU(reducedGold, mainXLength, mainYLength, MetaZLength);
-	forFullBoolPrepArgs.reducedSegm = get3dArrCPU(reducedSegm, mainXLength, mainYLength, MetaZLength);
-
-	forFullBoolPrepArgs.reducedGoldRef = get3dArrCPU(reducedGoldRef, mainXLength, mainYLength, MetaZLength);
-	forFullBoolPrepArgs.reducedSegmRef = get3dArrCPU(reducedSegmRef, mainXLength, mainYLength, MetaZLength);
-
-	forFullBoolPrepArgs.reducedGoldPrev = get3dArrCPU(reducedGoldPrevPointer, mainXLength, mainYLength, MetaZLength);
-	forFullBoolPrepArgs.reducedSegmPrev = get3dArrCPU(reducedSegmPrevPointer, mainXLength, mainYLength, MetaZLength);
-
-
 	forFullBoolPrepArgs.threads = threads;
 	forFullBoolPrepArgs.blocks = blocks;
 
@@ -278,21 +194,21 @@ minZ 2  [6]
 
 
 
-	i, j, k, value = 0;
-	i = 31;
-	j = 12;
-	for (k = 0; k < MetaZLength; k++) {
-		//goldArr[k][j][i] = 1;
-		if (reducedGold[k][j][i] > 0) {
-			for (int tt = 0; tt < 32; tt++) {
-				if ((reducedGold[k][j][i] & (1 << (tt)))) {
-					printf("found in reduced fp  [%d]\n", k * 32 + tt);
+	//i, j, k, value = 0;
+	//i = 31;
+	//j = 12;
+	//for (k = 0; k < MetaZLength; k++) {
+	//	goldArr[k][j][i] = 1;
+	//	if (reducedGold[k][j][i] > 0) {
+	//		for (int tt = 0; tt < 32; tt++) {
+	//			if ((reducedGold[k][j][i] & (1 << (tt)))) {
+	//				printf("found in reduced fp  [%d]\n", k * 32 + tt);
 
-				}
-			}
+	//			}
+	//		}
 
-		}
-	}
+	//	}
+	//}
 
 
 	//		i, j, k, value = 0;
@@ -414,12 +330,7 @@ minZ 2  [6]
 	free(forDebugArr);
 	free(goldArr);
 	free(segmArr);
-	free(reducedSegm);
-	free(reducedGold);
-	free(reducedGoldPrevPointer);
-	free(reducedSegmPrevPointer);
-	free(reducedGoldRef);
-	free(reducedSegmRef);
+
 
 
 

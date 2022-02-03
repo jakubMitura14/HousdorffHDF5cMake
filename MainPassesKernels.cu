@@ -12,6 +12,8 @@
 #include "MetaDataOtherPasses.cu"
 #include "DilatationKernels.cu"
 #include "MinMaxesKernel.cu"
+#include "MainKernelMetaHelpers.cu"
+#include <cooperative_groups/memcpy_async.h>
 
 using namespace cooperative_groups;
 
@@ -200,6 +202,16 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         (void*)getMinMaxes<int>,
         0);
     int warpsNumbForMinMax = blockSize/32;
+    int blockSizeForMinMax = minGridSize;
+
+    // for min maxes kernel 
+    cudaOccupancyMaxPotentialBlockSize(
+        &minGridSize,
+        &blockSize,
+        (void*)boolPrepareKernel<int>,
+        0);
+    int warpsNumbForboolPrepareKernel = blockSize / 32;
+    int blockSizeFoboolPrepareKernel = minGridSize;
 
 
 
@@ -209,36 +221,42 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-    //////reduced arrays
-    //array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
-    //array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
-
-    //array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
-    //array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
-
-
-    //array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
-    //array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
-
 
 
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr);
+    
+    //pointers ...
+    uint32_t* resultListPointer;
+    uint32_t* mainArrPointer;
+    uint32_t* workQueuePointer;
+
 
     ////preparation kernel
 
     // initialize, then launch
 
-
     checkCuda(cudaDeviceSynchronize(), "a1");
 
     void* kernel_args[] = { &fbArgs };
 
-    getMinMaxes << <minGridSize, dim3(warpsNumbForMinMax) >> > (fbArgs);
+        getMinMaxes << <blockSizeForMinMax, dim3(32,warpsNumbForMinMax) >> > (fbArgs);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
+        allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer);
 
-    //cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
+    checkCuda(cudaDeviceSynchronize(), "a2");
+
+        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs);
+
+    checkCuda(cudaDeviceSynchronize(), "a3");
+
+        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+
+    checkCuda(cudaDeviceSynchronize(), "a4");
+
+    
+    // cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
 
 
    /* unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
@@ -349,9 +367,18 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
     //cudaGetLastError();
 
-    cudaFree(forDebug.arrPStr.ptr);
-    cudaFree(goldArr.arrPStr.ptr);
-    cudaFree(segmArr.arrPStr.ptr);
+    cudaFreeAsync(forDebug.arrPStr.ptr, 0);
+    cudaFreeAsync(goldArr.arrPStr.ptr, 0);
+    cudaFreeAsync(segmArr.arrPStr.ptr, 0);
+
+
+    cudaFreeAsync(resultListPointer,0);
+    cudaFreeAsync(mainArrPointer, 0);
+    cudaFreeAsync(workQueuePointer, 0);
+
+
+
+
  /*   cudaFree(reducedGold.arrPStr.ptr);
     cudaFree(reducedSegm.arrPStr.ptr);
     cudaFree(reducedGoldPrev.arrPStr.ptr);

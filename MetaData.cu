@@ -33,36 +33,10 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
 
 	unsigned int* minMaxes;
 	size_t size = sizeof(unsigned int) * 20;
-	cudaMalloc(&minMaxes, size);
-	cudaMemcpy(minMaxes, metaDataCPU.minMaxes, size, cudaMemcpyHostToDevice);
+	cudaMallocAsync(&minMaxes, size,0);
+	cudaMemcpyAsync(minMaxes, metaDataCPU.minMaxes, size, cudaMemcpyHostToDevice,0);
 	res.minMaxes = minMaxes;
 
-
-	////!! x and z intentionally mixed !!
-	//res.fpCount = allocate3dInGPU(metaDataCPU.fpCount);
-	//res.fnCount = allocate3dInGPU(metaDataCPU.fnCount);
-
-	//res.fpCount = allocate3dInGPU(metaDataCPU.fpCount);
-	//res.fnCount = allocate3dInGPU(metaDataCPU.fnCount);
-	//res.fpCounter = allocate3dInGPU(metaDataCPU.fpCounter);
-	//res.fnCounter = allocate3dInGPU(metaDataCPU.fnCounter);
-	//res.fpOffset = allocate3dInGPU(metaDataCPU.fpOffset);
-	//res.fnOffset = allocate3dInGPU(metaDataCPU.fnOffset);
-
-	//res.isActiveGold = allocate3dInGPU(metaDataCPU.isActiveGold);
-	//res.isFullGold = allocate3dInGPU(metaDataCPU.isFullGold);
-	//res.isActiveSegm = allocate3dInGPU(metaDataCPU.isActiveSegm);
-	//res.isFullSegm = allocate3dInGPU(metaDataCPU.isFullSegm);
-
-	//res.isToBeActivatedGold = allocate3dInGPU(metaDataCPU.isToBeActivatedGold);
-	//res.isToBeActivatedSegm = allocate3dInGPU(metaDataCPU.isToBeActivatedSegm);
-
-
-
-	//res.isToBeValidatedFp = allocate3dInGPU(metaDataCPU.isToBeValidatedFp);
-	//res.isToBeValidatedFn = allocate3dInGPU(metaDataCPU.isToBeValidatedFn);
-
-	res.workQueue = allocate3dInGPU(metaDataCPU.workQueue);
 	//res.resultList = allocate3dInGPU(metaDataCPU.resultList);
 
 	res.metaXLength = metaDataCPU.metaXLength;
@@ -88,24 +62,7 @@ inline void copyMetaDataToCPU(MetaDataCPU metaDataCPU, MetaDataGPU metaDataGPU) 
 	cudaMemcpy( metaDataCPU.minMaxes, metaDataGPU.minMaxes, size, cudaMemcpyDeviceToHost);
 
 
-	//copyDeviceToHost3d(metaDataGPU.fpCounter, metaDataCPU.fpCounter);
-	//copyDeviceToHost3d(metaDataGPU.fnCounter, metaDataCPU.fnCounter);
-	//copyDeviceToHost3d(metaDataGPU.fpOffset, metaDataCPU.fpOffset);
-	//copyDeviceToHost3d(metaDataGPU.fnOffset, metaDataCPU.fnOffset);
 
-	//copyDeviceToHost3d(metaDataGPU.isActiveGold, metaDataCPU.isActiveGold);
-	//copyDeviceToHost3d(metaDataGPU.isFullGold, metaDataCPU.isFullGold);
-	//copyDeviceToHost3d(metaDataGPU.isActiveSegm, metaDataCPU.isActiveSegm);
-	//copyDeviceToHost3d(metaDataGPU.isFullSegm, metaDataCPU.isFullSegm);
-
-	//copyDeviceToHost3d(metaDataGPU.isToBeActivatedGold, metaDataCPU.isToBeActivatedGold);
-	//copyDeviceToHost3d(metaDataGPU.isToBeActivatedSegm, metaDataCPU.isToBeActivatedSegm);
-
-	//copyDeviceToHost3d(metaDataGPU.workQueue, metaDataCPU.workQueue);
-	////copyDeviceToHost3d(metaDataGPU.resultList, metaDataCPU.resultList);
-
-	//copyDeviceToHost3d(metaDataGPU.isToBeValidatedFp, metaDataCPU.isToBeValidatedFp);
-	//copyDeviceToHost3d(metaDataGPU.isToBeValidatedFn, metaDataCPU.isToBeValidatedFn);
 
 
 
@@ -113,43 +70,43 @@ inline void copyMetaDataToCPU(MetaDataCPU metaDataCPU, MetaDataGPU metaDataGPU) 
 }
 
 
-/*
-free metadata
-*/
-#pragma once
-inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
-	cudaFree(metaDataGPU.fpCount.arrPStr.ptr);
-	cudaFree(metaDataGPU.fnCount.arrPStr.ptr);
-	cudaFree(metaDataGPU.minMaxes);
-
-	cudaFree(metaDataGPU.fpCounter.arrPStr.ptr);
-	cudaFree(metaDataGPU.fnCounter.arrPStr.ptr);
-	cudaFree(metaDataGPU.fpOffset.arrPStr.ptr);
-	cudaFree(metaDataGPU.fnOffset.arrPStr.ptr);
-
-	cudaFree(metaDataGPU.isActiveGold.arrPStr.ptr);
-	cudaFree(metaDataGPU.isFullGold.arrPStr.ptr);
-	cudaFree(metaDataGPU.isActiveSegm.arrPStr.ptr);
-	cudaFree(metaDataGPU.isFullSegm.arrPStr.ptr);
-
-	cudaFree(metaDataGPU.isToBeActivatedGold.arrPStr.ptr);
-	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
-
-	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
-
-
-	//cudaFree(metaDataGPU.resultList);
-
-	//cudaFreeAsync(metaDataGPU.resultList,0);
-	//cudaFree(metaDataGPU.resultList.arrPStr.ptr);
-
-	cudaFree(metaDataGPU.isToBeValidatedFp.arrPStr.ptr);
-	cudaFree(metaDataGPU.isToBeValidatedFn.arrPStr.ptr);
-
-
-
-
-}
+///*
+//free metadata
+//*/
+//#pragma once
+//inline void freeMetaDataGPU(MetaDataGPU metaDataGPU) {
+//	cudaFree(metaDataGPU.fpCount.arrPStr.ptr);
+//	cudaFree(metaDataGPU.fnCount.arrPStr.ptr);
+//	cudaFree(metaDataGPU.minMaxes);
+//
+//	cudaFree(metaDataGPU.fpCounter.arrPStr.ptr);
+//	cudaFree(metaDataGPU.fnCounter.arrPStr.ptr);
+//	cudaFree(metaDataGPU.fpOffset.arrPStr.ptr);
+//	cudaFree(metaDataGPU.fnOffset.arrPStr.ptr);
+//
+//	cudaFree(metaDataGPU.isActiveGold.arrPStr.ptr);
+//	cudaFree(metaDataGPU.isFullGold.arrPStr.ptr);
+//	cudaFree(metaDataGPU.isActiveSegm.arrPStr.ptr);
+//	cudaFree(metaDataGPU.isFullSegm.arrPStr.ptr);
+//
+//	cudaFree(metaDataGPU.isToBeActivatedGold.arrPStr.ptr);
+//	cudaFree(metaDataGPU.isToBeActivatedSegm.arrPStr.ptr);
+//
+//	cudaFree(metaDataGPU.workQueue.arrPStr.ptr);
+//
+//
+//	//cudaFree(metaDataGPU.resultList);
+//
+//	//cudaFreeAsync(metaDataGPU.resultList,0);
+//	//cudaFree(metaDataGPU.resultList.arrPStr.ptr);
+//
+//	cudaFree(metaDataGPU.isToBeValidatedFp.arrPStr.ptr);
+//	cudaFree(metaDataGPU.isToBeValidatedFn.arrPStr.ptr);
+//
+//
+//
+//
+//}
 
 
 ///*
