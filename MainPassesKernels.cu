@@ -83,53 +83,53 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 }
 
 template <typename TKKI>
-inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs) {
+inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes) {
     char* tensorslice;
     for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
         if (linIdexMeta<13) {
             if (linIdexMeta == 1) {
-                printf("maxX %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+                printf("maxX %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
             }
     if(linIdexMeta == 2) {
-    printf("minX %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("minX %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 3) {
-    printf("maxY %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("maxY %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 4) {
-    printf("minY %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("minY %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 5) {
-    printf("maxZ %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("maxZ %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 6) {
-    printf("minZ %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("minZ %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
 
     if(linIdexMeta == 7) {
-    printf("global FP count %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("global FP count %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 8) {
-    printf("global FN count %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("global FN count %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 9) {
-    printf("workQueueCounter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("workQueueCounter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 10) {
-    printf("resultFP globalCounter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("resultFP globalCounter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 11) {
-    printf("resultFn globalCounter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("resultFn globalCounter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 12) {
-    printf("global offset counter %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("global offset counter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
 
     if(linIdexMeta == 13) {
-    printf("globalIterationNumb %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("globalIterationNumb %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
     if(linIdexMeta == 17) {
-    printf("suum debug %d  [%d]\n", fbArgs.metaData.minMaxes[linIdexMeta], linIdexMeta);
+    printf("suum debug %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
     }
         }
 
@@ -183,7 +183,7 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 #pragma once
 extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
-
+    cudaDeviceReset();
     cudaError_t syncErr;
     cudaError_t asyncErr;
     int device = 0;
@@ -221,14 +221,19 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-
-
-    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr);
-    
-    //pointers ...
+        //pointers ...
     uint32_t* resultListPointer;
     uint32_t* mainArrPointer;
     uint32_t* workQueuePointer;
+    unsigned int* minMaxes;
+    size_t size = sizeof(unsigned int) * 20;
+    cudaMalloc(&minMaxes, size);
+
+    //MetaDataGPU metaDataGPU = allocateMetaDataOnGPU(fFArgs.metaData);
+    checkCuda(cudaDeviceSynchronize(), "a0");
+
+    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, minMaxes);
+    fbArgs.metaData.minMaxes = minMaxes;
 
 
     ////preparation kernel
@@ -239,19 +244,23 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     void* kernel_args[] = { &fbArgs };
 
-        getMinMaxes << <blockSizeForMinMax, dim3(32,warpsNumbForMinMax) >> > (fbArgs);
+        getMinMaxes << <blockSizeForMinMax, dim3(32,warpsNumbForMinMax) >> > (fbArgs, minMaxes);
+       
+        checkCuda(cudaDeviceSynchronize(), "a1");
+
+
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-        allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer);
+     //  allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs);
+      //  boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs);
 
     checkCuda(cudaDeviceSynchronize(), "a3");
 
-        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+      //  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
 
@@ -335,8 +344,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-  //testKernel << <10,512>> > (fbArgs);
+   //testKernel << <10,512>> > (fbArgs, minMaxes);
 
+    testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
 
     ////sync
@@ -367,14 +377,14 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
     //cudaGetLastError();
 
-    cudaFreeAsync(forDebug.arrPStr.ptr, 0);
-    cudaFreeAsync(goldArr.arrPStr.ptr, 0);
-    cudaFreeAsync(segmArr.arrPStr.ptr, 0);
+    //cudaFreeAsync(forDebug.arrPStr.ptr, 0);
+    //cudaFreeAsync(goldArr.arrPStr.ptr, 0);
+    //cudaFreeAsync(segmArr.arrPStr.ptr, 0);
 
 
-    cudaFreeAsync(resultListPointer,0);
-    cudaFreeAsync(mainArrPointer, 0);
-    cudaFreeAsync(workQueuePointer, 0);
+    //cudaFreeAsync(resultListPointer,0);
+    //cudaFreeAsync(mainArrPointer, 0);
+    //cudaFreeAsync(workQueuePointer, 0);
 
 
 
@@ -401,6 +411,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
 
 
+    cudaDeviceReset();
 
     return true;
 }

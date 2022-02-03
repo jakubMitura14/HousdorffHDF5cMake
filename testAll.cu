@@ -159,36 +159,36 @@ minZ 2  [6]
 
 
 
-	i = 1;
-	printf("maxX %d  [%d]\n", minMaxesCPU[i], i);
-	i = 2;
-	printf("minX %d  [%d]\n", minMaxesCPU[i], i);
-	i = 3;
-	printf("maxY %d  [%d]\n", minMaxesCPU[i], i);
-	i = 4;
-	printf("minY %d  [%d]\n", minMaxesCPU[i], i);
-	i = 5;
-	printf("maxZ %d  [%d]\n", minMaxesCPU[i], i);
-	i = 6;
-	printf("minZ %d  [%d]\n", minMaxesCPU[i], i);
+	//i = 1;
+	//printf("maxX %d  [%d]\n", minMaxesCPU[i], i);
+	//i = 2;
+	//printf("minX %d  [%d]\n", minMaxesCPU[i], i);
+	//i = 3;
+	//printf("maxY %d  [%d]\n", minMaxesCPU[i], i);
+	//i = 4;
+	//printf("minY %d  [%d]\n", minMaxesCPU[i], i);
+	//i = 5;
+	//printf("maxZ %d  [%d]\n", minMaxesCPU[i], i);
+	//i = 6;
+	//printf("minZ %d  [%d]\n", minMaxesCPU[i], i);
 
-	int ii = 7;
-	printf("global FP count %d  [%d]\n", minMaxesCPU[ii], ii);
-	ii = 8;
-	printf("global FN count %d  [%d]\n", minMaxesCPU[ii], ii);
-	ii = 9;
-	printf("workQueueCounter %d  [%d]\n", minMaxesCPU[ii], ii);
-	ii = 10;
-	printf("resultFP globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
-	ii = 11;
-	printf("resultFn globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
-	ii = 12;
-	printf("global offset counter %d  [%d]\n", minMaxesCPU[ii], ii);
+	//int ii = 7;
+	//printf("global FP count %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 8;
+	//printf("global FN count %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 9;
+	//printf("workQueueCounter %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 10;
+	//printf("resultFP globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 11;
+	//printf("resultFn globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 12;
+	//printf("global offset counter %d  [%d]\n", minMaxesCPU[ii], ii);
 
-	ii = 13;
-	printf("globalIterationNumb %d  [%d]\n", minMaxesCPU[ii], ii);
-	ii = 17;
-	printf("suum debug %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 13;
+	//printf("globalIterationNumb %d  [%d]\n", minMaxesCPU[ii], ii);
+	//ii = 17;
+	//printf("suum debug %d  [%d]\n", minMaxesCPU[ii], ii);
 
 
 

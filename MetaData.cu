@@ -7,7 +7,7 @@
 copy from host to device
 */
 #pragma once
-inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
+inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU, unsigned int*& minMaxes) {
 	MetaDataGPU res;
 
 	metaDataCPU.minMaxes[1] = 0;
@@ -31,10 +31,8 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU) {
 	metaDataCPU.minMaxes[19] = 0;
 	metaDataCPU.minMaxes[20] = 0;
 
-	unsigned int* minMaxes;
 	size_t size = sizeof(unsigned int) * 20;
-	cudaMallocAsync(&minMaxes, size,0);
-	cudaMemcpyAsync(minMaxes, metaDataCPU.minMaxes, size, cudaMemcpyHostToDevice,0);
+	cudaMemcpy(minMaxes, metaDataCPU.minMaxes, size, cudaMemcpyHostToDevice);
 	res.minMaxes = minMaxes;
 
 	//res.resultList = allocate3dInGPU(metaDataCPU.resultList);

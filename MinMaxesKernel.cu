@@ -22,7 +22,7 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 */
 #pragma once
 template <typename TYU>
-__device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
+__device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs, unsigned int* minMaxes) {
 
     ////////////some initializations
     thread_block cta = this_thread_block();
@@ -95,6 +95,7 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
                 /////////////////// setting min and maxes
 //    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
                 auto active = coalesced_threads();
+                sync(cta);
                 active.sync();
 
                 if (isToBeExecutedOnActive(active, 2) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
@@ -121,34 +122,35 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs) {
     sync(cta);
 
     auto active = coalesced_threads();
+
     if (isToBeExecutedOnActive(active, 0)) {
         //printf("in minMaxes internal  %d \n", minMaxesInShmem[0]);
         //getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, fbArgs.metaData.minMaxes.Ny, 0, 0)[0] = 61;
-        atomicMax(&fbArgs.metaData.minMaxes[1], minMaxesInShmem[1]);
+        atomicMax(&minMaxes[1], minMaxesInShmem[1]);
     };
 
     if (isToBeExecutedOnActive(active, 1)) {
 
-        atomicMin(&fbArgs.metaData.minMaxes[2], minMaxesInShmem[2]);
+        atomicMin(&minMaxes[2], minMaxesInShmem[2]);
     };
 
     if (isToBeExecutedOnActive(active, 2)) {
-        atomicMax(&fbArgs.metaData.minMaxes[3], minMaxesInShmem[3]);
+        atomicMax(&minMaxes[3], minMaxesInShmem[3]);
     };
 
     if (isToBeExecutedOnActive(active, 3)) {
-        atomicMin(&fbArgs.metaData.minMaxes[4], minMaxesInShmem[4]);
+        atomicMin(&minMaxes[4], minMaxesInShmem[4]);
     };
 
 
 
     if (isToBeExecutedOnActive(active, 4)) {
-        atomicMax(&fbArgs.metaData.minMaxes[5], minMaxesInShmem[5]);
+        atomicMax(&minMaxes[5], minMaxesInShmem[5]);
+        //printf(" minMaxesInShmem  %d \n ", minMaxes[5]);
     };
 
     if (isToBeExecutedOnActive(active, 5)) {
-        atomicMin(&fbArgs.metaData.minMaxes[6], minMaxesInShmem[6]);
-
+        atomicMin(&minMaxes[6], minMaxesInShmem[6]);
     };
 
 
@@ -164,8 +166,8 @@ collecting all needed functions for GPU execution to prepare data from calculati
 */
 #pragma once
 template <typename TYO>
-__global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs) {
-    metaDataIterB(fbArgs);
+__global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs, unsigned int* minMaxes) {
+    metaDataIterB(fbArgs, minMaxes);
 }
 
 

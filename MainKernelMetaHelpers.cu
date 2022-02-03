@@ -6,7 +6,7 @@ template <typename ZZR>
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, uint32_t*& resultListPointer) {
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes, size, cudaMemcpyHostToDevice);
 
     unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
 
@@ -35,7 +35,7 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyHostToDevice);
+    cudaMemcpy( gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes, size, cudaMemcpyHostToDevice);
 
     //read an modify
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
@@ -72,12 +72,16 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
     gpuArgs.mainArrSectionLength = mainArrSectionLength;
     gpuArgs.metaDataOffset = (mainArrXLength * 6);
     
-    size = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
-    cudaMallocAsync(&mainArr, size, 0);
+    size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
+    //std::cout <<"size  ";
+    //std::cout << (totalMetaLength * mainArrSectionLength * sizeof(uint32_t))/1000000000;
+    //std::cout << "\n";
+    cudaMallocAsync(&mainArr, sizeB, 0);
     //workqueue
 
-    size = totalMetaLength * sizeof(uint32_t);
-    cudaMallocAsync(&workQueue, size, 0);
+    size_t sizeC = (totalMetaLength * sizeof(uint32_t));
+   //cudaMallocAsync(&workQueue, size, 0);
+   cudaMalloc(&workQueue, size);
 
 
 };
