@@ -88,37 +88,15 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 
 
 
-//
-//#pragma once
-//template <typename ZZR>
-//inline void calculateOccupancy(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs) {
-//   
-//
-//    int numBlocks; // Occupancy in terms of active blocks
-//    int blockSize = 32;
-//    // These variables are used to convert occupancy to warps
-//    int device;
-//    cudaDeviceProp prop;
-//    int activeWarps;
-//    int maxWarps;
-//    cudaGetDevice(&device);
-//    cudaGetDeviceProperties(&prop, device);
-//
-//    cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-//        &numBlocks,
-//        MyKernel,
-//        blockSize,
-//        0);
-//    activeWarps = numBlocks * blockSize / prop.warpSize;
-//    maxWarps = prop.maxThreadsPerMultiProcessor / prop.warpSize;
-//    std::cout << "Occupancy: " << (double)activeWarps / maxWarps * 100 << "%" <<
-//        std::endl;
-//
-//
-//
-//
-//
-//
-//};
+
+#pragma once
+template <typename ZZR>
+inline void printForDebug(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs) {
+    // getting arrays allocated on  cpu to be able to print and test them easier
+    size_t size = sizeof(unsigned int) * 20;
+    unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
+
+
+};
 
 
