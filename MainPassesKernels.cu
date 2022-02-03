@@ -252,7 +252,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-     //  allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer);
+       allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer,minMaxes);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
