@@ -369,7 +369,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
 
-    printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer);
+    printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
 
 
     checkCuda(cudaDeviceSynchronize(), "just after copy device to host");

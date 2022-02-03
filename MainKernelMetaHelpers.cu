@@ -40,9 +40,9 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //read an modify
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
     //7)global FP count; 8)global FN count
-    unsigned int xRange = cpuArgs.metaData.minMaxes[1] - cpuArgs.metaData.minMaxes[2];
-    unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4];
-    unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6];
+    unsigned int xRange = cpuArgs.metaData.minMaxes[1] - cpuArgs.metaData.minMaxes[2]+1;
+    unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4]+1;
+    unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6]+1;
     unsigned int totalMetaLength = xRange* yRange* zRange;
 
  
@@ -73,9 +73,24 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     metaData.metaDataOffset = (mainArrXLength * 6);
     
     size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
-   /* std::cout <<"mainArrSectionLength  ";
-    std::cout << mainArrSectionLength;
-    std::cout << "\n";*/
+    std::cout <<"totalMetaLength  ";
+    std::cout << totalMetaLength;
+    std::cout << "\n";
+
+
+    //std::cout << "xRange  ";
+    //std::cout << xRange;
+    //std::cout << "\n";
+
+    //std::cout << "yRange  ";
+    //std::cout << yRange;
+    //std::cout << "\n";
+
+    //std::cout << "zRange  ";
+    //std::cout << zRange;
+    //std::cout << "\n";
+
+
     cudaMallocAsync(&mainArr, sizeB, 0);
     //workqueue
 
@@ -92,11 +107,16 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
 #pragma once
 template <typename ZZR>
 inline void printForDebug(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, uint32_t* resultListPointer
-    , uint32_t* mainArrPointer, uint32_t* workQueuePointer) {
+    , uint32_t* mainArrPointer, uint32_t* workQueuePointer, MetaDataGPU metaData) {
     // getting arrays allocated on  cpu to be able to print and test them easier
-    //size_t size = sizeof(uint32_t) * gpuArgs.metaData.totalMetaLength* gpuArgs.mainArrSectionLength;
-    //uint32_t* mainArrCPU = (uint32_t*)malloc(size);
+    size_t size = sizeof(uint32_t) * metaData.totalMetaLength* metaData.mainArrSectionLength;
+    uint32_t* mainArrCPU = (uint32_t*)malloc(size);
 
+
+    for (int linIdexMeta = 0; linIdexMeta < metaData.totalMetaLength; linIdexMeta++) {
+        
+
+    }
 
 };
 
