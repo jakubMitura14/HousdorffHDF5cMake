@@ -278,5 +278,6 @@ inline __global__ void paddingDilatation(ForBoolKernelArgs<TKKI> fbArgs) {
     updateGlobalCountersAndClear(fbArgs, tensorslice, blockFpConter, blockFnConter, localWorkQueueCounter, localFpConter, localFnConter);
 
 
-
+    //KROWA!!!
+    //remember to zero out the global work queue counter
 }

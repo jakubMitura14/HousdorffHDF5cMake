@@ -228,11 +228,12 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     unsigned int* minMaxes;
     size_t size = sizeof(unsigned int) * 20;
     cudaMalloc(&minMaxes, size);
+    
 
     //MetaDataGPU metaDataGPU = allocateMetaDataOnGPU(fFArgs.metaData);
     checkCuda(cudaDeviceSynchronize(), "a0");
-
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, minMaxes);
+    MetaDataGPU metaData= fbArgs.metaData;
     fbArgs.metaData.minMaxes = minMaxes;
 
 
@@ -249,14 +250,13 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         checkCuda(cudaDeviceSynchronize(), "a1");
 
 
+    checkCuda(cudaDeviceSynchronize(), "a2");
+
+    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer,minMaxes, metaData);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-       allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer,minMaxes);
-
-    checkCuda(cudaDeviceSynchronize(), "a2");
-
-        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs);
+        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, mainArrPointer, metaData);
 
     checkCuda(cudaDeviceSynchronize(), "a3");
 
@@ -369,6 +369,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
 
+    printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer);
 
 
     checkCuda(cudaDeviceSynchronize(), "just after copy device to host");

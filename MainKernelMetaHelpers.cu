@@ -27,8 +27,8 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 
 #pragma once
 template <typename ZZR>
-inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs
-            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes
+inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs
+            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData
 ) {
     ////reduced arrays
 
@@ -47,35 +47,35 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 
  
     //updating size informations
-    gpuArgs.metaData.metaXLength = xRange;
-    gpuArgs.metaData.MetaYLength = yRange;
-    gpuArgs.metaData.MetaZLength = zRange;
-    gpuArgs.metaData.totalMetaLength = totalMetaLength;
+    metaData.metaXLength = xRange;
+    metaData.MetaYLength = yRange;
+    metaData.MetaZLength = zRange;
+    metaData.totalMetaLength = totalMetaLength;
 
     cpuArgs.metaData.metaXLength = xRange;
     cpuArgs.metaData.MetaYLength = yRange;
     cpuArgs.metaData.MetaZLength = zRange;
     cpuArgs.metaData.totalMetaLength = totalMetaLength;
     //saving min maxes
-    gpuArgs.maxX = cpuArgs.metaData.minMaxes[1];
-    gpuArgs.minX = cpuArgs.metaData.minMaxes[2];
-    gpuArgs.maxY = cpuArgs.metaData.minMaxes[3];
-    gpuArgs.minY = cpuArgs.metaData.minMaxes[4];
-    gpuArgs.maxZ = cpuArgs.metaData.minMaxes[5];
-    gpuArgs.minZ = cpuArgs.metaData.minMaxes[6];
+    metaData.maxX = cpuArgs.metaData.minMaxes[1];
+    metaData.minX = cpuArgs.metaData.minMaxes[2];
+    metaData.maxY = cpuArgs.metaData.minMaxes[3];
+    metaData.minY = cpuArgs.metaData.minMaxes[4];
+    metaData.maxZ = cpuArgs.metaData.minMaxes[5];
+    metaData.minZ = cpuArgs.metaData.minMaxes[6];
 
     //allocating needed memory
     // main array
     unsigned int mainArrXLength = cpuArgs.dbXLength * cpuArgs.dbYLength;
     unsigned int mainArrSectionLength = (mainArrXLength * 6) + 18;
-    gpuArgs.mainArrXLength = mainArrXLength;
-    gpuArgs.mainArrSectionLength = mainArrSectionLength;
-    gpuArgs.metaDataOffset = (mainArrXLength * 6);
+    metaData.mainArrXLength = mainArrXLength;
+    metaData.mainArrSectionLength = mainArrSectionLength;
+    metaData.metaDataOffset = (mainArrXLength * 6);
     
     size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
-    std::cout <<"size  ";
-    std::cout << (totalMetaLength * mainArrSectionLength * sizeof(uint32_t))/1000000000;
-    std::cout << "\n";
+   /* std::cout <<"mainArrSectionLength  ";
+    std::cout << mainArrSectionLength;
+    std::cout << "\n";*/
     cudaMallocAsync(&mainArr, sizeB, 0);
     //workqueue
 
@@ -83,7 +83,7 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
    //cudaMallocAsync(&workQueue, size, 0);
    cudaMalloc(&workQueue, size);
 
-
+   return metaData;
 };
 
 
@@ -91,10 +91,11 @@ inline void allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, Fo
 
 #pragma once
 template <typename ZZR>
-inline void printForDebug(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs) {
+inline void printForDebug(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, uint32_t* resultListPointer
+    , uint32_t* mainArrPointer, uint32_t* workQueuePointer) {
     // getting arrays allocated on  cpu to be able to print and test them easier
-    size_t size = sizeof(unsigned int) * 20;
-    unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
+    //size_t size = sizeof(uint32_t) * gpuArgs.metaData.totalMetaLength* gpuArgs.mainArrSectionLength;
+    //uint32_t* mainArrCPU = (uint32_t*)malloc(size);
 
 
 };

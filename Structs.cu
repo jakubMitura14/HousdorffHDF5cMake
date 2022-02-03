@@ -76,7 +76,20 @@ extern "C" struct MetaDataGPU {
     uint32_t* workQueue;
     uint32_t* resultList;
 
-
+    //represents x from description of main Arr
+    unsigned int mainArrXLength;
+    //have length 6x+18
+    unsigned int mainArrSectionLength;
+    //have length 6x 
+    unsigned int metaDataOffset;
+    // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
+        //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
+    unsigned int maxX;
+    unsigned int minX;
+    unsigned int maxY;
+    unsigned int minY;
+    unsigned int maxZ;
+    unsigned int minZ;
 };
 
 
@@ -179,20 +192,7 @@ now what occupies what positions
 6x+18 : posterior
 */
     uint32_t* mainArr;
-    //represents x from description above
-    unsigned int mainArrXLength;
-    //have length 6x+18
-    unsigned int mainArrSectionLength;
-    //have length 6x 
-    unsigned int metaDataOffset;
-    // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
-        //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
-    unsigned int maxX;
-    unsigned int minX;
-    unsigned int maxY;
-    unsigned int minY;
-    unsigned int maxZ;
-    unsigned int minZ;
+
 
 
 
