@@ -116,7 +116,94 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                 }
             }
         }
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 9];
+        //    if (count ==1) {
+        //        printf("in TEST kernel looking for xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
+        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
+        //    }
+        //}
+
+        ///// testing  calculation of surrounding blocks linear indicies
+        // block 1,1,1
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    if (xMeta==1 && yMeta==1 && zMeta==1) {
+        //        printf("linear indicies from metadata  top %d bottom %d left %d right %d anterior %d posterior %d  linIdexMeta current %d \n    "
+        //            ,mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 13]
+        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 14]
+
+        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 15]
+        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 16]
+
+        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 17]
+        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 18]
+        //            , linIdexMeta
+        //        );
+        //    }
+        //    if (xMeta ==  1&& yMeta == 1 && zMeta == 0) {
+        //        printf("linear index top linIdexMeta %d \n    ", linIdexMeta);
+        //    
+        //    }
+        //    if (xMeta ==1 && yMeta == 1 && zMeta == 2) {
+        //        printf("linear index bottom linIdexMeta %d \n    ", linIdexMeta);
+
+        //    }
+        //    if (xMeta == 1&& yMeta == 2 && zMeta == 1) {
+        //        printf("linear index anterior linIdexMeta %d \n    ", linIdexMeta);
+
+        //    }
+        //    if (xMeta == 1&& yMeta == 0 && zMeta == 1) {
+        //        printf("linear index posterior linIdexMeta %d \n    ", linIdexMeta);
+
+        //    }
+
+        //    if (xMeta ==2 && yMeta == 1 && zMeta == 1) {
+        //        printf("linear index right linIdexMeta %d \n    ", linIdexMeta);
+
+        //    }
+        //    if (xMeta == 0&& yMeta == 1 && zMeta == 1) {
+        //        printf("linear index left linIdexMeta %d \n    ", linIdexMeta);
+
+        //    }
+
+        //}
+
+//// checking weather on edges it shows UINT32_MAX
+        //   if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+
+        //    if (xMeta ==  1&& yMeta == 1 && zMeta == 0) {
+        //        printf("linear index top linIdexMeta %d  and max is %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 13], UINT32_MAX);
+        //    
+        //    }
+        //    if (xMeta ==1 && yMeta == 1 && zMeta == 3) {
+        //        printf("linear index bottom linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 14]);
+
+        //    }
+        //    if (xMeta == 1&& yMeta == 5 && zMeta == 1) {
+        //        printf("linear index anterior linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 17]);
+
+        //    }
+        //    if (xMeta == 1&& yMeta == 0 && zMeta == 1) {
+        //        printf("linear index posterior linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 18]);
+
+        //    }
+
+        //    if (xMeta ==2 && yMeta == 1 && zMeta == 1) {
+        //        printf("linear index right linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 16]);
+
+        //    }
+        //    if (xMeta == 0&& yMeta == 1 && zMeta == 1) {
+        //        printf("linear index left linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 15]);
+
+        //    }
+
+        //}
+
+
+
     }
+
+
 
 
     //for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {

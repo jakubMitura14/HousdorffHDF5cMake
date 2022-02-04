@@ -241,7 +241,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
         //marking as active 
 //FP pass
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
-         //   printf("\n set activeee in gold xMeta %d yMeta %d  zMeta %d \n",xMeta,yMeta,zMeta);
+          //  printf("\n set activeee in gold xMeta %d yMeta %d  zMeta %d \n",xMeta,yMeta,zMeta);
            // getTensorRow<bool>(tensorslice, metaData.isActiveGold, metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta] = true;
             mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8] = 1;
 

@@ -63,45 +63,6 @@ __device__ void addToQueue(ForBoolKernelArgs<PYO> fbArgs, unsigned int& old, uns
         }
 }
 
-    ///*
-    //here we
-    //*/
-    //template <typename UUIU>
-    //__global__ void passFromLocalQueueToGlobal(ForBoolKernelArgs<UUIU> fbArgs, unsigned int& old, unsigned int& count, char* tensorslice
-    //    , uint16_t & xMeta, uint16_t & yMeta, uint16_t & zMeta, array3dWithDimsGPU & offsetMetadataArr
-    //    , uint16_t isGold, unsigned int* fpFnLocCounters[2], uint16_t* localWorkAndOffsetQueue[1600][5], unsigned int* localWorkQueueCounter[1], uint16_t& i
-    //) {
-    //        //given fp is non zero we need to  add this to local queue
-    //        if (count > 0) {
-    //            //we need to establish where to put the entry in the local queue
-    //            count = atomicAdd(&fpFnLocCounters[1 - isGold], count);
-    //            old = atomicAdd(&localWorkQueueCounter[0], 1);
-
-    //            //we check weather we still have space in shared memory
-    //            if (old < 1590) {// so we still have space in shared memory
-    //                localWorkAndOffsetQueue[old][0] = xMeta;
-    //                localWorkAndOffsetQueue[old][1] = yMeta;
-    //                localWorkAndOffsetQueue[old][2] = zMeta;
-    //                localWorkAndOffsetQueue[old][3] = isGold;// marking it is about gold pass - FP
-    //                localWorkAndOffsetQueue[old][3] = count;// marking local offset - this will need to be incremented later by global and local value
-    //            }
-    //            else {// so we do not have any space more in the sared memory  - it is unlikely so we will just in this case save immidiately to global memory
-    //                
-    //                
-    //                old = atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9]), old);
-
-    //                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 0, 0)[old] = localWorkAndOffsetQueue[i][0];
-    //                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 1, 0)[old] = localWorkAndOffsetQueue[i][1];
-    //                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 2, 0)[old] = localWorkAndOffsetQueue[i][2];
-    //                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 3, 0)[old] = localWorkAndOffsetQueue[i][3];
-    //                //and offset 
-    //                getTensorRow<unsigned int>(tensorslice, offsetMetadataArr, offsetMetadataArr.Ny, yMeta, zMeta)[xMeta]
-    //                    = atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[12]), count);
-    //            };
-
-
-    //}
-
 
 
 
