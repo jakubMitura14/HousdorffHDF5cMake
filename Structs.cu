@@ -78,7 +78,7 @@ extern "C" struct MetaDataGPU {
 
     //represents x from description of main Arr
     unsigned int mainArrXLength;
-    //have length 6x+18
+    //have length 6x+19
     unsigned int mainArrSectionLength;
     //have length 6x 
     unsigned int metaDataOffset;

@@ -43,11 +43,12 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC> mainFunA
 setting the linear index of metadata blocks that are in given direction if there is no such (out of range) we will save it as UINT32_MAX
 */
 template <typename TCC>
-__device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd , uint16_t linIdexMeta , MetaDataGPU metaData, uint32_t* mainArr) {
+__device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
+    , uint16_t linIdexMeta , MetaDataGPU metaData, uint32_t* mainArr) {
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + inArrIndex] = linIdexMeta - toAdd;
+            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + inArrIndex] = (linIdexMeta + toAdd);
         }
         else {
             mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + inArrIndex] = UINT32_MAX;
@@ -178,115 +179,115 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
         
        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-//       
-//        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*2]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-//        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*3]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-//       
-//        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*4]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-//        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*5]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-//       
-//
-//        //// no need of synchronizations we are exportin data here only 
-//
-//
-//        /////adding the block and total number of the Fp's and Fn's 
-//        sumFp = reduce(tile, sumFp, plus<uint16_t>());
-//        sumFn = reduce(tile, sumFn, plus<uint16_t>());
-//        //reusing shared memory and adding accumulated values from tiles
-//        if (tile.thread_rank() == 0) {
-//            sharedForGold[tile.meta_group_rank()] = sumFp;
-//            sharedForSegm[tile.meta_group_rank()] = sumFn;
-//        }
-//        sync(cta);//waiting so shared memory will be loaded evrywhere
-//        //on single thread we do last sum reduction
-//        auto active = coalesced_threads();
-//        //gold
-//
-//        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-//        //    printf("xMeta %d yMeta %d zMeta %d \n", xMeta, yMeta, zMeta);
-//        //}
-//
-//        if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty) {
-//            sharedForGold[33] = 0;//reset
-//            for (int i = 0; i < tile.meta_group_size(); i += 1) {
-//                sharedForGold[33] += sharedForGold[i];
-// /*               if (sharedForGold[i]>0) {
-//                    printf("adding sharedForGold[i] %d in gold \n ", sharedForGold[i]);
-//                }*/
-//
-//            };
-//            fpSFnS[0] += sharedForGold[33];// will be needed later for global set
-//            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 1] = sharedForGold[33];
-//
-//           // getTensorRow<unsigned int>(tensorslice, metaData.fpCount, metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
-//        }
-//        //segm
-//       // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
-//        if ((threadIdx.x == 0) && (threadIdx.y == 1) && isNotEmpty) {
-//
-//
-//            sharedForSegm[33] = 0;//reset
-//            for (int i = 0; i < tile.meta_group_size(); i += 1) {
-//                sharedForSegm[33] += sharedForSegm[i];
-//            };
-//            fpSFnS[1] += sharedForSegm[33];// will be needed later for global set
-//            //setting metadata
-//            mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 2] = sharedForSegm[33];
-//
-//           // getTensorRow<unsigned int>(tensorslice, metaData.fnCount, metaData.fnCount.Ny, yMeta, zMeta)[xMeta] = sharedForSegm[1][0];
-//
-//        }
-//
-//        //marking as active 
-////FP pass
-//        if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
-//         //   printf("\n set activeee in gold xMeta %d yMeta %d  zMeta %d \n",xMeta,yMeta,zMeta);
-//           // getTensorRow<bool>(tensorslice, metaData.isActiveGold, metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta] = true;
-//            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8] = 1;
-//
-//        };
-//        //FN pass
-//        if ((threadIdx.x == 1) && (threadIdx.y == 0) && isNotEmpty && anyInSegm[0]) {
-//         //   printf("\n set activeee in segm xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta, zMeta);
-//           // getTensorRow<bool>(tensorslice, metaData.isActiveSegm, metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta] = true;
-//            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9] = 1;
-//
-//        };
-//
-//
-//        //after we streamed over all block we save also information about indicies of the surrounding blocks - given they are in range if not UINT32_MAX will be saved 
-//        //top
-//        //setNeighbourBlocks(fbArgs, idX, inArrIndex, predicate, toAdd)
-//
-//        setNeighbourBlocks(fbArgs, 3, 13, (zMeta > 0), (-(metaData.metaXLength * metaData.MetaYLength)), linIdexMeta, metaData,mainArr);//top
-//        setNeighbourBlocks(fbArgs, 4, 14, (zMeta < (metaData.MetaZLength - 1)), (metaData.metaXLength* metaData.MetaYLength), linIdexMeta, metaData,mainArr);//bottom
-//
-//        setNeighbourBlocks(fbArgs, 6 ,15, (xMeta > 0), (-1), linIdexMeta, metaData,mainArr);//left
-//        setNeighbourBlocks(fbArgs, 7, 16, (xMeta < (metaData.metaXLength - 1)), 1, linIdexMeta, metaData,mainArr);//right
-//
-//        setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData,mainArr);//anterior
-//        setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData,mainArr);//posterior
-//
-//
-//        sync(cta); // just to reduce the warp divergence
+       
+        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*2]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*3]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+       
+        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*4]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*5]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+       
+
+        //// no need of synchronizations we are exportin data here only 
+
+
+        /////adding the block and total number of the Fp's and Fn's 
+        sumFp = reduce(tile, sumFp, plus<uint16_t>());
+        sumFn = reduce(tile, sumFn, plus<uint16_t>());
+        //reusing shared memory and adding accumulated values from tiles
+        if (tile.thread_rank() == 0) {
+            sharedForGold[tile.meta_group_rank()] = sumFp;
+            sharedForSegm[tile.meta_group_rank()] = sumFn;
+        }
+        sync(cta);//waiting so shared memory will be loaded evrywhere
+        //on single thread we do last sum reduction
+        auto active = coalesced_threads();
+        //gold
+
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    printf("xMeta %d yMeta %d zMeta %d \n", xMeta, yMeta, zMeta);
+        //}
+
+        if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty) {
+            sharedForGold[33] = 0;//reset
+            for (int i = 0; i < tile.meta_group_size(); i += 1) {
+                sharedForGold[33] += sharedForGold[i];
+ /*               if (sharedForGold[i]>0) {
+                    printf("adding sharedForGold[i] %d in gold \n ", sharedForGold[i]);
+                }*/
+
+            };
+            fpSFnS[0] += sharedForGold[33];// will be needed later for global set
+            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 1] = sharedForGold[33];
+
+           // getTensorRow<unsigned int>(tensorslice, metaData.fpCount, metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
+        }
+        //segm
+       // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
+        if ((threadIdx.x == 0) && (threadIdx.y == 1) && isNotEmpty) {
+
+
+            sharedForSegm[33] = 0;//reset
+            for (int i = 0; i < tile.meta_group_size(); i += 1) {
+                sharedForSegm[33] += sharedForSegm[i];
+            };
+            fpSFnS[1] += sharedForSegm[33];// will be needed later for global set
+            //setting metadata
+            mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 2] = sharedForSegm[33];
+
+           // getTensorRow<unsigned int>(tensorslice, metaData.fnCount, metaData.fnCount.Ny, yMeta, zMeta)[xMeta] = sharedForSegm[1][0];
+
+        }
+
+        //marking as active 
+//FP pass
+        if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
+         //   printf("\n set activeee in gold xMeta %d yMeta %d  zMeta %d \n",xMeta,yMeta,zMeta);
+           // getTensorRow<bool>(tensorslice, metaData.isActiveGold, metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta] = true;
+            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8] = 1;
+
+        };
+        //FN pass
+        if ((threadIdx.x == 1) && (threadIdx.y == 0) && isNotEmpty && anyInSegm[0]) {
+         //   printf("\n set activeee in segm xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta, zMeta);
+           // getTensorRow<bool>(tensorslice, metaData.isActiveSegm, metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta] = true;
+            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9] = 1;
+
+        };
+
+
+        //after we streamed over all block we save also information about indicies of the surrounding blocks - given they are in range if not UINT32_MAX will be saved 
+        //top
+
+        setNeighbourBlocks(fbArgs, 3, 13, (zMeta > 0), (-(metaData.metaXLength * metaData.MetaYLength)), linIdexMeta, metaData,mainArr);//top
+        setNeighbourBlocks(fbArgs, 4, 14, (zMeta < (metaData.MetaZLength - 1)), (metaData.metaXLength* metaData.MetaYLength), linIdexMeta, metaData,mainArr);//bottom
+
+        setNeighbourBlocks(fbArgs, 6 ,15, (xMeta > 0), (-1), linIdexMeta, metaData,mainArr);//left
+        setNeighbourBlocks(fbArgs, 7, 16, (xMeta < (metaData.metaXLength - 1)), 1, linIdexMeta, metaData,mainArr);//right
+
+        setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData,mainArr);//anterior
+        setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData,mainArr);//posterior
+      // setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (1), linIdexMeta, metaData,mainArr);//posterior
+
+
+        sync(cta); // just to reduce the warp divergence
 
 
     }
     sync(cta);
 
 
-    ////setting global fp and fn
-    //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-    //  /*  printf("metaData.totalMetaLength %d metaData.mainArrSectionLength %d metaData.metaXLength %d \n"
-    //        , metaData.totalMetaLength, metaData.mainArrSectionLength, metaData.metaXLength);*/
+    //setting global fp and fn
+    if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+      /*  printf("metaData.totalMetaLength %d metaData.mainArrSectionLength %d metaData.metaXLength %d \n"
+            , metaData.totalMetaLength, metaData.mainArrSectionLength, metaData.metaXLength);*/
 
-    //    atomicAdd(&(metaData.minMaxes[7]), fpSFnS[0]);
-    //};
+        atomicAdd(&(metaData.minMaxes[7]), fpSFnS[0]);
+    };
 
-    //if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-    //      atomicAdd(&(metaData.minMaxes[8]), fpSFnS[1]);
+    if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
+          atomicAdd(&(metaData.minMaxes[8]), fpSFnS[1]);
 
-    //};
+    };
 
 
 

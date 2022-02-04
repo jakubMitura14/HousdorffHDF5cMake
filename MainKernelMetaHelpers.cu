@@ -67,7 +67,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //allocating needed memory
     // main array
     unsigned int mainArrXLength = cpuArgs.dbXLength * cpuArgs.dbYLength;
-    unsigned int mainArrSectionLength = (mainArrXLength * 6) + 18;
+    unsigned int mainArrSectionLength = (mainArrXLength * 6) + 19;
     metaData.mainArrXLength = mainArrXLength;
     metaData.mainArrSectionLength = mainArrSectionLength;
     metaData.metaDataOffset = (mainArrXLength * 6);
