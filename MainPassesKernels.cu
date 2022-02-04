@@ -102,21 +102,16 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     uint16_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
                     uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
                     
-                    if (isBitAt(column, zLoc) && column>0) {
-                   // if (x==33 && y==1 && z==71) {
-                   // if (x==75 && y==20 && z==70) {
-                   // if (column>0) {
-
-
-                        //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
-                        //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-
-
-
-                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d \n"
-                                    , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                                , column);
-                    }
+                   // if (isBitAt(column, zLoc) && column>0) {
+                   //// if (x==33 && y==1 && z==71) {
+                   //// if (x==75 && y==20 && z==70) {
+                   //// if (column>0) {
+                   //     //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
+                   //     //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
+                   //     printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d \n"
+                   //                 , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                   //             , column);
+                   // }
 
                 }
             }

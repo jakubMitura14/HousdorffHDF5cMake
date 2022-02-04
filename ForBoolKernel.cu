@@ -150,9 +150,9 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
                             sumFn += (goldBool && !segmBool);
                             if (goldBool)  anyInGold[0] = true;
                             if (segmBool)  anyInSegm[0] = true;
-                            if (goldBool) {
-                                printf("in kernel x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
-                            }
+                            //if (goldBool) {
+                            //    printf("in kernel x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
+                            //}
 
 
                         }
@@ -269,7 +269,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
       // setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (1), linIdexMeta, metaData,mainArr);//posterior
 
 
-        sync(cta); // just to reduce the warp divergence
+        tile.sync(); // just to reduce the warp divergence
 
 
     }
