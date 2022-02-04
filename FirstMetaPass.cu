@@ -24,39 +24,30 @@ offsetMetadataArr- arrays from metadata holding data about result list offsets i
 
 #pragma once
 template <typename PYO>
-__device__ void addToQueue(ForBoolKernelArgs<PYO> fbArgs, unsigned int& old, unsigned int& count, char* tensorslice
-    , uint16_t xMeta, uint16_t yMeta, uint16_t zMeta, array3dWithDimsGPU& offsetMetadataArr, array3dWithDimsGPU& countMetadataArr
-    , uint16_t isGold, array3dWithDimsGPU& isActiveArr, unsigned int fpFnLocCounter[1], uint16_t localWorkAndOffsetQueue[1600][5], unsigned int localWorkQueueCounter[1]
-) {
+__device__ inline void addToQueue(ForBoolKernelArgs<PYO> fbArgs, uint16_t linIdexMeta, uint8_t isGold
+    , unsigned int fpFnLocCounter[1], uint32_t localWorkQueue[1600], uint32_t localOffsetQueue[1600], unsigned int localWorkQueueCounter[1]
+    , uint8_t countIndexNumb, uint8_t isActiveIndexNumb, uint8_t offsetIndexNumb
+    , uint32_t* mainArr, MetaDataGPU metaData, unsigned int* minMaxes,uint32_t* workQueue) {
 
-    count = getTensorRow<unsigned int>(tensorslice, countMetadataArr, countMetadataArr.Ny, yMeta, zMeta)[xMeta];
+    unsigned int count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + countIndexNumb];
         //given fp is non zero we need to  add this to local queue
-        if (getTensorRow<bool>(tensorslice, isActiveArr, isActiveArr.Ny, yMeta, zMeta)[xMeta]) {
-            //we need to establish where to put the entry in the local queue
-            //if (count>0) {
-            //    printf("\n in add queue count %d xMeta %d yMeta %d zMeta %d \n", count, xMeta, yMeta, zMeta);
-            //}
+        if (mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + isActiveIndexNumb]==1) {
             count = atomicAdd(&fpFnLocCounter[0], count);
             //printf("\n in add queue fpFnLocCounter %d xMeta %d yMeta %d zMeta %d \n", fpFnLocCounter[0], xMeta, yMeta, zMeta);
 
-            old = atomicAdd(&localWorkQueueCounter[0], 1);
             //we check weather we still have space in shared memory
             if (old < 1590) {// so we still have space in shared memory
-                localWorkAndOffsetQueue[old][0] = xMeta;
-                localWorkAndOffsetQueue[old][1] = yMeta;
-                localWorkAndOffsetQueue[old][2] = zMeta;
-                localWorkAndOffsetQueue[old][3] = isGold;// marking it is about gold pass - FP
-                localWorkAndOffsetQueue[old][4] = count;// marking local offset - this will need to be incremented later by global and local value
-            }
+                unsigned int  old = atomicAdd(&localWorkQueueCounter[0], 1);
+                // will be equal or above UINT16_MAX if it is gold pass
+                localWorkQueue[old] = uint32_t(linIdexMeta+(UINT16_MAX* isGold));
+                localOffsetQueue[old] = uint32_t(count);
+                     }
             else {// so we do not have any space more in the sared memory  - it is unlikely so we will just in this case save immidiately to global memory
-                old = atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9]), old);
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 0, 0)[old] = xMeta;
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 1, 0)[old] = yMeta;
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 2, 0)[old] = zMeta;
-                getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 3, 0)[old] = isGold;
+                old = atomicAdd(&((minMaxes[9]), old);
+                //workQueue
+                workQueue[old] = uint32_t(linIdexMeta + (UINT16_MAX * isGold));
                 //and offset 
-                getTensorRow<unsigned int>(tensorslice, offsetMetadataArr, offsetMetadataArr.Ny, yMeta, zMeta)[xMeta]
-                    = atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[12]), count);
+                mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + offsetIndexNumb] = atomicAdd(&(minMaxes[12]), count);
             };
 
 
@@ -71,7 +62,8 @@ __device__ void addToQueue(ForBoolKernelArgs<PYO> fbArgs, unsigned int& old, uns
 
 #pragma once
 template <typename PYO>
-__global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs) {
+__global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
+    , uint32_t* mainArr, MetaDataGPU metaData, unsigned int* minMaxes, uint32_t* workQueue) {
 
     //////initializations
     thread_block cta = this_thread_block();
@@ -90,7 +82,8 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs) {
     __shared__ unsigned int localWorkQueueCounter[1];     
     //according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes so it will give us 1600 length of shared memory
     //so here we will store locally the calculated offsets and coordinates of meta data block of intrest marking also wheather we are  talking about gold or segmentation pass (fp or fn )
-    __shared__ uint16_t localWorkAndOffsetQueue[1600][5];
+    __shared__ uint32_t localWorkQueue[1600];
+    __shared__ uint32_t localOffsetQueue[1600];
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
         fpFnLocCounter[0] = 0;
     }
@@ -100,63 +93,58 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs) {
     // classical grid stride loop - in case of unlikely event we will run out of space we will empty it prematurly
     //main metadata iteration
     for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += blockDim.x * gridDim.x) {
-        //we get from linear index  the coordinates of the metadata block of intrest
-        xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-        zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
-        yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
-        //we define offsets in the result list to have the results organizedand avoid overwiting
-
-        //TODO remove only debugging    
-        //getTensorRow<unsigned int>(tensorslice, fbArgs.forDebugArr, fbArgs.forDebugArr.Ny, yMeta, zMeta)[xMeta] += 1;
-
-        ////gold pass
-        //addToQueue(fbArgs, old, count, tensorslice, xMeta, yMeta, zMeta, fbArgs.metaData.fpOffset, fbArgs.metaData.fpCount, 1,fbArgs.metaData.isActiveGold,  fpFnLocCounter, localWorkAndOffsetQueue, localWorkQueueCounter);
-        ////segmPass
-        //addToQueue(fbArgs, old, count, tensorslice, xMeta, yMeta, zMeta, fbArgs.metaData.fnOffset, fbArgs.metaData.fnCount, 0,fbArgs.metaData.isActiveSegm,  fpFnLocCounter, localWorkAndOffsetQueue, localWorkQueueCounter);
+         
+   
         
-        addToQueue(fbArgs, old, count, tensorslice, xMeta, yMeta, zMeta, fbArgs.metaData.fpOffset, fbArgs.metaData.fpCount, 0, fbArgs.metaData.isActiveSegm, fpFnLocCounter, localWorkAndOffsetQueue, localWorkQueueCounter);
-        addToQueue(fbArgs, old, count, tensorslice, xMeta, yMeta, zMeta, fbArgs.metaData.fnOffset, fbArgs.metaData.fnCount, 1, fbArgs.metaData.isActiveGold, fpFnLocCounter, localWorkAndOffsetQueue, localWorkQueueCounter);
-
-
+        //goldpass
+        addToQueue(fbArgs, linIdexMeta,0
+            , fpFnLocCounter, localWorkQueue, localOffsetQueue,localWorkQueueCounter
+            ,  1,  9, 5
+            , mainArr, metaData, minMaxes,  workQueue)
+          //segmPass  
+            addToQueue(fbArgs, linIdexMeta, 1
+                , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
+                ,2, 7,6
+                , mainArr, metaData, minMaxes, workQueue)
+    
+        
+        
+ /*       addToQueue(fbArgs, old, count, tensorslice, xMeta, yMeta, zMeta, fbArgs.metaData.fpOffset, fbArgs.metaData.fpCount, 0, fbArgs.metaData.isActiveSegm, fpFnLocCounter, localWorkAndOffsetQueue, localWorkQueueCounter);
+        addToQueue(fbArgs, old, count, tensorslice, xMeta, yMeta, zMeta, fbArgs.metaData.fnOffset, fbArgs.metaData.fnCount, 1, fbArgs.metaData.isActiveGold, fpFnLocCounter, localWorkAndOffsetQueue, localWorkQueueCounter);*/
         }
     sync(cta);
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        globalOffsetForBlock[0] = atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[12]), (fpFnLocCounter[0]));
+        globalOffsetForBlock[0] = atomicAdd(&(minMaxes[12]), (fpFnLocCounter[0]));
        /* if (fpFnLocCounter[0]>0) {
             printf("\n in meta first pass global offset %d  locCounter %d \n  ", globalOffsetForBlock[0], fpFnLocCounter[0]);
         }*/
     };
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
         if (localWorkQueueCounter[0]>0) {
-            globalWorkQueueCounter[0] = atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9]), (localWorkQueueCounter[0]));
+            globalWorkQueueCounter[0] = atomicAdd(&(minMaxes[9]), (localWorkQueueCounter[0]));
 
          }
     }
     sync(cta);
     //grid stride loop for pushing value from local memory to global 
 
-
+    //__shared__ uint32_t localWorkQueue[1600];
+    //__shared__ uint32_t localOffsetQueue[1600];
     for (uint16_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
-        
-       // printf("addTo %d global Queue xMeta [%d] yMeta [%d] zMeta [%d] isGold %d \n", globalWorkQueueCounter[0] + i, localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2], localWorkAndOffsetQueue[i][3]);
-        //TODO() instead of copying memory manually better would be to use mempcyasync ...
-       // printf("\n saving to local work queue xMeta %d  yMeta %d  zMeta %d  isGold %d   ", localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2], localWorkAndOffsetQueue[i][3]);
+       // 
+       //// printf("addTo %d global Queue xMeta [%d] yMeta [%d] zMeta [%d] isGold %d \n", globalWorkQueueCounter[0] + i, localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2], localWorkAndOffsetQueue[i][3]);
+       // //TODO() instead of copying memory manually better would be to use mempcyasync ...
+       //// printf("\n saving to local work queue xMeta %d  yMeta %d  zMeta %d  isGold %d   ", localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2], localWorkAndOffsetQueue[i][3]);
 
-        getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 0, 0)[globalWorkQueueCounter[0]+i] = localWorkAndOffsetQueue[i][0];
-        getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 1, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][1];
-        getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 2, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][2];
-        getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 3, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][3];
-        //and offset 
+       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 0, 0)[globalWorkQueueCounter[0]+i] = localWorkAndOffsetQueue[i][0];
+       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 1, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][1];
+       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 2, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][2];
+       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 3, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][3];
+       // //and offset 
         
         //FP pass
-        if (localWorkAndOffsetQueue[i][3] == 1) {
-
-          /*  printf("\n in meta first pass saving  offset %d  locCounter  %d xMeta %d yMeta %d zMeta %d \n  ", globalOffsetForBlock[0], fpFnLocCounter[0]
-                , localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][3]);*/
-
-            getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpOffset, fbArgs.metaData.fpOffset.Ny, localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2])[localWorkAndOffsetQueue[i][0]]
-                = localWorkAndOffsetQueue[i][4] + globalOffsetForBlock[0];
-
+        if (localWorkQueue[i]>= UINT16_MAX) {
+            mainArr[(localWorkQueue[i]- UINT16_MAX) * metaData.mainArrSectionLength + metaData.metaDataOffset + offsetIndexNumb] = localOffsetQueue[i] + globalOffsetForBlock[0];
         }
         //FN pass
         else {
