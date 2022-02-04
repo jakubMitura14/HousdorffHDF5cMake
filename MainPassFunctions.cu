@@ -179,6 +179,11 @@ inline __device__ uint32_t isBitAt(uint32_t numb, int pos) {
 }
 
 
+inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
+    return (numb & (1 << (pos)));
+}
+
+
 /*
 to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
 predicate - indicates what we consider border case here

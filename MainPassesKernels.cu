@@ -83,75 +83,69 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 }
 
 template <typename TKKI>
-inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes) {
+inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData) {
     char* tensorslice;
-    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-        if (linIdexMeta<13) {
-            if (linIdexMeta == 1) {
-                printf("maxX %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
+
+
+    for (uint16_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
+        //we get from linear index  the coordinates of the metadata block of intrest
+        uint8_t xMeta = linIdexMeta % metaData.metaXLength;
+        uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
+        uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
+
+        for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
+            uint16_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
+            for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
+                uint16_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
+                for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
+
+                    uint16_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
+                    uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
+                    
+                    if (isBitAt(column, zLoc) && column>0) {
+                   // if (x==33 && y==1 && z==71) {
+                   // if (x==75 && y==20 && z==70) {
+                   // if (column>0) {
+
+
+                        //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
+                        //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
+
+
+
+                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d \n"
+                                    , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                                , column);
+                    }
+
+                }
             }
-    if(linIdexMeta == 2) {
-    printf("minX %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 3) {
-    printf("maxY %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 4) {
-    printf("minY %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 5) {
-    printf("maxZ %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 6) {
-    printf("minZ %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-
-    if(linIdexMeta == 7) {
-    printf("global FP count %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 8) {
-    printf("global FN count %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 9) {
-    printf("workQueueCounter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 10) {
-    printf("resultFP globalCounter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 11) {
-    printf("resultFn globalCounter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 12) {
-    printf("global offset counter %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-
-    if(linIdexMeta == 13) {
-    printf("globalIterationNumb %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
-    if(linIdexMeta == 17) {
-    printf("suum debug %d  [%d]\n", minMaxes[linIdexMeta], linIdexMeta);
-    }
         }
-
-     /*   if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
-
-            printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
-                fbArgs.metaData.resultList[linIdexMeta * 5]
-                , fbArgs.metaData.resultList[linIdexMeta * 5 + 1]
-                , fbArgs.metaData.resultList[linIdexMeta * 5 + 2]
-                , fbArgs.metaData.resultList[linIdexMeta * 5 + 3]
-                , fbArgs.metaData.resultList[linIdexMeta * 5 + 4]
-                , linIdexMeta
-
-
-            );
-        }
-        else {
-            printf(" *** ");
-            atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[17]), 1);
-
-        }*/
     }
+
+
+    //for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+  
+
+    // /*   if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
+
+    //        printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
+    //            fbArgs.metaData.resultList[linIdexMeta * 5]
+    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 1]
+    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 2]
+    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 3]
+    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 4]
+    //            , linIdexMeta
+
+
+    //        );
+    //    }
+    //    else {
+    //        printf(" *** ");
+    //        atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[17]), 1);
+
+    //    }*/
+    //}
 }
 
 /*
@@ -344,7 +338,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   //testKernel << <10,512>> > (fbArgs, minMaxes);
+   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrPointer, metaData);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
@@ -369,7 +363,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
 
-    printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
+   // printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
 
 
     checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
