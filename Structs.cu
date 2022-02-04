@@ -2,10 +2,8 @@
 #include <cstdint>
 
 #pragma once
-constexpr auto localWorkQueLength = 32;
-constexpr auto localWorkQueLengthDiv32 = 1;
-// includes localWorkQueLength and source and res shmem
-constexpr auto totalCombinedShmemWorkQueue = (8 * 32) + localWorkQueLength;
+constexpr auto localWorkQueLength = 372;
+
 
 /**
 In order to be able to use cuda malloc 3d we will implemnt it as a series
@@ -191,7 +189,7 @@ now what occupies what positions
 6x+17 : anterior
 6x+18 : posterior
 */
-    uint32_t* mainArr;
+ //   uint32_t* mainArr;
 
 
 

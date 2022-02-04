@@ -241,15 +241,12 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
         //marking as active 
 //FP pass
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
-          //  printf("\n set activeee in gold xMeta %d yMeta %d  zMeta %d \n",xMeta,yMeta,zMeta);
-           // getTensorRow<bool>(tensorslice, metaData.isActiveGold, metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta] = true;
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8] = 1;
+            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7] = 1;
+          //  printf("in bool kernel mark as sctive linIdexMeta %d in index  %d \n  ", linIdexMeta, isGold);
 
         };
         //FN pass
         if ((threadIdx.x == 1) && (threadIdx.y == 0) && isNotEmpty && anyInSegm[0]) {
-         //   printf("\n set activeee in segm xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta, zMeta);
-           // getTensorRow<bool>(tensorslice, metaData.isActiveSegm, metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta] = true;
             mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9] = 1;
 
         };
@@ -266,7 +263,6 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
 
         setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData,mainArr);//anterior
         setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData,mainArr);//posterior
-      // setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (1), linIdexMeta, metaData,mainArr);//posterior
 
 
         tile.sync(); // just to reduce the warp divergence

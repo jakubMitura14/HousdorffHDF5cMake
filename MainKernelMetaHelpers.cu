@@ -3,16 +3,22 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 */
 #pragma once
 template <typename ZZR>
-inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, uint32_t*& resultListPointer) {
+inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
+    uint32_t* resultListPointerMeta,uint16_t* resultListPointerLocal,uint16_t* resultListPointerIterNumb) {
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
     cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost);
 
     unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
 
-    size = sizeof(uint32_t) * 5 * fpPlusFn + 1;
-    cudaMallocAsync(&resultListPointer, size, 0);
-    gpuArgs.metaData.resultList = resultListPointer;
+    size = sizeof(uint32_t)* fpPlusFn + 1;
+    cudaMallocAsync(&resultListPointerMeta, size, 0);
+
+    size = sizeof(uint16_t) * fpPlusFn + 1;
+    cudaMallocAsync(&resultListPointerLocal, size, 0);
+    cudaMallocAsync(&resultListPointerIterNumb, size, 0);
+
+   // metaData.resultList = resultListPointer;
 
 
     // cudaFreeAsync(gpuArgs.metaData.resultList, 0);

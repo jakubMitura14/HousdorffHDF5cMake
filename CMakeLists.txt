@@ -5,7 +5,7 @@ enable_language(CUDA)
 
 find_package(hdf5 CONFIG REQUIRED)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo  -rdc=true -lcudadevrt")
-
+set(CMAKE_CUDA_ARCHITECTURES 80)
 add_executable(hello hello.cu  )
 include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 

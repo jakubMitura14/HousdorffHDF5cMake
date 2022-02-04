@@ -13,6 +13,7 @@
 #include "DilatationKernels.cu"
 #include "MinMaxesKernel.cu"
 #include "MainKernelMetaHelpers.cu"
+#include "BiggerMainFunctions.cu"
 #include <cooperative_groups/memcpy_async.h>
 
 using namespace cooperative_groups;
@@ -83,7 +84,27 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 }
 
 template <typename TKKI>
-inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData) {
+inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* workQueue) {
+    thread_block cta = this_thread_block();
+
+    //work queue !!
+    //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+    //    for (uint16_t ii = blockIdx.x; ii < 7; ii += gridDim.x) {
+    //        if (workQueue[ii] > 0) {
+    //            if (workQueue[ii] > (UINT16_MAX-1)) {
+    //                printf("in gold workqueue elment %d  \n", (workQueue[ii] - UINT16_MAX));
+    //            }
+    //            else {
+    //                printf("in segm workqueue elment %d  \n", (workQueue[ii]));
+
+    //            }
+
+    //        }
+
+    //    }
+    //}
+
+    sync(cta);
     char* tensorslice;
 
 
@@ -117,13 +138,19 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
             }
         }
         //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 9];
+        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 7];
         //    if (count ==1) {
-        //        printf("in TEST kernel looking for xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
+        //        printf("in TEST kernel looking active gold  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
         //            , xMeta, yMeta, zMeta, linIdexMeta, count);
         //    }
         //}
-
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9];
+        //    if (count == 1) {
+        //        printf("in TEST kernel looking active segm  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
+        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
+        //    }
+        //}
         ///// testing  calculation of surrounding blocks linear indicies
         // block 1,1,1
         //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
@@ -199,7 +226,20 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
         //}
 
-
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 5];
+        //    if (count >0) {
+        //        printf("in TEST kernel offset fp  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
+        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
+        //    }
+        //}
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 6];
+        //    if (count > 0) {
+        //        printf("in TEST kernel offset fn  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
+        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
+        //    }
+        //}
 
     }
 
@@ -288,6 +328,14 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         0);
     int warpsNumbForboolPrepareKernel = blockSize / 32;
     int blockSizeFoboolPrepareKernel = minGridSize;
+    // for first meta pass kernel
+    cudaOccupancyMaxPotentialBlockSize(
+        &minGridSize,
+        &blockSize,
+        (void*)boolPrepareKernel<int>,
+        0);
+    int theadsForFirstMetaPass = blockSize ;
+    int blockForFirstMetaPass = minGridSize;
 
 
 
@@ -298,7 +346,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
         //pointers ...
-    uint32_t* resultListPointer;
+    uint32_t* resultListPointerMeta;
+    uint16_t* resultListPointerLocal;
+    uint16_t* resultListPointerIterNumb;
     uint32_t* mainArrPointer;
     uint32_t* workQueuePointer;
     unsigned int* minMaxes;
@@ -306,11 +356,13 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaMalloc(&minMaxes, size);
     
 
-    //MetaDataGPU metaDataGPU = allocateMetaDataOnGPU(fFArgs.metaData);
     checkCuda(cudaDeviceSynchronize(), "a0");
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, minMaxes);
     MetaDataGPU metaData= fbArgs.metaData;
     fbArgs.metaData.minMaxes = minMaxes;
+
+
+
 
 
     ////preparation kernel
@@ -336,28 +388,13 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a3");
 
-        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
+        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
 
-    
-    // cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
+        firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer);
 
-
-   /* unsigned int fpPlusFn = fFArgs.metaData.minMaxes.arrP[0][0][7] + fFArgs.metaData.minMaxes.arrP[0][0][8];
-    uint16_t* resultListPointer;
-    size_t size = sizeof(uint16_t) * 5 * fpPlusFn + 1;
-    cudaMallocAsync(&resultListPointer, size, 0);
-    fbArgs.metaData.resultList = resultListPointer;*/
-
-    //allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointer);
-
-    //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
-
-
-    //cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
-
-    checkCuda(cudaDeviceSynchronize(), "bb");
+    checkCuda(cudaDeviceSynchronize(), "a5");
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
@@ -420,7 +457,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrPointer, metaData);
+   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrPointer, metaData, workQueuePointer);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
@@ -456,7 +493,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     //cudaFreeAsync(segmArr.arrPStr.ptr, 0);
 
 
-    cudaFreeAsync(resultListPointer,0);
+    cudaFreeAsync(resultListPointerMeta,0);
+    cudaFreeAsync(resultListPointerLocal,0);
+    cudaFreeAsync(resultListPointerIterNumb,0);
     cudaFreeAsync(mainArrPointer, 0);
     cudaFreeAsync(workQueuePointer, 0);
 

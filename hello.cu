@@ -59,6 +59,13 @@ const H5std_string DATASET_NAME("onlyLungs");
 int main(void){
 
   
+
+
+
+
+   // testMainPasswes();
+
+
         ///*
         // * Open the specified file and the specified dataset in the file.
         // */
@@ -178,7 +185,6 @@ int main(void){
          */
  
 
-   testMainPasswes();
 
 
     return 0;  // successfully terminated

@@ -141,26 +141,15 @@ extern "C" inline void testMainPasswes() {
 	setArrCPU(arrGoldObj, 33, 1, 71, 2);
 	setArrCPU(arrGoldObj, 75, 20, 70, 2);
 	setArrCPU(arrGoldObj, 100, 70, 70, 2);
-/*
-* counts
-	in TEST kernel looking for xMeta 0 yMeta 0 zMeta 0 linIdexMeta 0 count 1
-		in TEST kernel looking for xMeta 1 yMeta 1 zMeta 0 linIdexMeta 3 count 1
-
-*/
+	setArrCPU(arrGoldObj, 99, 70, 70, 2);
 
 
 
 	setArrCPU(arrSegmObj, 33, 1, 110, 2);
 	setArrCPU(arrSegmObj, 75, 20, 161, 2);
-	setArrCPU(arrSegmObj, 75, 24, 161, 2);
+	setArrCPU(arrSegmObj, 75, 21, 161, 2);
 
-	/*
-	counts 
-	in TEST kernel looking for xMeta 1 yMeta 2 zMeta 3 linIdexMeta 23 count 1
-in TEST kernel looking for xMeta 0 yMeta 0 zMeta 1 linIdexMeta 6 count 1
-in TEST kernel looking for xMeta 1 yMeta 1 zMeta 3 linIdexMeta 21 count 1
-	
-	*/
+
 
 
 	/*
