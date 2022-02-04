@@ -18,6 +18,21 @@ using namespace cooperative_groups;
 
 /*
 load and dilatates the entries in gold or segm ...
+all operations are on the single data block represented by single entry in metadata 
+
+1) load data into pipeline head source shmem from either gold or segmentation array - and either ref or prev depending on wheather iteration number is odd or not ...
+2) a) compute dilatations of souce and save to rs shmem; 
+   b) also mark up and bottom of is anythink in padding
+   d) simultaneously pipeline should load the  data from the block above (if it exist) to register shmem  one
+3) dilatate from block above save to resshmem and simultaneously load data from block below and save to register shmem two
+commit so we will have register shmem one free
+4) dilatate from below  and simulatenously using 4 tiles we load into register one the padding info required for dilatations - anterior, posterior, left, right
+5) we dilatate anterior, posterior, left, right we need to have registers 2 cleared  to use and load to it the data from reduced gold or segm (originals) if it is to be validated - if not we skip this
+   b) mark is block full - if it is all of the resshmem entries are equal UINT32_MAX
+6) if it was to be validated we compare resshmem to loaded data and write down results
+7) save data from resshmem to global memory
+8) a) in case of non padding pass we use the data from is anything in padding  to activate neighbouring blocks
+   b) save the updated values of block metadata back to global memory
 */
 #pragma once
 template <typename TXTOIO>
@@ -47,7 +62,7 @@ inline __device__ void loadAndDilatateAndSave(ForBoolKernelArgs<TXTOIO> fbArgs, 
     cooperative_groups::memcpy_async(cta, (&mainShmem[0]), (&mainArr[ metaData.mainArrXLength*( 1+ (1-isGold[0]) +  ((1+ (iterationNumb[0] & 1))*2 ) ) ])
     , cuda::aligned_size_t<128>(sizeof(uint32_t) * (metaData.mainArrXLength) ));
     //now to registers we load also 
-
+    
 
 
     /// ///////////////// dilatations
@@ -84,6 +99,8 @@ inline __device__ void loadAndDilatateAndSave(ForBoolKernelArgs<TXTOIO> fbArgs, 
 
               //TODO() 4 corner threads has too much work and probably couse warp divergence ...- so those that for example have both threadidx and y=0 or max ...
     //we will also immidiately send data to    
+
+    krowa so we can use 8 tiles 4 will check for the is anythink in padding and 4 will load from neighbours ...
 
     //#left
     dilatateHelper((threadIdx.x == 0), 2, threadIdx.y, (-1), (0), sourceShared, resShared, isAnythingInPadding, localWorkQueue[i][0] > 0,

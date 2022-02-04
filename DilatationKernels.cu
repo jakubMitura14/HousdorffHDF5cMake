@@ -15,6 +15,7 @@
 using namespace cooperative_groups;
 
 constexpr auto startOfLocalWorkQ = 372;
+constexpr auto lengthOfMainShmem = 4468;
 
 
 template <typename TKKI>
@@ -25,21 +26,21 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
 
     thread_block cta = this_thread_block();
     thread_block_tile<32> tile = tiled_partition<32>(cta);
-    __shared__ cuda::barrier<cuda::thread_scope::thread_scope_block> barrier;
+    auto grid = cooperative_groups::this_grid();
 
     bool isBlockFull = true;// usefull to establish do we have block completely filled and no more dilatations possible
     /*
     * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
-    main shared memory spaces 
+    main shared memory spaces
     0-1023 : sourceShmem
     1024-2047 : resShmem
     2048-3071 : first register space
     3072-4095 : second register space
     4096-4468 (372 length) : place for local work queue in dilatation kernels
-    */ 
+    */
     __shared__ uint32_t mainShmem[4468];
     // holding data about paddings 
-        
+
 
     // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
     __shared__ bool isAnythingInPadding[6];
@@ -48,7 +49,6 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
     __shared__ unsigned int globalWorkQueueOffset[1];
     __shared__ unsigned int globalWorkQueueCounter[1];
     __shared__ unsigned int localWorkQueueCounter[1];
-    __shared__ bool isBlockToBeValidated[1];
     // keeping data wheather gold or segmentation pass should continue - on the basis of global counters
 
     __shared__ unsigned int localTotalLenthOfWorkQueue[1];
@@ -67,7 +67,7 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
     __shared__ uint32_t isGold[1];
 
     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
-    0 : global FP count; 
+    0 : global FP count;
     1 : global FN count;
     2 : workQueueCounter
     3 : resultFP globalCounter
@@ -76,7 +76,7 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
     __shared__ unsigned int localMinMaxes[5];
 
     /* will be used to store all of block metadata
-  nothing at  0 index 
+  nothing at  0 index
  1 :fpCount
  2 :fnCount
  3 :fpCounter
@@ -99,11 +99,41 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
  18 : posterior
     */
     __shared__ unsigned int localBlockMetaData[19];
-    
+
+    /////used mainly in meta passes
+
+    __shared__ unsigned int fpFnLocCounter[1];
+    __shared__ bool isGoldPassToContinue[1];
+    __shared__ bool isSegmPassToContinue[1];
+
+
+
+
+
     //initializations and loading    
-    if (tile.thread_rank() == 5 && tile.meta_group_rank() == 0) { iterationNumb[0] = 0; };
+    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) { iterationNumb[0] = -1; };
+    if (tile.thread_rank() == 11 && tile.meta_group_rank() == 0) {
+        isGoldPassToContinue[0] = true;
+    };
+    if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
+        isSegmPassToContinue[0] = true;
+    };
+
     //here we caclulate the offset for given block depending on length of the workqueue and number of the  available blocks in a grid
     // - this will give us number of work queue items per block - we will calculate offset on the basis of the block number
+
+
+
+
+
+    while (isGoldPassToContinue[0] || isSegmPassToContinue[0] ) {
+
+
+ 
+
+    if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {
+        iterationNumb[0] += 1;
+    };
 
     if (tile.thread_rank() == 6 && tile.meta_group_rank() == 0) {
         localWorkQueueCounter[0] = 0;
@@ -121,31 +151,25 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
     if (tile.thread_rank() == 4 && tile.meta_group_rank() == 0) {
         localFnConter[0] = 0;
     };
-    if (tile.thread_rank() == 5 && tile.meta_group_rank() == 0) {
-        init(&barrier, blockDim.x * blockDim.y);
-    };
 
 
 
 
-
-
-
-     if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
         localTotalLenthOfWorkQueue[0] = minMaxes[9];
         globalWorkQueueOffset[0] = floor((float)(localTotalLenthOfWorkQueue[0] / gridDim.x)) + 1;
         worQueueStep[0] = min(localWorkQueLength, globalWorkQueueOffset[0]);
     };
-     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
+    /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
 0 : global FP count;
 1 : global FN count;
 2 : workQueueCounter
 3 : resultFP globalCounter
 4 : resultFn globalCounter
 */
-     if (tile.meta_group_rank() == 1) {
-         cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
-     }
+    if (tile.meta_group_rank() == 1) {
+        cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
+    }
 
     sync(cta);
     // TODO - use pipelines as described at 201 in https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf
@@ -157,13 +181,12 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
         ///////////// loading to work queue
         cooperative_groups::memcpy_async(cta, (&mainShmem[4096]), (&workQueue[bigloop]), cuda::aligned_size_t<4>(sizeof(uint32_t) * worQueueStep[0]));
         sync(cta);
-
-            //now all of the threads in the block needs to have the same i value so we will increment by 1
+        //now all of the threads in the block needs to have the same i value so we will increment by 1
         for (uint8_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
                 //preparations fo block 
                 if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
-                    isGold[0] = uint32_t(mainShmem[startOfLocalWorkQ+i] >= UINT16_MAX);
+                    isGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
                     if (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX) {
                         //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
                         mainShmem[startOfLocalWorkQ + i] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
@@ -173,8 +196,8 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
                 //load meta data of a block to shared memory
                 if (tile.meta_group_rank() == 1) {
                     //mainShmem[startOfLocalWorkQ + i] is linindexMeta - linear index pointing out to what metadata block it is
-                    cooperative_groups::memcpy_async(tile, (&localBlockMetaData[0]), (&mainArr[  mainShmem[startOfLocalWorkQ + i]*metaData.mainArrSectionLength + metaData.metaDataOffset])
-                        , cuda::aligned_size_t<4>(sizeof(uint32_t) *18));
+                    cooperative_groups::memcpy_async(tile, (&localBlockMetaData[0]), (&mainArr[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.metaDataOffset])
+                        , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18));
                 }
 
 
@@ -214,12 +237,64 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
     }
     sync(cta);
     //     updating global counters
-//    updateGlobalCountersAndClear(fbArgs, tensorslice, blockFpConter, blockFnConter, localWorkQueueCounter, localFpConter, localFnConter);
+    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+        atomicAdd(&(minMaxes[10]), (blockFpConter[0]));
+    };
+    if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
+         atomicAdd(&(minMaxes[11]), (blockFnConter[0]));
+    };
+    // in first thread block we zero work queue counter
+    if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
+        if (blockIdx.x==0) {
+            minMaxes[9] = 0;
+        }
+    };
 
+
+
+
+
+
+
+
+    grid.sync()
+
+        krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+    /// /////////////// loading work queue for padding dilatations
+    metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
+            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+            (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
+                && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+                && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+            , mainArr, metaData, minMaxes, workQueue);
+     //////////// padding dilatations
+
+
+
+
+
+
+    grid.sync()
+   ////////////////////////main metadata pass
+        krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+
+   metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+            (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+                && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+            , mainArr, metaData, minMaxes, workQueue);
+    
+       
+       }// end while
 
 }
-
-
 //
 //
 //template <typename TKKI>

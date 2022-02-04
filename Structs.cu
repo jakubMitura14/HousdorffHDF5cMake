@@ -180,7 +180,6 @@ now what occupies what positions
 6x+10 :isFullSegm
 6x+11 :isToBeActivatedGold
 6x+12 :isToBeActivatedSegm
-6x+12 :isToBeActivatedSegm
 //now linear indexes of the blocks in all sides - if there is no block in given direction it will equal UINT32_MAX
 6x+13 : top
 6x+14 : bottom
