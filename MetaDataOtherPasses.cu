@@ -1,5 +1,6 @@
 #include "CPUAllocations.cu"
 #include "MetaData.cu"
+#include "Structs.cu"
 #include "IterationUtils.cu"
 #include "ExceptionManagUtils.cu"
 #include "CooperativeGroupsUtils.cu"
@@ -30,8 +31,6 @@ we will divide all shared memory in  blocks of 32 length what will enable us usi
 1) we divide by shifting 5 times so we will know to which shared memory space to put our data we will need to use if operators
 2) using sutractions and getting remainder will give us spot in 32 subblock where to put the data 
 https://stackoverflow.com/questions/13548172/bitshifts-to-obtain-remainder
-
-
 */
 
 
@@ -96,13 +95,13 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
     }
     //segm pass
     if (predicateB) {
-
+        unsigned int old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
             mainShmem[old] = uint32_t(linIdexMeta);
         }
         else {
             old = atomicAdd(&(minMaxes[9]), 1);
-            workQueue[old] = uint32_t(linIdexMeta)
+            workQueue[old] = uint32_t(linIdexMeta);
         }
         if (isPaddingPass) {
             //setting to be activated to 0 
@@ -121,9 +120,9 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
     }
 }
 sync(cta);
-cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (localWorkQueue), (sizeof(uint32_t) * localWorkQueueCounter[0]));
+cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (&mainArr[0]), (sizeof(uint32_t) * localWorkQueueCounter[0]));
 }
 
-}
+
 
 

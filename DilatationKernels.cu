@@ -14,8 +14,7 @@
 #include <cuda/pipeline>
 using namespace cooperative_groups;
 
-constexpr auto startOfLocalWorkQ = 372;
-constexpr auto lengthOfMainShmem = 4468;
+
 
 
 template <typename TKKI>
@@ -176,7 +175,7 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
     /// load work QueueData into shared memory 
 
     //TODO change looping so it will access contigous memory
-    for (uint8_t bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
+    for (uint16_t bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
         // grid stride loop - sadly most of threads will be idle 
         ///////////// loading to work queue
         cooperative_groups::memcpy_async(cta, (&mainShmem[4096]), (&workQueue[bigloop]), cuda::aligned_size_t<4>(sizeof(uint32_t) * worQueueStep[0]));
@@ -257,40 +256,40 @@ inline __global__ void mainDilatation(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
 
 
 
-    grid.sync()
+    grid.sync();
 
-        krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
-    /// /////////////// loading work queue for padding dilatations
-    metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
-            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
-            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
-            (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
-                && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
-                && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
-            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-            , mainArr, metaData, minMaxes, workQueue);
-     //////////// padding dilatations
-
-
+        //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+      /// /////////////// loading work queue for padding dilatations
+      //metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
+      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+      //        (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
+      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+      //        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+      //        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+      //        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+      //        , mainArr, metaData, minMaxes, workQueue);
+       //////////// padding dilatations
 
 
 
 
-    grid.sync()
+
+
+        grid.sync();
    ////////////////////////main metadata pass
-        krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+      //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
 
-   metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
-            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
-            (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
-                && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
-            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-            , mainArr, metaData, minMaxes, workQueue);
-    
+   //metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+   //         && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+   //         (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+   //             && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+   //         , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+   //         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+   //         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+   //         , mainArr, metaData, minMaxes, workQueue);
+   // 
        
        }// end while
 

@@ -62,64 +62,58 @@ const H5std_string DATASET_NAME("onlyLungs");
 
 
 
-__device__ void compute(int* global_out, int const* shared_in) {
-
+__device__ void compute(uint32_t* global_out, uint32_t const* shared_in) {
+    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+        
+     //   printf("  ***  ");
+       global_out[linIdexMeta] = shared_in[linIdexMeta] * 2;
+    }
 
 
 };
-__global__ void with_staging(int* global_out, int const* global_in, size_t size,
-    size_t batch_sz) {
+__global__ void with_staging(uint32_t* global_out, uint32_t const* global_in) {
     auto grid = cooperative_groups::this_grid();
     auto block = cooperative_groups::this_thread_block();
-    assert(size == batch_sz * grid.size()); // Assume input size fits batch_sz *  grid_size
-        constexpr size_t stages_count = 2; // Pipeline with two stages
-        // Two batches must fit in shared memory:
-    extern __shared__ int shared[]; // stages_count * block.size() * sizeof(int)     bytes
-        size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each    batch
-        // Allocate shared storage for a two-stage cuda::pipeline:
-        __shared__ cuda::pipeline_shared_state<
-        cuda::thread_scope::thread_scope_block,
-        stages_count
-        > shared_state;
-    auto pipeline = cuda::make_pipeline(block, &shared_state);
-    // Each thread processes `batch_sz` elements.
-    // Compute offset of the batch `batch` of this thread block in global memory:
-    auto block_batch = [&](size_t batch) -> int {
-        return block.group_index().x * block.size() + grid.size() * batch;
-    };
-    // Initialize first pipeline stage by submitting a `memcpy_async` to fetch a
-    //whole batch for the block :
-    if (batch_sz == 0) return;
+    constexpr size_t stages_count = 2; // Pipeline with two stages
+   
+                                       
+    __shared__ uint32_t shmem[64];
+    cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
+
+    size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each
+
+    // Initialize first pipeline stage by submitting a `memcpy_async` to fetch a whole batch for the block 
+
+
+   // cuda::memcpy_async(block, &shmem[0], &global_in[0], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
+    //pipeline.producer_commit();
+
+    // get first data into pipeline so from global in to first half in shmem
     pipeline.producer_acquire();
-    cuda::memcpy_async(block, shared + shared_offset[0], global_in +   block_batch(0), sizeof(int) * block.size(), pipeline);
+    cuda::memcpy_async(block, &shmem[0], &global_in[0], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
+
     pipeline.producer_commit();
     // Pipelined copy/compute:
-    for (size_t batch = 1; batch < batch_sz; ++batch) {
-        // Stage indices for the compute and copy stages:
-        size_t compute_stage_idx = (batch - 1) % 2;
-        size_t copy_stage_idx = batch % 2;
-        size_t global_idx = block_batch(batch);
-        // Collectively acquire the pipeline head stage from all producer threads:
+    for (size_t batch = 1; batch < 3; ++batch) {
+        //here we load data for compute step that will be in next loop iteration
         pipeline.producer_acquire();
-        // Submit async copies to the pipeline's head stage to be
-        // computed in the next loop iteration
-        cuda::memcpy_async(block, shared + shared_offset[copy_stage_idx], global_in     + global_idx, sizeof(int) * block.size(), pipeline);
-        // Collectively commit (advance) the pipeline's head stage
+        cuda::memcpy_async(block, &shmem[(batch & 1) *32], &global_in[batch*32], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
         pipeline.producer_commit();
-        // Collectively wait for the operations commited to the
-        // previous `compute` stage to complete:
+
+        //so here we wait for previous data load - in case it is fist loop we wait for data that was scheduled before loop started
         pipeline.consumer_wait();
-        // Computation overlapped with the memcpy_async of the "copy" stage:
-        compute(global_out + global_idx, shared + shared_offset[compute_stage_idx]);
+        compute(&global_out[(batch-1)*32] , &shmem[((batch-1) & 1) * 32]);
         // Collectively release the stage resources
         pipeline.consumer_release();
     }
     // Compute the data fetch by the last iteration
+
     pipeline.consumer_wait();
-    compute(global_out + block_batch(batch_sz - 1), shared + shared_offset[(batch_sz -
-        1) % 2]);
+    compute(&global_out[2 * 32] , &shmem[(2 & 1) * 32]);
     pipeline.consumer_release();
-}
+
+    }
+
 
 
 
@@ -127,6 +121,45 @@ __global__ void with_staging(int* global_out, int const* global_in, size_t size,
 
 
 int main(void){
+    //creating test data for pipeline concept
+    uint32_t* globalInGPU;
+    uint32_t* globalOutGPU;
+    size_t sizeC = (320 * sizeof(uint32_t));
+    uint32_t* globalInCPU = (uint32_t*)calloc(320 , sizeof(uint32_t));
+    //populating to ones
+    for (int i = 0; i < 96; i++) {
+        globalInCPU[i] = i;
+    };
+    uint32_t* globalOUTCPU = (uint32_t*)calloc(320, sizeof(uint32_t));
+
+
+    //cudaMallocAsync(&mainArr, sizeB, 0);
+    cudaMalloc(&globalInGPU, sizeC);
+    cudaMemcpy(globalInGPU, globalInCPU, sizeC, cudaMemcpyHostToDevice);
+
+    cudaMalloc(&globalOutGPU, sizeC);
+    cudaMemcpy(globalOutGPU, globalOUTCPU, sizeC, cudaMemcpyHostToDevice);
+
+    with_staging << <1,32 >> > (globalOutGPU, globalInGPU);
+
+
+    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
+    
+    cudaMemcpy(globalOUTCPU, globalOutGPU, sizeC, cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < 96; i++) {
+       printf("val %d in %d \n", globalOUTCPU[i],i);
+    };
+
+
+    //workqueue
+
+
+
+
+
+
+
 
   
 

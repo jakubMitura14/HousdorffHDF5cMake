@@ -3,7 +3,8 @@
 
 #pragma once
 constexpr auto localWorkQueLength = 372;
-
+constexpr auto startOfLocalWorkQ = 372;
+constexpr auto lengthOfMainShmem = 4468;
 
 /**
 In order to be able to use cuda malloc 3d we will implemnt it as a series
