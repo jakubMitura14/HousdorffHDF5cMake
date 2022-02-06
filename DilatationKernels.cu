@@ -83,7 +83,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     /// load work QueueData into shared memory 
     for (uint16_t bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
         // grid stride loop - sadly most of threads will be idle 
-        ///////////// loading to work queue
+        /////////// loading to work queue
         
         cooperative_groups::memcpy_async(cta, (&mainShmem[startOfLocalWorkQ]), (&workQueue[bigloop]), cuda::aligned_size_t<4>(sizeof(uint32_t) * worQueueStep[0]));
         sync(cta);
@@ -97,76 +97,76 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         
         for (uint16_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-                 ///#### pipeline step 1) now we load data for next step (to sourceshmem) and process data loaded in previous step
-                    pipeline.producer_acquire();
-                    cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForSourceShmem(metaData, mainShmem, iterationNumb,i )]) , bigShape, pipeline);
-                    pipeline.producer_commit();
+        //         ///#### pipeline step 1) now we load data for next step (to sourceshmem) and process data loaded in previous step
+        //            pipeline.producer_acquire();
+        //            cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForSourceShmem(metaData, mainShmem, iterationNumb,i )]) , bigShape, pipeline);
+        //            pipeline.producer_commit();
 
-                ////compute first we load data about calculated linear index meta and information is it gold iteration ...
-                    pipeline.consumer_wait();
-                        if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
-                            isGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
-                            if (isGold[0]) {
-                                //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
-                                currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
-                            }
-                        };
-                    pipeline.consumer_release();
-
-
-                ////////#### pipeline step 2) 
-                //load for next step - so we load posterior of anterior block and left of block to the right given they exist
-                    //anterior
-                    pipeline.producer_acquire();
-                        if (localBlockMetaData[17]<UINT32_MAX) {
-                            //cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                            //    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,17 )])
-                            //    , bigShape, pipeline);
-
-                            cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)]), bigShape, pipeline);
+        //        ////compute first we load data about calculated linear index meta and information is it gold iteration ...
+        //            pipeline.consumer_wait();
+        //                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+        //                    isGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
+        //                    if (isGold[0]) {
+        //                        //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
+        //                        currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
+        //                    }
+        //                };
+        //            pipeline.consumer_release();
 
 
-                        }
-                        //left
-                        if (localBlockMetaData[16] < UINT32_MAX) {
-                            cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)]), thirdRegShape, pipeline);
+        //        ////////#### pipeline step 2) 
+        //        //load for next step - so we load posterior of anterior block and left of block to the right given they exist
+        //            //anterior
+        //            pipeline.producer_acquire();
+        //                if (localBlockMetaData[17]<UINT32_MAX) {
+        //                    //cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+        //                    //    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,17 )])
+        //                    //    , bigShape, pipeline);
 
-                            //cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                            //    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)])
-                            //    , thirdRegShape, pipeline);
-                        }
-                    pipeline.producer_commit();
-                //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
-                    pipeline.consumer_wait();
-                        // first we perform up and down dilatations
-
-                        mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
-                        //we also need to set shmem paddings on the basis of first and last bits ...
-                        //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
-                        if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
-                            // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-                            isAnythingInPadding[0] = true;
-                        };
-                        //bottom
-                        if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
-                            isAnythingInPadding[1] = true;
-                        };
-                    pipeline.consumer_release();
+        //                    cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)]), bigShape, pipeline);
 
 
+        //                }
+        //                //left
+        //                if (localBlockMetaData[16] < UINT32_MAX) {
+        //                    cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)]), thirdRegShape, pipeline);
 
-                ////// pipeline step 3) 
+        //                    //cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+        //                    //    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)])
+        //                    //    , thirdRegShape, pipeline);
+        //                }
+        //            pipeline.producer_commit();
+        //        //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
+        //            pipeline.consumer_wait();
+        //                // first we perform up and down dilatations
+
+        //                mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
+        //                //we also need to set shmem paddings on the basis of first and last bits ...
+        //                //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
+        //                if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
+        //                    // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
+        //                    isAnythingInPadding[0] = true;
+        //                };
+        //                //bottom
+        //                if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
+        //                    isAnythingInPadding[1] = true;
+        //                };
+        //            pipeline.consumer_release();
 
 
 
+        //        ////// pipeline step 3) 
 
-                ///########## last step loading for next iteration if it is present
-                if (i + 1<= worQueueStep[0]) {
-                    pipeline.producer_acquire();
-                    cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
-                        , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
-                    pipeline.producer_commit();
-                }
+
+
+
+        //        ///########## last step loading for next iteration if it is present
+        //        if (i + 1<= worQueueStep[0]) {
+        //            pipeline.producer_acquire();
+        //            cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
+        //                , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
+        //            pipeline.producer_commit();
+        //        }
 
 
 

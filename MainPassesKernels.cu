@@ -270,30 +270,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
     //}
 }
 
-/*
-becouse we need a lot of the additional memory spaces to minimize memory consumption allocations will be postponed after first kernel run enabling
-*/
-#pragma once
-template <typename ZZR>
-inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, void* resultListPointer) {
-    //copy on cpu
-    copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
-    //read an modify
-    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
-    //7)global FP count; 8)global FN count
-    unsigned int fpPlusFn = cpuArgs.metaData.minMaxes.arrP[0][0][7] + cpuArgs.metaData.minMaxes.arrP[0][0][8];
 
-    size_t size = sizeof(uint16_t) * 5 * fpPlusFn + 1;
-    cudaMallocAsync(&resultListPointer, size, 0);
-    gpuArgs.metaData.resultList = resultListPointer;
-
-
-    // cudaFreeAsync(gpuArgs.metaData.resultList, 0);
-
-     //cudaFree(resultListPointer);
-
-
-};
 
 
 
@@ -426,7 +403,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
 
 
 
-        grid.sync();
+   //     grid.sync();
 
         //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
       /// /////////////// loading work queue for padding dilatations
@@ -447,7 +424,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
 
 
 
-        grid.sync();
+   //     grid.sync();
         ////////////////////////main metadata pass
            //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
 
@@ -583,7 +560,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     
 
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    //cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    mainPassKernel << < blockForMainPass, dim3(32, warpsNumbForMainPass) >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
+
 
 
         checkCuda(cudaDeviceSynchronize(), "a6");

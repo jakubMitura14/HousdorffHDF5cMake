@@ -61,99 +61,99 @@ const H5std_string DATASET_NAME("onlyLungs");
 //const int    NZ = 3;
 //const int    RANK_OUT = 3;
 
-
-
-__device__ void computeA(uint32_t* global_out, uint32_t const* shared_in) {
-    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-        
-     //   printf("  ***  ");
-       global_out[linIdexMeta] = shared_in[linIdexMeta] +1;   }
-
-};
-
-__device__ void computeB(uint32_t* global_out, uint32_t const* shared_in) {
-    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-
-        //   printf("  ***  ");
-        global_out[linIdexMeta] = shared_in[linIdexMeta] + 2;
-    }
-
-};
-
-__device__ void computeC(uint32_t* global_out, uint32_t const* shared_in) {
-    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-
-        //   printf("  ***  ");
-        global_out[linIdexMeta] = shared_in[linIdexMeta] + 3;
-    }
-
-};
-
-
-__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA,  uint32_t* global_inB,  uint32_t* global_inC) {
-    auto grid = cooperative_groups::this_grid();
-    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
-    constexpr size_t stages_count = 2; // Pipeline with two stages
-   
-                                       
-    bool isBlockFull = true;// usefull to establish do we have block completely filled and no more dilatations possible
-    /*
-    * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
-    main shared memory spaces
-    0-1023 : sourceShmem
-    1024-2047 : resShmem
-    2048-3071 : first register space
-    3072-4095 : second register space
-    4096-4468 (372 length) : place for local work queue in dilatation kernels
-    */
-    __shared__ uint32_t shmem[100];
-    // holding data about paddings 
-
-
-    // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
-    __shared__ bool isAnythingInPadding[6];
-
-    __shared__ unsigned int localBlockMetaData[19];
-
-
-   cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
-
-    size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each
-
-    // Initialize first pipeline stage by submitting a `memcpy_async` to fetch a whole batch for the block 
-
-
-   // cuda::memcpy_async(block, &shmem[0], &global_in[0], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
-    //pipeline.producer_commit();
-
-    // get first data into pipeline so from global in to first half in shmem
-    pipeline.producer_acquire();
-    cuda::memcpy_async(block, &shmem[0], &global_inA[0], cuda::aligned_size_t<4>(sizeof(uint32_t) * 32), pipeline);
-    pipeline.producer_commit();
-
-    
-    // loadIntoShmem(pipeline, block, shmem, global_inA,  0, 0, 32);
-
-    // Pipelined copy/compute:
-    for (size_t batch = 1; batch < 3; ++batch) {
-        //here we load data for compute step that will be in next loop iteration
-        pipeline.producer_acquire();
-        cuda::memcpy_async(block, &shmem[(batch & 1) *32], &global_inA[batch*32], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
-        pipeline.producer_commit();
-
-        //so here we wait for previous data load - in case it is fist loop we wait for data that was scheduled before loop started
-        pipeline.consumer_wait();
-        computeA(&global_out[(batch-1)*32] , &shmem[((batch-1) & 1) * 32]);
-        // Collectively release the stage resources
-        pipeline.consumer_release();
-    }
-    // Compute the data fetch by the last iteration
-
-    pipeline.consumer_wait();
-    computeA(&global_out[2 * 32] , &shmem[(2 & 1) * 32]);
-    pipeline.consumer_release();
-
-    }
+//
+//
+//__device__ void computeA(uint32_t* global_out, uint32_t const* shared_in) {
+//    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+//        
+//     //   printf("  ***  ");
+//       global_out[linIdexMeta] = shared_in[linIdexMeta] +1;   }
+//
+//};
+//
+//__device__ void computeB(uint32_t* global_out, uint32_t const* shared_in) {
+//    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+//
+//        //   printf("  ***  ");
+//        global_out[linIdexMeta] = shared_in[linIdexMeta] + 2;
+//    }
+//
+//};
+//
+//__device__ void computeC(uint32_t* global_out, uint32_t const* shared_in) {
+//    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+//
+//        //   printf("  ***  ");
+//        global_out[linIdexMeta] = shared_in[linIdexMeta] + 3;
+//    }
+//
+//};
+//
+//
+//__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA,  uint32_t* global_inB,  uint32_t* global_inC) {
+//    auto grid = cooperative_groups::this_grid();
+//    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
+//    constexpr size_t stages_count = 2; // Pipeline with two stages
+//   
+//                                       
+//    bool isBlockFull = true;// usefull to establish do we have block completely filled and no more dilatations possible
+//    /*
+//    * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
+//    main shared memory spaces
+//    0-1023 : sourceShmem
+//    1024-2047 : resShmem
+//    2048-3071 : first register space
+//    3072-4095 : second register space
+//    4096-4468 (372 length) : place for local work queue in dilatation kernels
+//    */
+//    __shared__ uint32_t shmem[100];
+//    // holding data about paddings 
+//
+//
+//    // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
+//    __shared__ bool isAnythingInPadding[6];
+//
+//    __shared__ unsigned int localBlockMetaData[19];
+//
+//
+//   cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
+//
+//    size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each
+//
+//    // Initialize first pipeline stage by submitting a `memcpy_async` to fetch a whole batch for the block 
+//
+//
+//   // cuda::memcpy_async(block, &shmem[0], &global_in[0], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
+//    //pipeline.producer_commit();
+//
+//    // get first data into pipeline so from global in to first half in shmem
+//    pipeline.producer_acquire();
+//    cuda::memcpy_async(block, &shmem[0], &global_inA[0], cuda::aligned_size_t<4>(sizeof(uint32_t) * 32), pipeline);
+//    pipeline.producer_commit();
+//
+//    
+//    // loadIntoShmem(pipeline, block, shmem, global_inA,  0, 0, 32);
+//
+//    // Pipelined copy/compute:
+//    for (size_t batch = 1; batch < 3; ++batch) {
+//        //here we load data for compute step that will be in next loop iteration
+//        pipeline.producer_acquire();
+//        cuda::memcpy_async(block, &shmem[(batch & 1) *32], &global_inA[batch*32], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
+//        pipeline.producer_commit();
+//
+//        //so here we wait for previous data load - in case it is fist loop we wait for data that was scheduled before loop started
+//        pipeline.consumer_wait();
+//        computeA(&global_out[(batch-1)*32] , &shmem[((batch-1) & 1) * 32]);
+//        // Collectively release the stage resources
+//        pipeline.consumer_release();
+//    }
+//    // Compute the data fetch by the last iteration
+//
+//    pipeline.consumer_wait();
+//    computeA(&global_out[2 * 32] , &shmem[(2 & 1) * 32]);
+//    pipeline.consumer_release();
+//
+//    }
 
 
 
@@ -162,61 +162,67 @@ __global__ void with_staging(uint32_t* global_out, uint32_t* global_inA,  uint32
 
 
 int main(void){
+
+
+
+    testMainPasswes();
+
+
     //creating test data for pipeline concept
-    uint32_t* globalInGPUA;
-    uint32_t* globalInGPUB;
-    uint32_t* globalInGPUC;
+    //uint32_t* globalInGPUA;
+    //uint32_t* globalInGPUB;
+    //uint32_t* globalInGPUC;
 
 
-    uint32_t* globalOutGPU;
-    size_t sizeC = (320 * sizeof(uint32_t));
-    uint32_t* globalInCPUA = (uint32_t*)calloc(320 , sizeof(uint32_t));
-    uint32_t* globalInCPUB = (uint32_t*)calloc(320 , sizeof(uint32_t));
-    uint32_t* globalInCPUC = (uint32_t*)calloc(320 , sizeof(uint32_t));
+    //uint32_t* globalOutGPU;
+    //size_t sizeC = (320 * sizeof(uint32_t));
+    //uint32_t* globalInCPUA = (uint32_t*)calloc(320 , sizeof(uint32_t));
+    //uint32_t* globalInCPUB = (uint32_t*)calloc(320 , sizeof(uint32_t));
+    //uint32_t* globalInCPUC = (uint32_t*)calloc(320 , sizeof(uint32_t));
 
-    //populating to ones
-    for (int i = 0; i < 96; i++) {
-        globalInCPUA[i] = 10;
-    };
+    ////populating to ones
+    //for (int i = 0; i < 96; i++) {
+    //    globalInCPUA[i] = 10;
+    //};
 
-    //populating to ones
-    for (int i = 0; i < 96; i++) {
-        globalInCPUB[i] = 100;
-    };
-
-
-    //populating to ones
-    for (int i = 0; i < 96; i++) {
-        globalInCPUC[i] = 1000;
-    };
-
-    uint32_t* globalOUTCPU = (uint32_t*)calloc(320, sizeof(uint32_t));
+    ////populating to ones
+    //for (int i = 0; i < 96; i++) {
+    //    globalInCPUB[i] = 100;
+    //};
 
 
-    //cudaMallocAsync(&mainArr, sizeB, 0);
-    cudaMalloc(&globalInGPUA, sizeC);
-    cudaMemcpy(globalInGPUA, globalInCPUA, sizeC, cudaMemcpyHostToDevice);
+    ////populating to ones
+    //for (int i = 0; i < 96; i++) {
+    //    globalInCPUC[i] = 1000;
+    //};
 
-    cudaMalloc(&globalInGPUB, sizeC);
-    cudaMemcpy(globalInGPUB, globalInCPUB, sizeC, cudaMemcpyHostToDevice);
-
-    cudaMalloc(&globalInGPUC, sizeC);
-    cudaMemcpy(globalInGPUC, globalInCPUC, sizeC, cudaMemcpyHostToDevice);
+    //uint32_t* globalOUTCPU = (uint32_t*)calloc(320, sizeof(uint32_t));
 
 
-    cudaMalloc(&globalOutGPU, sizeC);
-    cudaMemcpy(globalOutGPU, globalOUTCPU, sizeC, cudaMemcpyHostToDevice);
+    ////cudaMallocAsync(&mainArr, sizeB, 0);
+    //cudaMalloc(&globalInGPUA, sizeC);
+    //cudaMemcpy(globalInGPUA, globalInCPUA, sizeC, cudaMemcpyHostToDevice);
 
-    with_staging << <1,32 >> > (globalOutGPU, globalInGPUA, globalInGPUB, globalInGPUC);
+    //cudaMalloc(&globalInGPUB, sizeC);
+    //cudaMemcpy(globalInGPUB, globalInCPUB, sizeC, cudaMemcpyHostToDevice);
+
+    //cudaMalloc(&globalInGPUC, sizeC);
+    //cudaMemcpy(globalInGPUC, globalInCPUC, sizeC, cudaMemcpyHostToDevice);
 
 
-    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-    
-    cudaMemcpy(globalOUTCPU, globalOutGPU, sizeC, cudaMemcpyDeviceToHost);
+    //cudaMalloc(&globalOutGPU, sizeC);
+    //cudaMemcpy(globalOutGPU, globalOUTCPU, sizeC, cudaMemcpyHostToDevice);
 
-    for (int i = 0; i < 96; i++) {
-       printf("val %d in %d \n", globalOUTCPU[i],i);
-    };
+    //with_staging << <1,32 >> > (globalOutGPU, globalInGPUA, globalInGPUB, globalInGPUC);
+
+
+    //checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
+    //
+    //cudaMemcpy(globalOUTCPU, globalOutGPU, sizeC, cudaMemcpyDeviceToHost);
+
+    //for (int i = 0; i < 96; i++) {
+    //   printf("val %d in %d \n", globalOUTCPU[i],i);
+    //};
 
 
     //workqueue
