@@ -102,7 +102,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //cudaMallocAsync(&mainArr, sizeB, 0);
     cudaMallocAsync(&mainArr, sizeB, 0);
     cudaMemcpy(mainArr, mainArrCPU, sizeB, cudaMemcpyHostToDevice);
-
+    free(mainArrCPU);
     //workqueue
 
     size_t sizeC = (totalMetaLength * sizeof(uint32_t));

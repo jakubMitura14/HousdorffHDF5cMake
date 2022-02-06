@@ -538,11 +538,31 @@ inline __device__ void updateGlobalCountersAndClear(ForBoolKernelArgs<TXTJIOI> f
     //};
 
 }
+/*
+calculate index in main shmem where array that is source for this dilatation round is present
+*/
+inline __device__ size_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint32_t iterationNumb[1], uint16_t i){
+    return  metaData.mainArrXLength * (1 + (1 - ((mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))) + ((1 + (iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
+        + (mainShmem[startOfLocalWorkQ + i] - (UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))) * metaData.mainArrSectionLength   ;// offset depending on linear index of metadata block of intrest
+
+}
+
+
+/*
+calculate index in main shmem where array that is source for this dilatation round is present in the neighboutring block ...
+*/
+inline __device__ size_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint32_t iterationNumb[1], uint32_t isGold[1], uint32_t currLinIndM[1], uint32_t localBlockMetaData[19],  size_t inMetaIndex) {
+    return  metaData.mainArrXLength * (1 + (1 - isGold[1]) + ((1 + (iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
+        + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength;// offset depending on linear index of metadata block of intrest
+
+}
 
 
 
 
-///////////////////////////////// bigger functions
+///////////////////////////////// new functions
 
 
 

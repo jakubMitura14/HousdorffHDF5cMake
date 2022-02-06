@@ -24,3 +24,26 @@ inline __device__ bool isToBeExecutedOnActive(coalesced_group group, int numb, i
 
 
 }
+
+
+/*
+copy asynchronously into shared memopry using pipeline interface - works only for uint32_t
+pipeline: pipeline object
+block: thread block in cooperative groups definition
+mainShmem : shared memory to which we load data
+globalIn : global memory from which we take data
+alignSize: defines what is the smallest aligned byte lenghth - for best performance should be 128 so for example 32 uint32_t
+shmemStart : where in shared memory we have starting point for our load
+globalStart : where in global memory we start load
+length : how many uint32_t we want to copy from global to shmem
+*/
+//#pragma once
+//inline __device__ void  loadIntoShmem(cuda::pipeline<cuda::thread_scope_thread> pipeline, thread_block block,
+//                                        uint32_t* mainShmem, uint32_t* globalIn 
+//                                   ,int shmemStart, int globalStart, int length ) {
+//    
+//    pipeline.producer_acquire();
+//    cuda::memcpy_async(block, &mainShmem[shmemStart], &globalIn[globalStart], cuda::aligned_size_t<4>(sizeof(uint32_t) * length), pipeline);
+//    pipeline.producer_commit();
+//  
+//}

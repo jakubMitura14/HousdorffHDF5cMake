@@ -296,6 +296,179 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 };
 
 
+
+template <typename TKKI>
+inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* mainArr, MetaDataGPU metaData
+    , unsigned int* minMaxes, uint32_t* workQueue
+    , uint32_t* resultListPointerMeta, uint16_t* resultListPointerLocal, uint16_t* resultListPointerIterNumb) {
+
+
+    thread_block cta = this_thread_block();
+    thread_block_tile<32> tile = tiled_partition<32>(cta);
+    grid_group grid = cooperative_groups::this_grid();
+
+
+    /*
+    * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
+    main shared memory spaces
+    0-1023 : sourceShmem
+    1024-2047 : resShmem
+    2048-3071 : first register space
+    3072-4095 : second register space
+    4096-  4127: small 32 length resgister 3 space
+    4128-4500 (372 length) : place for local work queue in dilatation kernels
+    */
+    __shared__ uint32_t mainShmem[lengthOfMainShmem];
+    // holding data about paddings 
+
+
+    // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
+    __shared__ bool isAnythingInPadding[6];
+
+    __shared__ bool isBlockFull[1];
+    //variables needed for all threads
+    __shared__ uint32_t iterationNumb[1];
+    __shared__ unsigned int globalWorkQueueOffset[1];
+    __shared__ unsigned int globalWorkQueueCounter[1];
+    __shared__ unsigned int localWorkQueueCounter[1];
+    // keeping data wheather gold or segmentation pass should continue - on the basis of global counters
+
+    __shared__ unsigned int localTotalLenthOfWorkQueue[1];
+    //counters for per block number of results added in this iteration
+    __shared__ unsigned int localFpConter[1];
+    __shared__ unsigned int localFnConter[1];
+
+    __shared__ unsigned int blockFpConter[1];
+    __shared__ unsigned int blockFnConter[1];
+
+    //result list offset - needed to know where to write a result in a result list
+    __shared__ unsigned int resultfpOffset[1];
+    __shared__ unsigned int resultfnOffset[1];
+
+    __shared__ unsigned int worQueueStep[1];
+    __shared__ uint32_t isGold[1];
+    __shared__ uint32_t currLinIndM[1];
+
+    /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
+    0 : global FP count;
+    1 : global FN count;
+    2 : workQueueCounter
+    3 : resultFP globalCounter
+    4 : resultFn globalCounter
+    */
+    __shared__ unsigned int localMinMaxes[5];
+
+    /* will be used to store all of block metadata
+  nothing at  0 index
+ 1 :fpCount
+ 2 :fnCount
+ 3 :fpCounter
+ 4 :fnCounter
+ 5 :fpOffset
+ 6 :fnOffset
+ 7 :isActiveGold
+ 8 :isFullGold
+ 9 :isActiveSegm
+ 10 :isFullSegm
+ 11 :isToBeActivatedGold
+ 12 :isToBeActivatedSegm
+ 12 :isToBeActivatedSegm
+//now linear indexes of the blocks in all sides - if there is no block in given direction it will equal UINT32_MAX
+ 13 : top
+ 14 : bottom
+ 15 : left
+ 16 : right
+ 17 : anterior
+ 18 : posterior
+    */
+    __shared__ uint32_t localBlockMetaData[19];
+
+    /////used mainly in meta passes
+
+    __shared__ unsigned int fpFnLocCounter[1];
+    __shared__ bool isGoldPassToContinue[1];
+    __shared__ bool isSegmPassToContinue[1];
+
+
+
+
+
+    //initializations and loading    
+    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) { iterationNumb[0] = -1; };
+    if (tile.thread_rank() == 11 && tile.meta_group_rank() == 0) {
+        isGoldPassToContinue[0] = true;
+    };
+    if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
+        isSegmPassToContinue[0] = true;
+    };
+
+    //here we caclulate the offset for given block depending on length of the workqueue and number of the  available blocks in a grid
+    // - this will give us number of work queue items per block - we will calculate offset on the basis of the block number
+
+
+
+
+
+    //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
+
+        mainDilatation(false, fbArgs, mainArr, metaData, minMaxes, workQueue, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb,
+            cta, tile, grid, mainShmem
+            , isAnythingInPadding, isBlockFull, iterationNumb,globalWorkQueueOffset,
+            globalWorkQueueCounter, localWorkQueueCounter,localTotalLenthOfWorkQueue,localFpConter,
+            localFnConter, blockFpConter,blockFnConter, resultfpOffset,
+             resultfnOffset, worQueueStep,isGold, currLinIndM,localMinMaxes
+            ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue);
+
+
+
+
+
+
+
+
+        grid.sync();
+
+        //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+      /// /////////////// loading work queue for padding dilatations
+      //metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
+      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+      //        (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
+      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+      //        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+      //        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+      //        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+      //        , mainArr, metaData, minMaxes, workQueue);
+       //////////// padding dilatations
+
+
+
+
+
+
+        grid.sync();
+        ////////////////////////main metadata pass
+           //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+
+        //metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+        //         && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+        //         (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+        //             && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+        //         , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+        //         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+        //         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+        //         , mainArr, metaData, minMaxes, workQueue);
+        // 
+
+  //  }// end while
+
+    //setting global iteration number to local one 
+
+}
+
+
+
 #pragma once
 extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
@@ -336,6 +509,18 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         0);
     int theadsForFirstMetaPass = blockSize ;
     int blockForFirstMetaPass = minGridSize;
+    //for main pass kernel
+    cudaOccupancyMaxPotentialBlockSize(
+        &minGridSize,
+        &blockSize,
+        (void*)mainPassKernel<int>,
+        0);
+    int warpsNumbForMainPass = blockSize / 32;
+    int blockForMainPass = minGridSize;
+
+
+
+
 
 
 
@@ -371,7 +556,6 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a1");
 
-    void* kernel_args[] = { &fbArgs };
 
         getMinMaxes << <blockSizeForMinMax, dim3(32,warpsNumbForMinMax) >> > (fbArgs, minMaxes);
        
@@ -395,6 +579,14 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer);
 
     checkCuda(cudaDeviceSynchronize(), "a5");
+    void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
+
+    
+
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+
+
+        checkCuda(cudaDeviceSynchronize(), "a6");
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);

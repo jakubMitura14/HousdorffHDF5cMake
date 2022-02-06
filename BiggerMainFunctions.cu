@@ -68,18 +68,14 @@ inline __device__ void loadAndDilatateAndSave(ForBoolKernelArgs<TXTOIO> fbArgs, 
     /// ///////////////// dilatations
     // first we perform up and down dilatations
     resShared[threadIdx.x][threadIdx.y] = bitDilatate(sourceShared[threadIdx.x][threadIdx.y]);
-
     //we also need to set shmem paddings on the basis of first and last bits ...
-
     //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
     if (isBitAt(sourceShared[threadIdx.x][threadIdx.y], 0)) {
         // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
         isAnythingInPadding[0] = true;
     };
-    //shmemPaddingsTopBottom[threadIdx.x][threadIdx.y][0]=true; };
-//bottom
+    //bottom
     if (isBitAt(sourceShared[threadIdx.x][threadIdx.y], (fbArgs.dbZLength - 1))) {
-        //shmemPaddingsTopBottom[threadIdx.x][threadIdx.y][1] = true;
         isAnythingInPadding[1] = true;
     };
     //now we will  additionally get bottom bit of block above and top of block below given they exist 
