@@ -31,6 +31,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     uint32_t isGold[1], uint32_t currLinIndM[1], unsigned int localMinMaxes[5]
     , uint32_t localBlockMetaData[19], unsigned int fpFnLocCounter[1]
     , bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]
+    , uint32_t* origArrs, uint16_t* metaDataArr
 ) {
     auto pipeline = cuda::make_pipeline();
     auto bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (metaData.mainArrXLength));
@@ -91,8 +92,13 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         // we are preloading to the pipeline block metaData
         ////##### pipeline Step 0
         pipeline.producer_acquire();
-        cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ]- UINT16_MAX*(mainShmem[startOfLocalWorkQ]>= UINT16_MAX))* metaData.mainArrSectionLength + metaData.metaDataOffset])
+
+        cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&metaDataArr[(mainShmem[startOfLocalWorkQ] - UINT16_MAX * (mainShmem[startOfLocalWorkQ] >= UINT16_MAX)) * metaData.metaDataSectionLength])
             , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
+
+        //cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ] - UINT16_MAX * (mainShmem[startOfLocalWorkQ] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
+        //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
+
         pipeline.producer_commit();
         
         for (uint16_t i = 0; i < worQueueStep[0]; i += 1) {

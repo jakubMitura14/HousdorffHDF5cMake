@@ -27,11 +27,11 @@ offsetMetadataArr- arrays from metadata holding data about result list offsets i
 __device__ inline void addToQueue( uint16_t linIdexMeta, uint8_t isGold
     , unsigned int fpFnLocCounter[1], uint32_t localWorkQueue[1600], uint32_t localOffsetQueue[1600], unsigned int localWorkQueueCounter[1]
     , uint8_t countIndexNumb, uint8_t isActiveIndexNumb, uint8_t offsetIndexNumb
-    , uint32_t* mainArr, MetaDataGPU metaData, unsigned int* minMaxes,uint32_t* workQueue) {
+    , uint16_t* metaDataArr, MetaDataGPU metaData, unsigned int* minMaxes,uint32_t* workQueue) {
 
-    unsigned int count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + countIndexNumb];
+    unsigned int count = metaDataArr[linIdexMeta * metaData.metaDataSectionLength + countIndexNumb];
         //given fp is non zero we need to  add this to local queue
-        if (mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + isActiveIndexNumb]==1) {
+        if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + isActiveIndexNumb]==1) {
 
            // printf("in first meta pass linIdexMeta %d isGold %d \n  ", linIdexMeta, isGold);
 
@@ -48,7 +48,7 @@ __device__ inline void addToQueue( uint16_t linIdexMeta, uint8_t isGold
                 //workQueue
                 workQueue[old] = uint32_t(linIdexMeta + (UINT16_MAX * isGold));
                 //and offset 
-                mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + offsetIndexNumb] = atomicAdd(&(minMaxes[12]), count);
+                metaDataArr[linIdexMeta * metaData.metaDataSectionLength + offsetIndexNumb] = atomicAdd(&(minMaxes[12]), count);
             };
      }
 }
@@ -57,7 +57,8 @@ __device__ inline void addToQueue( uint16_t linIdexMeta, uint8_t isGold
 #pragma once
 template <typename PYO>
 __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
-    , uint32_t* mainArr, MetaDataGPU metaData, unsigned int* minMaxes, uint32_t* workQueue) {
+    , uint32_t* mainArr, MetaDataGPU metaData, unsigned int* minMaxes, uint32_t* workQueue
+    , uint32_t* origArrs, uint16_t* metaDataArr) {
 
     //////initializations
     thread_block cta = this_thread_block();
@@ -100,12 +101,12 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
         addToQueue( linIdexMeta, 0
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 1, 9, 6
-            , mainArr, metaData, minMaxes, workQueue);
+            , metaDataArr, metaData, minMaxes, workQueue);
           //segmPass  
         addToQueue( linIdexMeta, 1
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 2, 7, 5
-            , mainArr, metaData, minMaxes, workQueue);
+            , metaDataArr, metaData, minMaxes, workQueue);
     
         
         
@@ -131,29 +132,19 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (localWorkQueue), (sizeof(uint32_t) * localWorkQueueCounter[0]));
     //setting offsets
     for (uint16_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
-       // 
-       //// printf("addTo %d global Queue xMeta [%d] yMeta [%d] zMeta [%d] isGold %d \n", globalWorkQueueCounter[0] + i, localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2], localWorkAndOffsetQueue[i][3]);
-       // //TODO() instead of copying memory manually better would be to use mempcyasync ...
-       //// printf("\n saving to local work queue xMeta %d  yMeta %d  zMeta %d  isGold %d   ", localWorkAndOffsetQueue[i][0], localWorkAndOffsetQueue[i][1], localWorkAndOffsetQueue[i][2], localWorkAndOffsetQueue[i][3]);
 
-       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 0, 0)[globalWorkQueueCounter[0]+i] = localWorkAndOffsetQueue[i][0];
-       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 1, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][1];
-       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 2, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][2];
-       // getTensorRow<uint16_t>(tensorslice, fbArgs.metaData.workQueue, fbArgs.metaData.workQueue.Ny, 3, 0)[globalWorkQueueCounter[0] + i] = localWorkAndOffsetQueue[i][3];
-       // //and offset 
-        
         //FP pass
         if (localWorkQueue[i]>= UINT16_MAX) {
-            mainArr[(localWorkQueue[i]- UINT16_MAX) * metaData.mainArrSectionLength + metaData.metaDataOffset + 5] = localOffsetQueue[i] + globalOffsetForBlock[0];
+            metaDataArr[(localWorkQueue[i] - UINT16_MAX) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
         }
         //FN pass
         else {
-            mainArr[(localWorkQueue[i]) * metaData.mainArrSectionLength + metaData.metaDataOffset + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
-
+            metaDataArr[(localWorkQueue[i]) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
         };
 
         sync(cta);
 
+        
     }
 
            

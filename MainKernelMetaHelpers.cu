@@ -34,7 +34,7 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 #pragma once
 template <typename ZZR>
 inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs
-            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t* origArr, uint16_t* metaDataArr
+            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr, uint16_t*& metaDataArr
 ) {
     ////reduced arrays
 
@@ -100,15 +100,12 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
 
     cudaMallocAsync(&mainArr, sizeB, 0);
     size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
-
-    uint32_t* origArr, uint16_t* metaDataArr
     cudaMallocAsync(&origArr, sizeorigArr, 0);
-    size_t sizeorigArr = totalMetaLength * (20) * sizeof(uint16_t);
+    size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint16_t);
+    cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
 
-    metaDataArr
-
-    cudaMallocAsync(&mainArr, sizeB, 0);
     
+ 
     
     
     //cudaMemcpy(mainArr, mainArrCPU, sizeB, cudaMemcpyHostToDevice);
@@ -119,7 +116,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
 
     size_t sizeC = (totalMetaLength * sizeof(uint32_t));
    //cudaMallocAsync(&workQueue, size, 0);
-   cudaMalloc(&workQueue, size);
+    cudaMallocAsync(&workQueue, size,0);
 
    return metaData;
 };

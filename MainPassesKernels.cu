@@ -277,7 +277,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 template <typename TKKI>
 inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* mainArr, MetaDataGPU metaData
     , unsigned int* minMaxes, uint32_t* workQueue
-    , uint32_t* resultListPointerMeta, uint16_t* resultListPointerLocal, uint16_t* resultListPointerIterNumb) {
+    , uint32_t* resultListPointerMeta, uint16_t* resultListPointerLocal, uint16_t* resultListPointerIterNumb, uint32_t* origArrs, uint16_t* metaDataArr) {
 
 
     thread_block cta = this_thread_block();
@@ -394,11 +394,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
             globalWorkQueueCounter, localWorkQueueCounter,localTotalLenthOfWorkQueue,localFpConter,
             localFnConter, blockFpConter,blockFnConter, resultfpOffset,
              resultfnOffset, worQueueStep,isGold, currLinIndM,localMinMaxes
-            ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue);
+            ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue, origArrs, metaDataArr);
 
 
 
-
+        
 
 
 
@@ -416,7 +416,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
       //        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
       //        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
       //        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-      //        , mainArr, metaData, minMaxes, workQueue);
+      //        , mainArr, metaData, minMaxes, workQueue,metaDataArr);
        //////////// padding dilatations
 
 
@@ -435,7 +435,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
         //         , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
         //         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
         //         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-        //         , mainArr, metaData, minMaxes, workQueue);
+        //         , mainArr, metaData, minMaxes, workQueue,metaDataArr);
         // 
 
   //  }// end while
@@ -549,32 +549,43 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, mainArrPointer, metaData);
+        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, mainArrPointer, metaData, origArrsPointer, metaDataArrPointer);
+        //uint32_t* origArrs, uint16_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
 
-    checkCuda(cudaDeviceSynchronize(), "a3");
+    //checkCuda(cudaDeviceSynchronize(), "a3");
 
 
 
         allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
 
-    checkCuda(cudaDeviceSynchronize(), "a4");
+    //checkCuda(cudaDeviceSynchronize(), "a4");
 
-        firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer);
+        firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
-    checkCuda(cudaDeviceSynchronize(), "a5");
-    void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
+    //checkCuda(cudaDeviceSynchronize(), "a5");
+    //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
 
-    
+    //
 
-    //cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
-    mainPassKernel << < blockForMainPass, dim3(32, warpsNumbForMainPass) >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
+    ////cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    mainPassKernel << < blockForMainPass, dim3(32, warpsNumbForMainPass) >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, metaDataArrPointer);
 
 
 
-        checkCuda(cudaDeviceSynchronize(), "a6");
+    //    checkCuda(cudaDeviceSynchronize(), "a6");
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
+
+
+
+
+
+
+
+
+
+
 
   // // for (int i = 0; i < 205; i++) {
   //  while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
@@ -675,8 +686,8 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFreeAsync(resultListPointerIterNumb,0);
     cudaFreeAsync(mainArrPointer, 0);
     cudaFreeAsync(workQueuePointer, 0);
-
-
+    cudaFreeAsync(origArrsPointer, 0);
+    cudaFreeAsync(metaDataArrPointer, 0);
 
 
  /*   cudaFree(reducedGold.arrPStr.ptr);

@@ -43,7 +43,7 @@ inline __global__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddi
     , unsigned int localWorkQueueCounter[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localMinMaxes[5]
     , unsigned int fpFnLocCounter[1], bool isGoldPassToContinue[1], bool isSegmPassToContinue[1], thread_block cta, thread_block_tile<32> tile
     , uint32_t* mainArr, MetaDataGPU metaData
-    , unsigned int* minMaxes, uint32_t* workQueue
+    , unsigned int* minMaxes, uint32_t* workQueue, uint16_t* metaDataArr
 
 ) {
   // preparation loads
@@ -88,9 +88,9 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
         if (isPaddingPass) {
             //setting to be activated to 0 
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11] = 0;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11] = 0;
             //setting active to 1
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7] = 1;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] = 1;
         }
     }
     //segm pass
@@ -105,9 +105,9 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
         if (isPaddingPass) {
             //setting to be activated to 0 
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12] = 0;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] = 0;
             //setting active to 1
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9] = 1;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] = 1;
         }
     }
 

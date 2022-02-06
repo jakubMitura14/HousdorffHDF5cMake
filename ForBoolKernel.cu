@@ -44,14 +44,14 @@ setting the linear index of metadata blocks that are in given direction if there
 */
 template <typename TCC>
 __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
-    , uint16_t linIdexMeta , MetaDataGPU metaData, uint32_t* mainArr) {
+    , uint16_t linIdexMeta , MetaDataGPU metaData, uint16_t* metaDataArr) {
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + inArrIndex] = (linIdexMeta + toAdd);
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + inArrIndex] = (linIdexMeta + toAdd);
         }
         else {
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + inArrIndex] = UINT32_MAX;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + inArrIndex] = UINT32_MAX;
         }
     };
 }
@@ -65,7 +65,8 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 */
 #pragma once
 template <typename TYU>
-__device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, MetaDataGPU metaData) {
+__device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
+    , MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
 
     ////////////some initializations
     bool goldBool = false;
@@ -177,14 +178,14 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
         //cooperative_groups::memcpy_async(cta, (mainArr), (sharedForGold), (sizeof(uint32_t) *2) );
        
         
-       cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-       cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+       cooperative_groups::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+       cooperative_groups::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+       
+        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength ]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
+        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*1]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
        
         cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*2]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
         cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*3]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-       
-        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*4]), (sharedForGold), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
-        cooperative_groups::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*5]), (sharedForSegm), (sizeof(uint32_t) * blockDim.x * blockDim.y) );
        
 
         //// no need of synchronizations we are exportin data here only 
@@ -217,7 +218,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
 
             };
             fpSFnS[0] += sharedForGold[33];// will be needed later for global set
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 1] = sharedForGold[33];
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 1] = sharedForGold[33];
 
            // getTensorRow<unsigned int>(tensorslice, metaData.fpCount, metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
         }
@@ -232,7 +233,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
             };
             fpSFnS[1] += sharedForSegm[33];// will be needed later for global set
             //setting metadata
-            mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 2] = sharedForSegm[33];
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 2] = sharedForSegm[33];
 
            // getTensorRow<unsigned int>(tensorslice, metaData.fnCount, metaData.fnCount.Ny, yMeta, zMeta)[xMeta] = sharedForSegm[1][0];
 
@@ -241,13 +242,13 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
         //marking as active 
 //FP pass
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7] = 1;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] = 1;
           //  printf("in bool kernel mark as sctive linIdexMeta %d in index  %d \n  ", linIdexMeta, isGold);
 
         };
         //FN pass
         if ((threadIdx.x == 1) && (threadIdx.y == 0) && isNotEmpty && anyInSegm[0]) {
-            mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9] = 1;
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] = 1;
 
         };
 
@@ -255,14 +256,14 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr, M
         //after we streamed over all block we save also information about indicies of the surrounding blocks - given they are in range if not UINT32_MAX will be saved 
         //top
 
-        setNeighbourBlocks(fbArgs, 3, 13, (zMeta > 0), (-(metaData.metaXLength * metaData.MetaYLength)), linIdexMeta, metaData,mainArr);//top
-        setNeighbourBlocks(fbArgs, 4, 14, (zMeta < (metaData.MetaZLength - 1)), (metaData.metaXLength* metaData.MetaYLength), linIdexMeta, metaData,mainArr);//bottom
+        setNeighbourBlocks(fbArgs, 3, 13, (zMeta > 0), (-(metaData.metaXLength * metaData.MetaYLength)), linIdexMeta, metaData, metaDataArr);//top
+        setNeighbourBlocks(fbArgs, 4, 14, (zMeta < (metaData.MetaZLength - 1)), (metaData.metaXLength* metaData.MetaYLength), linIdexMeta, metaData, metaDataArr);//bottom
 
-        setNeighbourBlocks(fbArgs, 6 ,15, (xMeta > 0), (-1), linIdexMeta, metaData,mainArr);//left
-        setNeighbourBlocks(fbArgs, 7, 16, (xMeta < (metaData.metaXLength - 1)), 1, linIdexMeta, metaData,mainArr);//right
+        setNeighbourBlocks(fbArgs, 6 ,15, (xMeta > 0), (-1), linIdexMeta, metaData, metaDataArr);//left
+        setNeighbourBlocks(fbArgs, 7, 16, (xMeta < (metaData.metaXLength - 1)), 1, linIdexMeta, metaData, metaDataArr);//right
 
-        setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData,mainArr);//anterior
-        setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData,mainArr);//posterior
+        setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData, metaDataArr);//anterior
+        setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData, metaDataArr);//posterior
 
 
         tile.sync(); // just to reduce the warp divergence
@@ -298,7 +299,7 @@ collecting all needed functions for GPU execution to prepare data from calculati
 */
 #pragma once
 template <typename TYO>
-__global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs, uint32_t* mainArr, MetaDataGPU metaData) {
-    metaDataIter(fbArgs, mainArr, metaData);
+__global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
+    metaDataIter(fbArgs, mainArr, metaData, origArrs, metaDataArr);
 }
 
