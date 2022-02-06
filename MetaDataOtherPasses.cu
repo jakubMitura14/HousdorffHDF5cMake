@@ -38,7 +38,9 @@ https://stackoverflow.com/questions/13548172/bitshifts-to-obtain-remainder
 
 #pragma once
 template <typename TKKI>
-inline __global__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddingPass, bool predicateA, bool predicateB
+inline __global__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddingPass
+    , size_t predicateAa, size_t predicateAb, size_t predicateAc
+    , size_t predicateBa, size_t predicateBb, size_t predicateBc
     ,uint32_t mainShmem[4468], unsigned int globalWorkQueueOffset[1], unsigned int globalWorkQueueCounter[1]
     , unsigned int localWorkQueueCounter[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localMinMaxes[5]
     , unsigned int fpFnLocCounter[1], bool isGoldPassToContinue[1], bool isSegmPassToContinue[1], thread_block cta, thread_block_tile<32> tile
@@ -77,7 +79,14 @@ sync(cta);
 //iterations 
 for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
     //goldpass
-    if (predicateA) {
+
+    , size_t predicateAa, size_t predicateAb, size_t predicateAc
+        , size_t predicateBa, size_t predicateBb, size_t predicateBc
+
+    if (isGoldPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAa]
+        && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAb]
+        && ((isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAc) ]) {
+
         unsigned int old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
             mainShmem[old] = uint32_t(linIdexMeta + UINT16_MAX);
@@ -94,7 +103,10 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
     }
     //segm pass
-    if (predicateB) {
+    if (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBa]
+        && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBb]
+        && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBc)] ) {
+
         unsigned int old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
             mainShmem[old] = uint32_t(linIdexMeta);

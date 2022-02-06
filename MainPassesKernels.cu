@@ -403,20 +403,20 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
 
 
 
-   //     grid.sync();
+        grid.sync();
 
         //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
-      /// /////////////// loading work queue for padding dilatations
-      //metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
-      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
-      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
-      //        (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
-      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
-      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
-      //        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-      //        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-      //        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-      //        , mainArr, metaData, minMaxes, workQueue,metaDataArr);
+       /////////////// loading work queue for padding dilatations
+      metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
+              && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+              && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+              (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
+                  && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+                  && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+              , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+              , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+              , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+              , mainArr, metaData, minMaxes, workQueue,metaDataArr);
        //////////// padding dilatations
 
 
