@@ -34,7 +34,7 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 #pragma once
 template <typename ZZR>
 inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs
-            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData
+            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t* origArr, uint16_t* metaDataArr
 ) {
     ////reduced arrays
 
@@ -73,10 +73,9 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //allocating needed memory
     // main array
     unsigned int mainArrXLength = cpuArgs.dbXLength * cpuArgs.dbYLength;
-    unsigned int mainArrSectionLength = (mainArrXLength * 6) + 19;
+    unsigned int mainArrSectionLength = (mainArrXLength * 4);
     metaData.mainArrXLength = mainArrXLength;
     metaData.mainArrSectionLength = mainArrSectionLength;
-    metaData.metaDataOffset = (mainArrXLength * 6);
     
     size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
     std::cout <<"totalMetaLength  ";
@@ -97,12 +96,25 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //std::cout << "\n";
 
 
-    uint32_t* mainArrCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+    //uint32_t* mainArrCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
 
-    //cudaMallocAsync(&mainArr, sizeB, 0);
     cudaMallocAsync(&mainArr, sizeB, 0);
-    cudaMemcpy(mainArr, mainArrCPU, sizeB, cudaMemcpyHostToDevice);
-    free(mainArrCPU);
+    size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
+
+    uint32_t* origArr, uint16_t* metaDataArr
+    cudaMallocAsync(&origArr, sizeorigArr, 0);
+    size_t sizeorigArr = totalMetaLength * (20) * sizeof(uint16_t);
+
+    metaDataArr
+
+    cudaMallocAsync(&mainArr, sizeB, 0);
+    
+    
+    
+    //cudaMemcpy(mainArr, mainArrCPU, sizeB, cudaMemcpyHostToDevice);
+    
+    
+    //free(mainArrCPU);
     //workqueue
 
     size_t sizeC = (totalMetaLength * sizeof(uint32_t));

@@ -97,10 +97,12 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         
         for (uint16_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-        //         ///#### pipeline step 1) now we load data for next step (to sourceshmem) and process data loaded in previous step
-        //            pipeline.producer_acquire();
-        //            cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForSourceShmem(metaData, mainShmem, iterationNumb,i )]) , bigShape, pipeline);
-        //            pipeline.producer_commit();
+                 ///#### pipeline step 1) now we load data for next step (to sourceshmem) and process data loaded in previous step
+                    pipeline.producer_acquire();
+
+                    cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForSourceShmem(metaData, mainShmem, iterationNumb,i )]) , bigShape, pipeline);
+                    //cuda::memcpy_async(cta, (&mainShmem[32]), (&mainArr[32]) , bigShape, pipeline);
+                    pipeline.producer_commit();
 
         //        ////compute first we load data about calculated linear index meta and information is it gold iteration ...
         //            pipeline.consumer_wait();

@@ -511,7 +511,11 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     uint32_t* resultListPointerMeta;
     uint16_t* resultListPointerLocal;
     uint16_t* resultListPointerIterNumb;
+    
+    uint32_t* origArrsPointer;
     uint32_t* mainArrPointer;
+    uint16_t* metaDataArrPointer;
+
     uint32_t* workQueuePointer;
     unsigned int* minMaxes;
     size_t size = sizeof(unsigned int) * 20;
@@ -541,13 +545,15 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer,minMaxes, metaData);
+    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer,minMaxes, metaData, origArrsPointer, metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
         boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, mainArrPointer, metaData);
 
     checkCuda(cudaDeviceSynchronize(), "a3");
+
+
 
         allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
 
