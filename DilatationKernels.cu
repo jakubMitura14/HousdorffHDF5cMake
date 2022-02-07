@@ -210,34 +210,60 @@ localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory a
 , threadIdx.y, (fbArgs.dbXLength - 1))// coordinates in new block
 
  ////////#### pipeline step 7) process top block data and load bottom
-    pipeline.producer_acquire();
     if (localBlockMetaData[14]<UINT16_MAX) {
-       cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-        (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,14 )])
-        , bigShape, pipeline);
+        pipeline.producer_acquire();
+           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+            (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,14 )])
+            , bigShape, pipeline);
+        pipeline.producer_commit();
       }
-    pipeline.producer_commit();
-    //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
-        dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, pipeline,13, 
-        , 1// represent a uint32 number that has a bit of intrest in this block set and all others 0 
+//compute
+pipeline.consumer_wait();
+dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, pipeline,localBlockMetaData,13, 
+        , 1// represent a uint32 number that has a bit of intrest in this block set and all others 0 here first bit is set
         , 2147483648
         ,begfirstRegShmem)
+    pipeline.consumer_release();    
  ////////#### pipeline step 8) process bottom block data  - do final operations for a block and load reference data if block is to be validated
+// now we need to establish weather this block should be validated so weahter the counter in metadata is smaller than metadata count
+//load
+if( localBlockMetaData[((1-isGold[0])+1)] //fp for gold and fn count for not gold
+    > localBlockMetaData[((1-isGold[0])+1)]   ){// so count is bigger than counter so we should validate
+//now we load data from referenca arrays 
+    
+
+}else{//if we are not validating we immidiately start loading data for next loop
+    lastLoad(pipeline,cta,worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
+)
+}
+
+//compute bottom block data
+pipeline.consumer_wait();
+
+dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, pipeline,localBlockMetaData,14, 
+        , 2147483648// represent a uint32 number that has a bit of intrest in this block set and all others 0 here last bit is set
+        , 1
+        ,begfirstRegShmem)
+ krowa additionally we need to establish and save information is block full and mark neighbouring blocks as to be activated if it is not a padding pass       
+        we also need to save results of res shmem into dilatation array
+        
+        
+pipeline.consumer_release();    
+ ////////#### pipeline step 9 ) this step exists only  if block is to be validated 
+if( localBlockMetaData[((1-isGold[0])+1)] //fp for gold and fn count for not gold
+    > localBlockMetaData[((1-isGold[0])+1)]   ){// so count is bigger than counter so we should validate
+    lastLoad(pipeline,cta/
+worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData)
+    //here we are establishing weather we have any results if so we save it to global memory
+    
+    
+}
 
 
 
 
 
 
-
-
-               ///########## last step loading for next iteration if it is present
-               if (i + 1<= worQueueStep[0]) {
-                   pipeline.producer_acquire();
-                   cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
-                       , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
-                   pipeline.producer_commit();
-               }
 
 
 
