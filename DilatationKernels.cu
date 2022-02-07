@@ -118,91 +118,126 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                                currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
                            }
                        };
+                      if (tile.thread_rank() <6 && tile.meta_group_rank() == 1) {// this is how it is encoded wheather it is gold or segm block
+                            isAnythingInPadding[0] = false;                       
+                       };
+                       krowa remember to clear is anything in padding
                    pipeline.consumer_release();
 
 
                ////////#### pipeline step 2) 
-               //load for next step - so we load posterior of anterior block and left of block to the right given they exist
+               //load for next step - so we load posterior of anterior block  given it exists
                    //anterior
                    pipeline.producer_acquire();
                        if (localBlockMetaData[17]<UINT16_MAX) {
                            cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
                               (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,17 )])
                               , bigShape, pipeline);
-
-                       }
-                       //left
-                       if (localBlockMetaData[16] < UINT16_MAX) {
-                           cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)]), thirdRegShape, pipeline);
-
-                           cooperative_groups::memcpy_async(cta, (&mainShmem[begThirdRegShmem]),
-                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)])
-                              , thirdRegShape, pipeline);
                        }
                    pipeline.producer_commit();
                //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
                    pipeline.consumer_wait();
-                       // first we perform up and down dilatations
-
+                       // first we perform up and down dilatations inside the block
                        mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
-                       //we also need to set shmem paddings on the basis of first and last bits ...
-                       //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
-                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
-                           // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-                           isAnythingInPadding[0] = true;
-                       };
-                       //bottom
-                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
-                           isAnythingInPadding[1] = true;
-                       };
+
                    pipeline.consumer_release();
 
 
+ ////////#### pipeline step 3) process anterior block data and load posterior
+loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+, metaData,mainArr, //pointers to arrays with data
+//now some variables needed to load data  
+    18 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begSecRegShmem //offset defined in shared memory used to load data into 
+    , bigShape // shape and alignment of data in load - inludes length of data
+//now variables needed for dilatations we dilatate to anterior
+    17 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begfirstRegShmem//offset defined in shared memory used to process  data from 
+,(threadIdx.y == (fbArgs.dbYLength - 1) // defining when our thread is a corner case and need to load data from outside of the block
+, 4,// needed to know wheather block in given direction should be marked as to be activated
+(0), (1)// x and y changes
+, 0, threadIdx.x// coordinates in new block
+
+ ////////#### pipeline step 4) process posterior block data and load right
+loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+, metaData,mainArr, //pointers to arrays with data
+//now some variables needed to load data  
+    16 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begfirstRegShmem //offset defined in shared memory used to load data into 
+    , thirdRegShape // shape and alignment of data in load - inludes length of data
+//now variables needed for dilatations we dilatate to anterior
+    18 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begSecRegShmem//offset defined in shared memory used to process  data from 
+,(threadIdx.y == 0) // defining when our thread is a corner case and need to load data from outside of the block
+, 5,// needed to know wheather block in given direction should be marked as to be activated
+(0), (-1)// x and y changes
+, (fbArgs.dbYLength - 1), threadIdx.x)// coordinates in new block
+
+
+ ////////#### pipeline step 5) process right block data and load left
+loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+, metaData,mainArr, //pointers to arrays with data
+//now some variables needed to load data  
+    15 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begSecRegShmem //offset defined in shared memory used to load data into 
+    , bigShape // shape and alignment of data in load - inludes length of data
+//now variables needed for dilatations we dilatate to anterior
+    16 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begfirstRegShmem//offset defined in shared memory used to process  data from 
+,(threadIdx.x == (fbArgs.dbXLength - 1) // defining when our thread is a corner case and need to load data from outside of the block
+, 3,// needed to know wheather block in given direction should be marked as to be activated
+(1), (0)// x and y changes
+, threadIdx.y, 0// coordinates in new block
+
+
+ ////////#### pipeline step 6) process left block data and load top
+loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+, metaData,mainArr, //pointers to arrays with data
+//now some variables needed to load data  
+    13 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begfirstRegShmem //offset defined in shared memory used to load data into 
+    , bigShape // shape and alignment of data in load - inludes length of data
+//now variables needed for dilatations we dilatate to anterior
+    15 // where is the index describing linear index of the neighbour in direction of intrest
+    ,begSecRegShmem //offset defined in shared memory used to process  data from 
+,(threadIdx.x == 0) // defining when our thread is a corner case and need to load data from outside of the block
+, 2,// needed to know wheather block in given direction should be marked as to be activated
+(-1), (0)// x and y changes
+, threadIdx.y, (fbArgs.dbXLength - 1))// coordinates in new block
+
+ ////////#### pipeline step 7) process top block data and load bottom
+    pipeline.producer_acquire();
+    if (localBlockMetaData[14]<UINT16_MAX) {
+       cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+        (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,14 )])
+        , bigShape, pipeline);
+      }
+    pipeline.producer_commit();
+    //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
+        dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, pipeline,13, 
+        , 1// represent a uint32 number that has a bit of intrest in this block set and all others 0 
+        , 2147483648
+        ,begfirstRegShmem)
+ ////////#### pipeline step 8) process bottom block data  - do final operations for a block and load reference data if block is to be validated
 
 
 
-        ////////#### pipeline step 3) process anterior and right - load left  
-               //load for next step - so we load anterior of posterior block given it exist
-                   //posterior
+
+
+
+
+
+               ///########## last step loading for next iteration if it is present
+               if (i + 1<= worQueueStep[0]) {
                    pipeline.producer_acquire();
-                       if (localBlockMetaData[18]<UINT16_MAX) {
-                           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,18 )]) 
-                              , bigShape, pipeline);
-
-                       }
-                     
+                   cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
+                       , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
                    pipeline.producer_commit();
-               //compute - now we have data in in reg shmems one and 3 we need to perform we loaded d posterior of anterior block and left of block to the right 
-               //now we update anterior of this block and right of this block
-               pipeline.consumer_wait();
-                       // first we perform up and down dilatations
-
-                       mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
-                       //we also need to set shmem paddings on the basis of first and last bits ...
-                       //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
-                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
-                           // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-                           isAnythingInPadding[0] = true;
-                       };
-                       //bottom
-                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
-                           isAnythingInPadding[1] = true;
-                       };
-                   pipeline.consumer_release();
-
-
-
-
-
-
-        //        ///########## last step loading for next iteration if it is present
-        //        if (i + 1<= worQueueStep[0]) {
-        //            pipeline.producer_acquire();
-        //            cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
-        //                , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
-        //            pipeline.producer_commit();
-        //        }
+               }
 
 
 
