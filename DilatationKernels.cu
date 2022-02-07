@@ -94,7 +94,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         pipeline.producer_acquire();
 
         cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&metaDataArr[(mainShmem[startOfLocalWorkQ] - UINT16_MAX * (mainShmem[startOfLocalWorkQ] >= UINT16_MAX)) * metaData.metaDataSectionLength])
-            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
+            , cuda::aligned_size_t<8>(sizeof(uint16_t) * 20), pipeline);
 
         //cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ] - UINT16_MAX * (mainShmem[startOfLocalWorkQ] >= UINT16_MAX)) * metaData.mainArrSectionLength + metaData.metaDataOffset])
         //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
@@ -107,63 +107,91 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     pipeline.producer_acquire();
 
                     cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForSourceShmem(metaData, mainShmem, iterationNumb,i )]) , bigShape, pipeline);
-                    //cuda::memcpy_async(cta, (&mainShmem[32]), (&mainArr[32]) , bigShape, pipeline);
                     pipeline.producer_commit();
 
         //        ////compute first we load data about calculated linear index meta and information is it gold iteration ...
-        //            pipeline.consumer_wait();
-        //                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
-        //                    isGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
-        //                    if (isGold[0]) {
-        //                        //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
-        //                        currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
-        //                    }
-        //                };
-        //            pipeline.consumer_release();
+                   pipeline.consumer_wait();
+                       if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+                           isGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
+                           if (isGold[0]) {
+                               //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
+                               currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
+                           }
+                       };
+                   pipeline.consumer_release();
 
 
-        //        ////////#### pipeline step 2) 
-        //        //load for next step - so we load posterior of anterior block and left of block to the right given they exist
-        //            //anterior
-        //            pipeline.producer_acquire();
-        //                if (localBlockMetaData[17]<UINT32_MAX) {
-        //                    //cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-        //                    //    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,17 )])
-        //                    //    , bigShape, pipeline);
+               ////////#### pipeline step 2) 
+               //load for next step - so we load posterior of anterior block and left of block to the right given they exist
+                   //anterior
+                   pipeline.producer_acquire();
+                       if (localBlockMetaData[17]<UINT16_MAX) {
+                           cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,17 )])
+                              , bigShape, pipeline);
 
-        //                    cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)]), bigShape, pipeline);
+                       }
+                       //left
+                       if (localBlockMetaData[16] < UINT16_MAX) {
+                           cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)]), thirdRegShape, pipeline);
 
+                           cooperative_groups::memcpy_async(cta, (&mainShmem[begThirdRegShmem]),
+                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)])
+                              , thirdRegShape, pipeline);
+                       }
+                   pipeline.producer_commit();
+               //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
+                   pipeline.consumer_wait();
+                       // first we perform up and down dilatations
 
-        //                }
-        //                //left
-        //                if (localBlockMetaData[16] < UINT32_MAX) {
-        //                    cuda::memcpy_async(cta, (&mainShmem[0]), (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)]), thirdRegShape, pipeline);
-
-        //                    //cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-        //                    //    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 16)])
-        //                    //    , thirdRegShape, pipeline);
-        //                }
-        //            pipeline.producer_commit();
-        //        //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
-        //            pipeline.consumer_wait();
-        //                // first we perform up and down dilatations
-
-        //                mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
-        //                //we also need to set shmem paddings on the basis of first and last bits ...
-        //                //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
-        //                if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
-        //                    // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-        //                    isAnythingInPadding[0] = true;
-        //                };
-        //                //bottom
-        //                if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
-        //                    isAnythingInPadding[1] = true;
-        //                };
-        //            pipeline.consumer_release();
+                       mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
+                       //we also need to set shmem paddings on the basis of first and last bits ...
+                       //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
+                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
+                           // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
+                           isAnythingInPadding[0] = true;
+                       };
+                       //bottom
+                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
+                           isAnythingInPadding[1] = true;
+                       };
+                   pipeline.consumer_release();
 
 
 
-        //        ////// pipeline step 3) 
+
+
+        ////////#### pipeline step 3) process anterior and right - load left  
+               //load for next step - so we load anterior of posterior block given it exist
+                   //posterior
+                   pipeline.producer_acquire();
+                       if (localBlockMetaData[18]<UINT16_MAX) {
+                           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,18 )]) 
+                              , bigShape, pipeline);
+
+                       }
+                     
+                   pipeline.producer_commit();
+               //compute - now we have data in in reg shmems one and 3 we need to perform we loaded d posterior of anterior block and left of block to the right 
+               //now we update anterior of this block and right of this block
+               pipeline.consumer_wait();
+                       // first we perform up and down dilatations
+
+                       mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
+                       //we also need to set shmem paddings on the basis of first and last bits ...
+                       //top            0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
+                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], 0)) {
+                           // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
+                           isAnythingInPadding[0] = true;
+                       };
+                       //bottom
+                       if (isBitAt(mainShmem[threadIdx.x + threadIdx.y * 32], (fbArgs.dbZLength - 1))) {
+                           isAnythingInPadding[1] = true;
+                       };
+                   pipeline.consumer_release();
+
+
 
 
 
