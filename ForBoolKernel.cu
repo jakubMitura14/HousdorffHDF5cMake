@@ -44,14 +44,14 @@ setting the linear index of metadata blocks that are in given direction if there
 */
 template <typename TCC>
 __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
-    , uint16_t linIdexMeta , MetaDataGPU metaData, uint16_t* metaDataArr) {
+    , uint16_t linIdexMeta , MetaDataGPU metaData, uint16_t localBlockMetaData[20]) {
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + inArrIndex] = (linIdexMeta + toAdd);
+            localBlockMetaData[inArrIndex] = (linIdexMeta + toAdd);
         }
         else {
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + inArrIndex] = UINT32_MAX;
+            localBlockMetaData[inArrIndex] = UINT32_MAX;
         }
     };
 }
@@ -87,12 +87,15 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
     __shared__ uint32_t sharedForSegm[1024];
     //for storing fp and fn sums to later accumulate it to global values
     __shared__ uint32_t fpSFnS[2];
+    __shared__ uint16_t localBlockMetaData[20];
 
     __shared__ bool anyInGold[1];
     __shared__ bool anyInSegm[1];
     //__shared__ uint32_t reduction_s[32];
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
     __shared__ int minMaxesInShmem[7];
+
+
 
     if ((threadIdx.x == 1) && (threadIdx.y == 1)) { fpSFnS[0] = 0; };
     if ((threadIdx.x == 2) && (threadIdx.y == 1)) { fpSFnS[1] = 0; };
@@ -120,7 +123,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
         anyInGold[0] = false;
         anyInSegm[0] = false;
         //iterating over data block
-
+        sync(cta);
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
             uint16_t x = (xMeta+ metaData.minX)* fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
@@ -168,7 +171,11 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
 
             }
         }
-
+        //reset local metadata
+        if ((threadIdx.x <20) && (threadIdx.y == 0) {
+            localBlockMetaData[threadIdx.x]=0;
+        }
+        
 
     
         isNotEmpty = __syncthreads_or(isNotEmpty);
@@ -218,7 +225,8 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
 
             };
             fpSFnS[0] += sharedForGold[33];// will be needed later for global set
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 1] = sharedForGold[33];
+            //metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 1] = sharedForGold[33];
+            localBlockMetaData[1] = sharedForGold[33];
 
            // getTensorRow<unsigned int>(tensorslice, metaData.fpCount, metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
         }
@@ -233,7 +241,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
             };
             fpSFnS[1] += sharedForSegm[33];// will be needed later for global set
             //setting metadata
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 2] = sharedForSegm[33];
+            localBlockMetaData[2] = sharedForSegm[33];
 
            // getTensorRow<unsigned int>(tensorslice, metaData.fnCount, metaData.fnCount.Ny, yMeta, zMeta)[xMeta] = sharedForSegm[1][0];
 
@@ -242,13 +250,13 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
         //marking as active 
 //FP pass
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] = 1;
+            localBlockMetaData[7] = 1;
           //  printf("in bool kernel mark as sctive linIdexMeta %d in index  %d \n  ", linIdexMeta, isGold);
 
         };
         //FN pass
         if ((threadIdx.x == 1) && (threadIdx.y == 0) && isNotEmpty && anyInSegm[0]) {
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] = 1;
+            localBlockMetaData[9] = 1;
 
         };
 
@@ -266,8 +274,10 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
         setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData, metaDataArr);//posterior
 
 
-        tile.sync(); // just to reduce the warp divergence
+        sync(cta); // just to reduce the warp divergence
 
+        // copy metadata to global memory
+        cooperative_groups::memcpy_async(cta, (&metaDataArr[linIdexMeta * metaData.metaDataSectionLength]), (&localBlockMetaData[0]), (sizeof(uint16_t) * 20));
 
     }
     sync(cta);
@@ -285,8 +295,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
           atomicAdd(&(metaData.minMaxes[8]), fpSFnS[1]);
 
     };
-
-
+   
 
 
 

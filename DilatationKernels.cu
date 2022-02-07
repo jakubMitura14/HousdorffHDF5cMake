@@ -29,7 +29,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     unsigned int blockFnConter[1], unsigned int resultfpOffset[1],
     unsigned int resultfnOffset[1], unsigned int worQueueStep[1],
     uint32_t isGold[1], uint32_t currLinIndM[1], unsigned int localMinMaxes[5]
-    , uint32_t localBlockMetaData[19], unsigned int fpFnLocCounter[1]
+    , uint16_t localBlockMetaData[19], unsigned int fpFnLocCounter[1]
     , bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]
     , uint32_t* origArrs, uint16_t* metaDataArr
 ) {
@@ -143,121 +143,124 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                    pipeline.consumer_release();
 
 
- ////////#### pipeline step 3) process anterior block data and load posterior
-loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
-localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
-, metaData,mainArr, //pointers to arrays with data
-//now some variables needed to load data  
-    18 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begSecRegShmem //offset defined in shared memory used to load data into 
-    , bigShape // shape and alignment of data in load - inludes length of data
-//now variables needed for dilatations we dilatate to anterior
-    17 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begfirstRegShmem//offset defined in shared memory used to process  data from 
-,(threadIdx.y == (fbArgs.dbYLength - 1) // defining when our thread is a corner case and need to load data from outside of the block
-, 4,// needed to know wheather block in given direction should be marked as to be activated
-(0), (1)// x and y changes
-, 0, threadIdx.x// coordinates in new block
+                 ////////#### pipeline step 3) process anterior block data and load posterior
+                loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+                localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+                , metaData,mainArr, //pointers to arrays with data
+                //now some variables needed to load data  
+                    18 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begSecRegShmem //offset defined in shared memory used to load data into 
+                    , bigShape // shape and alignment of data in load - inludes length of data
+                //now variables needed for dilatations we dilatate to anterior
+                    17 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begfirstRegShmem//offset defined in shared memory used to process  data from 
+                ,(threadIdx.y == (fbArgs.dbYLength - 1) // defining when our thread is a corner case and need to load data from outside of the block
+                , 4,// needed to know wheather block in given direction should be marked as to be activated
+                (0), (1)// x and y changes
+                , 0, threadIdx.x// coordinates in new block
 
- ////////#### pipeline step 4) process posterior block data and load right
-loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
-localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
-, metaData,mainArr, //pointers to arrays with data
-//now some variables needed to load data  
-    16 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begfirstRegShmem //offset defined in shared memory used to load data into 
-    , thirdRegShape // shape and alignment of data in load - inludes length of data
-//now variables needed for dilatations we dilatate to anterior
-    18 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begSecRegShmem//offset defined in shared memory used to process  data from 
-,(threadIdx.y == 0) // defining when our thread is a corner case and need to load data from outside of the block
-, 5,// needed to know wheather block in given direction should be marked as to be activated
-(0), (-1)// x and y changes
-, (fbArgs.dbYLength - 1), threadIdx.x)// coordinates in new block
-
-
- ////////#### pipeline step 5) process right block data and load left
-loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
-localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
-, metaData,mainArr, //pointers to arrays with data
-//now some variables needed to load data  
-    15 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begSecRegShmem //offset defined in shared memory used to load data into 
-    , bigShape // shape and alignment of data in load - inludes length of data
-//now variables needed for dilatations we dilatate to anterior
-    16 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begfirstRegShmem//offset defined in shared memory used to process  data from 
-,(threadIdx.x == (fbArgs.dbXLength - 1) // defining when our thread is a corner case and need to load data from outside of the block
-, 3,// needed to know wheather block in given direction should be marked as to be activated
-(1), (0)// x and y changes
-, threadIdx.y, 0// coordinates in new block
+                 ////////#### pipeline step 4) process posterior block data and load right
+                loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+                localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+                , metaData,mainArr, //pointers to arrays with data
+                //now some variables needed to load data  
+                    16 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begfirstRegShmem //offset defined in shared memory used to load data into 
+                    , thirdRegShape // shape and alignment of data in load - inludes length of data
+                //now variables needed for dilatations we dilatate to anterior
+                    18 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begSecRegShmem//offset defined in shared memory used to process  data from 
+                ,(threadIdx.y == 0) // defining when our thread is a corner case and need to load data from outside of the block
+                , 5,// needed to know wheather block in given direction should be marked as to be activated
+                (0), (-1)// x and y changes
+                , (fbArgs.dbYLength - 1), threadIdx.x)// coordinates in new block
 
 
- ////////#### pipeline step 6) process left block data and load top
-loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
-localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
-, metaData,mainArr, //pointers to arrays with data
-//now some variables needed to load data  
-    13 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begfirstRegShmem //offset defined in shared memory used to load data into 
-    , bigShape // shape and alignment of data in load - inludes length of data
-//now variables needed for dilatations we dilatate to anterior
-    15 // where is the index describing linear index of the neighbour in direction of intrest
-    ,begSecRegShmem //offset defined in shared memory used to process  data from 
-,(threadIdx.x == 0) // defining when our thread is a corner case and need to load data from outside of the block
-, 2,// needed to know wheather block in given direction should be marked as to be activated
-(-1), (0)// x and y changes
-, threadIdx.y, (fbArgs.dbXLength - 1))// coordinates in new block
+                 ////////#### pipeline step 5) process right block data and load left
+                loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+                localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+                , metaData,mainArr, //pointers to arrays with data
+                //now some variables needed to load data  
+                    15 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begSecRegShmem //offset defined in shared memory used to load data into 
+                    , bigShape // shape and alignment of data in load - inludes length of data
+                //now variables needed for dilatations we dilatate to anterior
+                    16 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begfirstRegShmem//offset defined in shared memory used to process  data from 
+                ,(threadIdx.x == (fbArgs.dbXLength - 1) // defining when our thread is a corner case and need to load data from outside of the block
+                , 3,// needed to know wheather block in given direction should be marked as to be activated
+                (1), (0)// x and y changes
+                , threadIdx.y, 0// coordinates in new block
 
- ////////#### pipeline step 7) process top block data and load bottom
-    if (localBlockMetaData[14]<UINT16_MAX) {
-        pipeline.producer_acquire();
-           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-            (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,14 )])
-            , bigShape, pipeline);
-        pipeline.producer_commit();
-      }
-//compute
-pipeline.consumer_wait();
-dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, pipeline,localBlockMetaData,13, 
-        , 1// represent a uint32 number that has a bit of intrest in this block set and all others 0 here first bit is set
-        , 2147483648
-        ,begfirstRegShmem)
-    pipeline.consumer_release();    
- ////////#### pipeline step 8) process bottom block data  - do final operations for a block and load reference data if block is to be validated
-// now we need to establish weather this block should be validated so weahter the counter in metadata is smaller than metadata count
-//load
-if( localBlockMetaData[((1-isGold[0])+1)] //fp for gold and fn count for not gold
-    > localBlockMetaData[((1-isGold[0])+1)]   ){// so count is bigger than counter so we should validate
-//now we load data from referenca arrays 
+
+                 ////////#### pipeline step 6) process left block data and load top
+                loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+                localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+                , metaData,mainArr, //pointers to arrays with data
+                //now some variables needed to load data  
+                    13 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begfirstRegShmem //offset defined in shared memory used to load data into 
+                    , bigShape // shape and alignment of data in load - inludes length of data
+                //now variables needed for dilatations we dilatate to anterior
+                    15 // where is the index describing linear index of the neighbour in direction of intrest
+                    ,begSecRegShmem //offset defined in shared memory used to process  data from 
+                ,(threadIdx.x == 0) // defining when our thread is a corner case and need to load data from outside of the block
+                , 2,// needed to know wheather block in given direction should be marked as to be activated
+                (-1), (0)// x and y changes
+                , threadIdx.y, (fbArgs.dbXLength - 1))// coordinates in new block
+
+                 ////////#### pipeline step 7) process top block data and load bottom
+                    if (localBlockMetaData[14]<UINT16_MAX) {
+                        pipeline.producer_acquire();
+                           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+                            (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,14 )])
+                            , bigShape, pipeline);
+                        pipeline.producer_commit();
+                      }
+                //compute
+                pipeline.consumer_wait();
+                dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, pipeline, localBlockMetaData, 13,
+                    , 1// represent a uint32 number that has a bit of intrest in this block set and all others 0 here first bit is set
+                    , 2147483648
+                    , begfirstRegShmem);
+                    pipeline.consumer_release();    
+                 ////////#### pipeline step 8) process bottom block data  - do final operations for a block and load reference data if block is to be validated
+                // now we need to establish weather this block should be validated so weahter the counter in metadata is smaller than metadata count
+                //load
+
+                if( localBlockMetaData[((1-isGold[0])+1)] //fp for gold and fn count for not gold
+                    > localBlockMetaData[((1-isGold[0])+1)]   ){// so count is bigger than counter so we should validate
+                //now we load data from referenca arrays 
     
 
-}else{//if we are not validating we immidiately start loading data for next loop
-    lastLoad(pipeline,cta,worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
-)
-}
+                }else{//if we are not validating we immidiately start loading data for next loop
+                    lastLoad(pipeline,cta,worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
+                )
+                }
 
-//compute bottom block data
-pipeline.consumer_wait();
+                //compute bottom block data
+                pipeline.consumer_wait();
 
-dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, pipeline,localBlockMetaData,14, 
-        , 2147483648// represent a uint32 number that has a bit of intrest in this block set and all others 0 here last bit is set
-        , 1
-        ,begfirstRegShmem)
- krowa additionally we need to establish and save information is block full and mark neighbouring blocks as to be activated if it is not a padding pass       
-        we also need to save results of res shmem into dilatation array
+                dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, pipeline,localBlockMetaData,14, 
+                        , 2147483648// represent a uint32 number that has a bit of intrest in this block set and all others 0 here last bit is set
+                        , 1
+                        ,begfirstRegShmem)
+
+                
+                 krowa additionally we need to establish and save information is block full and mark neighbouring blocks as to be activated if it is not a padding pass       
+                        we also need to save results of res shmem into dilatation array
         
         
-pipeline.consumer_release();    
- ////////#### pipeline step 9 ) this step exists only  if block is to be validated 
-if( localBlockMetaData[((1-isGold[0])+1)] //fp for gold and fn count for not gold
-    > localBlockMetaData[((1-isGold[0])+1)]   ){// so count is bigger than counter so we should validate
-    lastLoad(pipeline,cta/
-worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData)
-    //here we are establishing weather we have any results if so we save it to global memory
+                pipeline.consumer_release();    
+                 ////////#### pipeline step 9 ) this step exists only  if block is to be validated 
+                if( localBlockMetaData[((1-isGold[0])+1)] //fp for gold and fn count for not gold
+                    > localBlockMetaData[((1-isGold[0])+1)]   ){// so count is bigger than counter so we should validate
+                    lastLoad(pipeline,cta/
+                worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData)
+                    //here we are establishing weather we have any results if so we save it to global memory
     
     
-}
+                }
 
 
 

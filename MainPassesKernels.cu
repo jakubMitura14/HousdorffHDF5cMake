@@ -358,7 +358,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t* 
  17 : anterior
  18 : posterior
     */
-    __shared__ uint32_t localBlockMetaData[19];
+    __shared__ uint16_t localBlockMetaData[20]
 
     /////used mainly in meta passes
 
@@ -528,7 +528,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     fbArgs.metaData.minMaxes = minMaxes;
 
 
-
+    //3086
 
 
     ////preparation kernel
