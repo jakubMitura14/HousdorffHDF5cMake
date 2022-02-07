@@ -184,66 +184,6 @@ inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
 }
 
 
-/*
-to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
-predicate - indicates what we consider border case here
-paddingPos = integer marking which padding we are currently talking about(top ? bottom ? anterior ? ...)
-padingVariedA, padingVariedB - eithr bitPos threadid X or Y depending what will be changing in this case
-
-normalXChange, normalYchange - indicating which wntries we are intrested in if we are not at the boundary so how much to add to xand y thread position
-*/
-#pragma once
-template <typename TXTOI>
-inline __device__ void dilatateHelper(bool predicate,
-    int paddingPos,   int  padingVariedB, int  normalXChange, int normalYchange
-, uint32_t sourceShared[32][32], uint32_t resShared[32][32], bool isAnythingInPadding[6]
-,bool predicateToLoadOutside, char* tensorslice, ForBoolKernelArgs<TXTOI> fbArgs, uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i
-, unsigned int iterationNumb[1], uint8_t forBorderYcoord, uint8_t forBorderXcoord) {
-   
-
-
-    // so we first check for corner cases 
-    if (predicate) {
-        // now we need to load the data from the neigbouring blocks
-        //first checking is there anything to look to 
-        if (predicateToLoadOutside) {
-            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-            if (sourceShared[threadIdx.x][threadIdx.y] > 0) {
-                isAnythingInPadding[paddingPos] = true;
-            };
-            //printf("looking padding currMetaX %d currMetaY %d currMetaZ %d X %d Y %d padding pos  paddingPos %d value %d  ;  %d  xChange %d   y Change %d  \n"
-            //   ,  localWorkQueue[i][0], localWorkQueue[i][1], localWorkQueue[i][2]
-            //, (localWorkQueue[i][0] + normalXChange) * fbArgs.dbXLength + forBorderXcoord
-            //    , (localWorkQueue[i][1] + normalYchange)* fbArgs.dbYLength + forBorderYcoord 
-            //        , paddingPos,  isAnythingInPadding[paddingPos], sourceShared[threadIdx.x][threadIdx.y]
-            //, normalXChange, normalYchange
-            //);
-
-            //printf("looking padding xChange %d yChange %d currMetaX %d currMetaY %d currMetaZ %d new X %d new Y %d value %d  \n"
-            //    , normalXChange, normalYchange, localWorkQueue[i][0], localWorkQueue[i][1], localWorkQueue[i][2]
-            //, (localWorkQueue[i][0] + normalXChange) * fbArgs.dbXLength + forBorderXcoord
-            //    , (localWorkQueue[i][1] + normalYchange)* fbArgs.dbYLength + forBorderYcoord 
-            //    , getTensorRow<uint32_t>(tensorslice, getSourceReduced(fbArgs, localWorkQueue, i, iterationNumb)
-            //        , fbArgs.reducedGold.Ny, (localWorkQueue[i][1] + normalYchange) * fbArgs.dbYLength + forBorderYcoord
-            //        , localWorkQueue[i][2])[(localWorkQueue[i][0] + normalXChange) * fbArgs.dbXLength + forBorderXcoord]);
-
-
-            resShared[threadIdx.x][threadIdx.y] = 
-                resShared[threadIdx.x][threadIdx.y]
-                    | getTensorRow<uint32_t>(tensorslice, getSourceReduced(fbArgs, localWorkQueue, i, iterationNumb)
-                        , fbArgs.reducedGold.Ny, (localWorkQueue[i][1] + normalYchange) * fbArgs.dbYLength + forBorderYcoord
-                            , localWorkQueue[i][2])[(localWorkQueue[i][0]+ normalXChange) * fbArgs.dbXLength + forBorderXcoord];
-            ;
-
-        }
-    }
-    else {//given we are not in corner case we need just to do the dilatation using biwise or 
-        resShared[threadIdx.x][threadIdx.y] = sourceShared[threadIdx.x+ normalXChange][threadIdx.y+ normalYchange] | resShared[threadIdx.x][threadIdx.y];
-    
-    }
-   
-
-}
 
 
 
@@ -564,6 +504,123 @@ inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, ui
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength   ;// offset depending on linear index of metadata block of intrest
 }
 
+
+/*
+to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
+works only for anterior - posterior lateral an medial dilatations
+predicate - indicates what we consider border case here
+paddingPos = integer marking which padding we are currently talking about(top ? bottom ? anterior ? ...)
+padingVariedA, padingVariedB - eithr bitPos threadid X or Y depending what will be changing in this case
+
+normalXChange, normalYchange - indicating which wntries we are intrested in if we are not at the boundary so how much to add to xand y thread position
+metaDataCoordIndex - index where in the metadata of this block th linear index of neihjbouring block is present
+targetShmemOffset - offset where loaded data needed for dilatation of outside of the block is present for example defining  register shmem one or 2 ...
+*/
+#pragma once
+inline __device__ void dilatateHelperForTransverse(bool predicate,
+    uint8_t paddingPos,    uint8_t  normalXChange, uint8_t normalYchange
+, uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline
+,uint8_t forBorderYcoord, uint8_t forBorderXcoord
+,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset   ) {
+   
+
+ pipeline.consumer_wait();
+
+    // so we first check for corner cases 
+    if (predicate) {
+        // now we need to load the data from the neigbouring blocks
+        //first checking is there anything to look to 
+        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
+            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+            if (mainShmem[threadIdx.x+threadIdx.y*32] > 0) {
+                isAnythingInPadding[paddingPos] = true;
+            };
+            mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = 
+                mainShmem[begResShmem+threadIdx.x+threadIdx.y*32]
+                    | mainShmem[targetShmemOffset+forBorderXcoord+forBorderYcoord*32]
+
+        }
+    }
+    else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
+        mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] 
+        = mainShmem[(threadIdx.x+ normalXChange)+(threadIdx.y+ normalYchange)*32] | mainShmem[begResShmem+threadIdx.x+threadIdx.y*32];
+    
+    }
+   
+              pipeline.consumer_release();
+
+}
+
+
+#pragma once
+template <typename TXTOI>
+inline __device__ void dilatateHelperTopDown(bool predicate,
+    uint8_t paddingPos,    uint8_t normalZchange
+, uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline
+,uint8_t metaDataCoordIndex
+, uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
+, uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
+
+) {
+        pipeline.consumer_wait();
+        // now we need to load the data from the neigbouring blocks
+        //first checking is there anything to look to 
+        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
+            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+            if (mainShmem[threadIdx.x + threadIdx.y * 32] & numberbitOfIntrestInBlock) {
+                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
+                               isAnythingInPadding[0] = true;
+            };
+            mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = 
+                mainShmem[begResShmem+threadIdx.x+threadIdx.y*32]
+                    | (mainShmem[targetShmemOffset+forBorderXcoord+forBorderYcoord*32] & numberWithCorrBitSetInNeigh )
+
+        }   
+         pipeline.consumer_release();
+
+}
+
+
+
+/*
+in pipeline defined to load data for next step and simultaneously process the previous step data  
+used for left,right,anterior,posterior dilatations
+*/
+inline __device__  void loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
+localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
+, metaData,mainArr, //pointers to arrays with data
+//now some variables needed to load data  
+    uint8_t metaDataCoordIndexToLoad // where is the index describing linear index of the neighbour in direction of intrest
+    ,uint16_t targetShmemOffset //offset defined in shared memory used to load data into 
+    , shape // shape and alignment of data in load - inludes length of data
+//now variables needed for dilatations
+    uint8_t metaDataCoordIndexToProcess // where is the index describing linear index of the neighbour in direction of intrest
+    ,uint16_t sourceShmemOffset //offset defined in shared memory used to process  data from 
+,bool predicate // defining when our thread is a corner case and need to load data from outside of the block
+,uint8_t paddingPos,// needed to know wheather block in given direction should be marked as to be activated
+uint8_t  normalXChange, uint8_t normalYchange
+, uint8_t forBorderYcoord, uint8_t forBorderXcoord
+
+){
+               pipeline.producer_acquire();
+                       if (localBlockMetaData[metaDataCoordIndexToLoad]<UINT16_MAX) {
+                           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,metaDataCoordIndexToLoad )]) 
+                              , shape, pipeline);
+
+                       }
+                     
+               pipeline.producer_commit();
+               //compute 
+               pipeline.consumer_wait();
+                    //if we want to do left riaght, anterior , posterior dilatations
+                  dilatateHelperForTransverse(predicate), paddingPos, normalXChange, normalYchange, mainShmem
+                     , isAnythingInPadding,  iterationNumb,forBorderYcoord, forBorderXcoord,metaDataCoordIndexToProcess,sourceShmemOffset );
+  
+                     
+                     
+              
+}
 
 
 
