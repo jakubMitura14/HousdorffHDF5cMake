@@ -555,7 +555,7 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 #pragma once
 template <typename TXTOI>
 inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-, uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline
+, uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline,localBlockMetaData
 ,uint8_t metaDataCoordIndex
 , uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
 , uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
@@ -601,6 +601,9 @@ uint8_t  normalXChange, uint8_t normalYchange
 , uint8_t forBorderYcoord, uint8_t forBorderXcoord
 
 ){
+
+krowa rethink weather pipeline.producer_acquire() and commit should not be inside the if statements for border cases
+
                pipeline.producer_acquire();
                        if (localBlockMetaData[metaDataCoordIndexToLoad]<UINT16_MAX) {
                            cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
@@ -611,7 +614,6 @@ uint8_t  normalXChange, uint8_t normalYchange
                      
                pipeline.producer_commit();
                //compute 
-               pipeline.consumer_wait();
                     //if we want to do left riaght, anterior , posterior dilatations
                   dilatateHelperForTransverse(predicate), paddingPos, normalXChange, normalYchange, mainShmem
                      , isAnythingInPadding,  iterationNumb,forBorderYcoord, forBorderXcoord,metaDataCoordIndexToProcess,sourceShmemOffset );
@@ -622,7 +624,20 @@ uint8_t  normalXChange, uint8_t normalYchange
 }
 
 
-
+/*
+constitutes end of pipeline  where we load data for next iteration if such is present
+*/
+inline __device__  void lastLoad(pipeline,cta//some needed CUDA objects
+worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
+){
+               if (i + 1<= worQueueStep[0]) {
+                   pipeline.producer_acquire();
+                   cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) 
+                   * metaData.mainArrSectionLength + metaData.metaDataOffset])
+                       , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
+                   pipeline.producer_commit();
+               }
+}
 
 
 
