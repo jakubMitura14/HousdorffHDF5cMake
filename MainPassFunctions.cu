@@ -554,13 +554,12 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 #pragma once
 template <typename TXTOI>
-inline __device__ void dilatateHelperTopDown(bool predicate,
-    uint8_t paddingPos,    uint8_t normalZchange
+inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
 , uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline
 ,uint8_t metaDataCoordIndex
 , uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
 , uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
-
+, uint16_t targetShmemOffset
 ) {
         pipeline.consumer_wait();
         // now we need to load the data from the neigbouring blocks
