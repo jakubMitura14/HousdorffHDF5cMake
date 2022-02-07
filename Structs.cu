@@ -172,33 +172,40 @@ struct ForBoolKernelArgs {
 main array with all required data  organized in sections for each metadata block
 x-  is block dimx times block dimy
 now what occupies what positions
+##mainArr
+(0) - x-1 : reducedGoldRef
+(x) - 2x-1 : reducedSegmRef
+(3x) - 3x-1 : reducedGoldPrev
+(4x) - 4x-1 : reducedSegmPrev
+
+##metaDataArr
+0: empty
+1 :fpCount
+2 :fnCount
+3 :fpCounter
+4 :fnCounter
+5 :fpOffset
+6 :fnOffset
+7 :isActiveGold
+8 :isFullGold
+9 :isActiveSegm
+10 :isFullSegm
+11 :isToBeActivatedGold
+12 :isToBeActivatedSegm
+//now linear indexes of the blocks in all sides - if there is no block in given direction it will equal UINT32_MAX
+13 : top
+14 : bottom
+15 : left
+16 : right
+17 : anterior
+18 : posterior
+19 : empty
+20 : empty
+
+
+###origArrs
 0-x : reducedGold
 (x+1) - 2x : reducedSegm
-(2x+1) - 3x : reducedGoldRef
-(3x+1) - 4x : reducedSegmRef
-(4x+1) - 5x : reducedGoldPrev
-(5x+1) - 6x : reducedSegmPrev
-6x+1 :fpCount
-6x+2 :fnCount
-6x+3 :fpCounter
-6x+4 :fnCounter
-6x+5 :fpOffset
-6x+6 :fnOffset
-6x+7 :isActiveGold
-6x+8 :isFullGold
-6x+9 :isActiveSegm
-6x+10 :isFullSegm
-6x+11 :isToBeActivatedGold
-6x+12 :isToBeActivatedSegm
-//now linear indexes of the blocks in all sides - if there is no block in given direction it will equal UINT32_MAX
-6x+13 : top
-6x+14 : bottom
-6x+15 : left
-6x+16 : right
-6x+17 : anterior
-6x+18 : posterior
-6x+19 : empty
-6x+20 : empty
 
 */
  //   uint32_t* mainArr;
