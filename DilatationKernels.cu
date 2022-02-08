@@ -36,7 +36,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     auto pipeline = cuda::make_pipeline();
     auto bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (metaData.mainArrXLength));
     auto thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
-
+    thread_block_tile<1> miniTile = tiled_partition<1>(block);
 
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0  && !isPaddingPass) {
         iterationNumb[0] += 1;
@@ -106,20 +106,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
                  ///#### pipeline step 1) now we load data for next step (to mainly sourceshmem and left-right if apply) and process data loaded in previous step
                     pipeline.producer_acquire();
-                    // so we want to load in one sweep right row of the block to the left if it exist the data bout this block and data of block to the right  that we are intrested in 
-                    //if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
 
-                    //    printf("linindex meta %d begSourceShmem %d anyToLeft %d sourceShmemIndex %d mainArrIndex %d toCopyLength %d  \n"
-                    //        , (mainShmem[startOfLocalWorkQ + i] - UINT16_MAX*(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
-                    //        , (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0) * (-32)) + begSourceShmem
-                    //        , (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0) * (-32))
-                    //        , getIndexForSourceShmem(metaData, mainShmem, iterationNumb, i)
-                    //        , (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0) * (-32))
-                    //        + getIndexForSourceShmem(metaData, mainShmem, iterationNumb, i)
-                    //        , (metaData.mainArrXLength + 32 * (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0)
-                    //            + (mainShmem[startOfLocalWorkQ + i] < (metaData.totalMetaLength - 1))))
-                    //    );
-                    //}
                     cuda::memcpy_async(cta, (&mainShmem[(((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0) * (-32)) + begSourceShmem]), // we check weather there is anything to the left - not on left border if so we need place for left 32 entries
                         &mainArr[((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) *(-32)) // we check weather there is anything to the left - not on left border if so we load left 32 entries
                         +  getIndexForSourceShmem(metaData, mainShmem, iterationNumb,i )] , 
@@ -147,15 +134,24 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
 
                ////////#### pipeline step 2) 
-               //load for next step - so we load posterior of anterior block  given it exists
-                   //anterior
-                   pipeline.producer_acquire();
-                       if (localBlockMetaData[17]<UINT16_MAX) {
-                           cooperative_groups::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,17 )])
-                              , bigShape, pipeline);
+               //load for next step - so we load posterior of anterior block  and anterior of posterior block given they exist
+                   //anterior and posterior
+                   if (localBlockMetaData[17] < UINT16_MAX   || (localBlockMetaData[18] < UINT16_MAX) {
+                       pipeline.producer_acquire();
+                       //anterior
+                       if (localBlockMetaData[17] < UINT16_MAX  && ) {
+                           cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem]),
+                               (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)])
+                               , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
                        }
-                   pipeline.producer_commit();
+                       //posterior
+                       if (localBlockMetaData[18] < UINT16_MAX) {
+                           cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem]),
+                               (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)])
+                               , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+                       }
+                       pipeline.producer_commit();
+                   }
                //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
                    pipeline.consumer_wait();
                        // first we perform up and down dilatations inside the block
