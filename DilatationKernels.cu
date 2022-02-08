@@ -38,6 +38,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     auto thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
     thread_block_tile<1> miniTile = tiled_partition<1>(block);
 
+
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0  && !isPaddingPass) {
         iterationNumb[0] += 1;
     };
@@ -138,26 +139,39 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                    //anterior and posterior
                    if (localBlockMetaData[17] < UINT16_MAX   || (localBlockMetaData[18] < UINT16_MAX) {
                        pipeline.producer_acquire();
-                       //anterior
-                       if (localBlockMetaData[17] < UINT16_MAX  && ) {
-                           cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem]),
-                               (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)])
-                               , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
-                       }
-                       //posterior
-                       if (localBlockMetaData[18] < UINT16_MAX) {
-                           cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem]),
-                               (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)])
-                               , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
-                       }
+                           //posterior of the block to anterior we load it using single threads and multple mempcy async becouse memory is non aligned
+                           if (localBlockMetaData[17] < UINT16_MAX  && miniTile.meta_group_rank()< fbArgs.dbYLength) {
+                               cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+32+ miniTile.meta_group_rank()]),
+                                   (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)] //basic offset
+                                       //we look for indicies 0,32,64... up to metaData.mainArrXLength
+                                       + miniTile.meta_group_rank()*32
+                                       )
+                                   , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+                           }
+                           //anterior of the block to posterior
+                           if (localBlockMetaData[18] < UINT16_MAX&& miniTile.meta_group_rank()< fbArgs.dbYLength*2) {
+                               cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+64+ miniTile.meta_group_rank() ]),
+                                   (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 18)
+                                       //we look for indicies 31,63... up to metaData.mainArrXLength
+                                       + (miniTile.meta_group_rank() * 32)+31
+                                   ])
+                                   , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+                           }
                        pipeline.producer_commit();
                    }
-               //compute - now we have data in source shmem about this block only so what can be done is to dilatate the source shmem data up and down and save data in res shmem - additionally saving data about is anything in to or bottom bits
-                   pipeline.consumer_wait();
-                       // first we perform up and down dilatations inside the block
-                       mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[threadIdx.x + threadIdx.y * 32]);
+                     //compute - now we have data in source shmem about this block and left and right padding
+                       pipeline.consumer_wait();
+                           // first we perform up and down dilatations inside the block
+                           mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[begSourceShmem+threadIdx.x + threadIdx.y * 32]);
+                           //we also do the left and right dilatations
+                           if (localBlockMetaData[17] < UINT16_MAX) {
 
-                   pipeline.consumer_release();
+                           };
+                           if (localBlockMetaData[18] < UINT16_MAX) {
+
+                           };
+
+                       pipeline.consumer_release();
 
 
         //         ////////#### pipeline step 3) process anterior block data and load posterior

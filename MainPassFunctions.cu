@@ -504,53 +504,48 @@ inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, ui
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
 }
 
-//
-///*
-//to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
-//works only for anterior - posterior lateral an medial dilatations
-//predicate - indicates what we consider border case here
-//paddingPos = integer marking which padding we are currently talking about(top ? bottom ? anterior ? ...)
-//padingVariedA, padingVariedB - eithr bitPos threadid X or Y depending what will be changing in this case
-//
-//normalXChange, normalYchange - indicating which wntries we are intrested in if we are not at the boundary so how much to add to xand y thread position
-//metaDataCoordIndex - index where in the metadata of this block th linear index of neihjbouring block is present
-//targetShmemOffset - offset where loaded data needed for dilatation of outside of the block is present for example defining  register shmem one or 2 ...
-//*/
-//#pragma once
-//inline __device__ void dilatateHelperForTransverse(bool predicate,
-//    uint8_t paddingPos,    uint8_t  normalXChange, uint8_t normalYchange
-//, uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline
-//,uint8_t forBorderYcoord, uint8_t forBorderXcoord
-//,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset   ) {
-//   
-//
-// pipeline.consumer_wait();
-//
-//    // so we first check for corner cases 
-//    if (predicate) {
-//        // now we need to load the data from the neigbouring blocks
-//        //first checking is there anything to look to 
-//        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
-//            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-//            if (mainShmem[threadIdx.x+threadIdx.y*32] > 0) {
-//                isAnythingInPadding[paddingPos] = true;
-//            };
-//            mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = 
-//                mainShmem[begResShmem+threadIdx.x+threadIdx.y*32]
-//                    | mainShmem[targetShmemOffset+forBorderXcoord+forBorderYcoord*32]
-//
-//        }
-//    }
-//    else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
-//        mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] 
-//        = mainShmem[(threadIdx.x+ normalXChange)+(threadIdx.y+ normalYchange)*32] | mainShmem[begResShmem+threadIdx.x+threadIdx.y*32];
-//    
-//    }
-//   
-//              pipeline.consumer_release();
-//
-//}
-//
+
+/*
+to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
+works only for anterior - posterior lateral an medial dilatations
+predicate - indicates what we consider border case here
+paddingPos = integer marking which padding we are currently talking about(top ? bottom ? anterior ? ...)
+padingVariedA, padingVariedB - eithr bitPos threadid X or Y depending what will be changing in this case
+
+normalXChange, normalYchange - indicating which wntries we are intrested in if we are not at the boundary so how much to add to xand y thread position
+metaDataCoordIndex - index where in the metadata of this block th linear index of neihjbouring block is present
+targetShmemOffset - offset where loaded data needed for dilatation of outside of the block is present for example defining  register shmem one or 2 ...
+*/
+#pragma once
+inline __device__ void dilatateHelperForTransverse(bool predicate,
+    uint8_t paddingPos,    uint8_t  normalXChange, uint8_t normalYchange
+, uint32_t mainShmem[], bool isAnythingInPadding[6]
+,uint8_t forBorderYcoord, uint8_t forBorderXcoord
+,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset   ) {
+    // so we first check for corner cases 
+    if (predicate) {
+        // now we need to load the data from the neigbouring blocks
+        //first checking is there anything to look to 
+        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
+            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+            if (mainShmem[threadIdx.x+threadIdx.y*32] > 0) {
+                isAnythingInPadding[paddingPos] = true;
+            };
+            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                | mainShmem[targetShmemOffset + forBorderXcoord + forBorderYcoord * 32];
+
+        }
+    }
+    else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
+        mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] 
+        = mainShmem[(threadIdx.x+ normalXChange)+(threadIdx.y+ normalYchange)*32] | mainShmem[begResShmem+threadIdx.x+threadIdx.y*32];
+    
+    }
+   
+
+}
+
 //
 //#pragma once
 //template <typename TXTOI>
