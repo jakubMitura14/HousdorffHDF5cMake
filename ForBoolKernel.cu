@@ -172,7 +172,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
             }
         }
         //reset local metadata
-        if ((threadIdx.x <20) && (threadIdx.y == 0) {
+        if ((threadIdx.x <20) && (threadIdx.y == 0)) {
             localBlockMetaData[threadIdx.x]=0;
         }
         

@@ -61,13 +61,31 @@ const H5std_string DATASET_NAME("onlyLungs");
 //const int    NZ = 3;
 //const int    RANK_OUT = 3;
 
+
 //
+//__device__ void computeA(uint32_t* global_out, uint32_t const* shared_in, uint32_t multiplier[1]) {
+//    //printf("  * %d *  ", threadIdx.x);
+//    //   printf("  ***  ");
 //
-//__device__ void computeA(uint32_t* global_out, uint32_t const* shared_in) {
 //    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-//        
-//     //   printf("  ***  ");
-//       global_out[linIdexMeta] = shared_in[linIdexMeta] +1;   }
+//        global_out[linIdexMeta] =  multiplier[0];
+//
+//        if (threadIdx.x == 0) {
+//
+//            for (int i = 0; i < 500; i++) {
+//                printf("  ***  ");
+//                printf("  ***  ");
+//                printf("  ***  ");
+//                global_out[linIdexMeta] = i * 44 - 66;
+//                global_out[linIdexMeta] =  multiplier[0];
+//
+//
+//            }
+//            multiplier[0] = multiplier[0] * 2;
+//
+//        }
+//    }
+//     
 //
 //};
 //
@@ -75,7 +93,7 @@ const H5std_string DATASET_NAME("onlyLungs");
 //    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
 //
 //        //   printf("  ***  ");
-//        global_out[linIdexMeta] = shared_in[linIdexMeta] + 2;
+//        global_out[linIdexMeta] = shared_in[linIdexMeta]*2;
 //    }
 //
 //};
@@ -90,23 +108,24 @@ const H5std_string DATASET_NAME("onlyLungs");
 //};
 //
 //
-//__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA,  uint32_t* global_inB,  uint32_t* global_inC) {
+//__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA, uint32_t* global_inB, uint32_t* global_inC) {
 //    auto grid = cooperative_groups::this_grid();
 //    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
+//    thread_block_tile<32> tile = tiled_partition<32>(block);
+//    thread_block_tile<1> miniTile = tiled_partition<1>(block);
+//
+//    __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
+//    init(&barrier, 1);
+//
+//
+//
 //    constexpr size_t stages_count = 2; // Pipeline with two stages
-//   
-//                                       
-//    bool isBlockFull = true;// usefull to establish do we have block completely filled and no more dilatations possible
-//    /*
-//    * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
-//    main shared memory spaces
-//    0-1023 : sourceShmem
-//    1024-2047 : resShmem
-//    2048-3071 : first register space
-//    3072-4095 : second register space
-//    4096-4468 (372 length) : place for local work queue in dilatation kernels
-//    */
+//
+//
 //    __shared__ uint32_t shmem[100];
+//    __shared__ uint32_t multiplier[1];
+//    multiplier[0] = 2;
+//    sync(block);
 //    // holding data about paddings 
 //
 //
@@ -116,7 +135,7 @@ const H5std_string DATASET_NAME("onlyLungs");
 //    __shared__ unsigned int localBlockMetaData[19];
 //
 //
-//   cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
+//    cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
 //
 //    size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each
 //
@@ -128,8 +147,29 @@ const H5std_string DATASET_NAME("onlyLungs");
 //
 //    // get first data into pipeline so from global in to first half in shmem
 //    pipeline.producer_acquire();
-//    cuda::memcpy_async(block, &shmem[0], &global_inA[0], cuda::aligned_size_t<4>(sizeof(uint32_t) * 32), pipeline);
+//    //printf("mini tile group rank %d \n", miniTile.meta_group_rank());
+//    //if (miniTile.meta_group_rank()==0){
+//    //    cuda::memcpy_async(miniTile, &shmem[miniTile.meta_group_rank()], &global_inA[miniTile.meta_group_rank()], cuda::aligned_size_t<4>(sizeof(uint32_t) * 1), pipeline);
+//    //}
+//    if (miniTile.meta_group_rank()%5==0 && miniTile.meta_group_rank()<30) {
+//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() ], &global_inA[miniTile.meta_group_rank() ], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
+//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank()+1 ], &global_inA[miniTile.meta_group_rank()+1 ], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
+//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() +2], &global_inA[miniTile.meta_group_rank() +2], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
+//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() +3], &global_inA[miniTile.meta_group_rank() +3], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
+//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() +4], &global_inA[miniTile.meta_group_rank() +4], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
+//
+//        //for (int i; i < 31; i++) {
+//        //    cuda::memcpy_async(&shmem[miniTile.meta_group_rank()+i], &global_inA[miniTile.meta_group_rank()+i], cuda::aligned_size_t<4>(sizeof(uint32_t) *2), barrier);
+//
+//        //    //cuda::memcpy_async(miniTile, &shmem[i], &global_inA[i], cuda::aligned_size_t<4>(sizeof(uint32_t) * 1), pipeline);
+//        //}
+//    }
+//  //  cuda::memcpy_async(block, &shmem[0], &global_inA[0], cuda::aligned_size_t<4>(sizeof(uint32_t) * 32), pipeline);
 //    pipeline.producer_commit();
+//  //  pipeline_producer_commit(pipeline, barrier);
+////    pipeline_producer_commit(pipeline);
+//    //barrier.arrive_and_wait();
+//    //pipeline.consumer_release();
 //
 //    
 //    // loadIntoShmem(pipeline, block, shmem, global_inA,  0, 0, 32);
@@ -138,24 +178,25 @@ const H5std_string DATASET_NAME("onlyLungs");
 //    for (size_t batch = 1; batch < 3; ++batch) {
 //        //here we load data for compute step that will be in next loop iteration
 //        pipeline.producer_acquire();
-//        cuda::memcpy_async(block, &shmem[(batch & 1) *32], &global_inA[batch*32], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
+//        cuda::memcpy_async( &shmem[(batch & 1) *32], &global_inA[batch*32], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
 //        pipeline.producer_commit();
 //
 //        //so here we wait for previous data load - in case it is fist loop we wait for data that was scheduled before loop started
 //        pipeline.consumer_wait();
-//        computeA(&global_out[(batch-1)*32] , &shmem[((batch-1) & 1) * 32]);
+//        //barrier.arrive_and_wait();
+//        computeA(&global_out[(batch-1)*32] , &shmem[((batch-1) & 1) * 32], multiplier);
 //        // Collectively release the stage resources
 //        pipeline.consumer_release();
 //    }
 //    // Compute the data fetch by the last iteration
 //
 //    pipeline.consumer_wait();
-//    computeA(&global_out[2 * 32] , &shmem[(2 & 1) * 32]);
+//    computeA(&global_out[2 * 32] , &shmem[(2 & 1) * 32], multiplier);
 //    pipeline.consumer_release();
 //
 //    }
-
-
+//
+//
 
 
 
@@ -167,63 +208,71 @@ int main(void){
 
     testMainPasswes();
 
-
-    //creating test data for pipeline concept
-    //uint32_t* globalInGPUA;
-    //uint32_t* globalInGPUB;
-    //uint32_t* globalInGPUC;
-
-
-    //uint32_t* globalOutGPU;
-    //size_t sizeC = (320 * sizeof(uint32_t));
-    //uint32_t* globalInCPUA = (uint32_t*)calloc(320 , sizeof(uint32_t));
-    //uint32_t* globalInCPUB = (uint32_t*)calloc(320 , sizeof(uint32_t));
-    //uint32_t* globalInCPUC = (uint32_t*)calloc(320 , sizeof(uint32_t));
-
-    ////populating to ones
-    //for (int i = 0; i < 96; i++) {
-    //    globalInCPUA[i] = 10;
-    //};
-
-    ////populating to ones
-    //for (int i = 0; i < 96; i++) {
-    //    globalInCPUB[i] = 100;
-    //};
-
-
-    ////populating to ones
-    //for (int i = 0; i < 96; i++) {
-    //    globalInCPUC[i] = 1000;
-    //};
-
-    //uint32_t* globalOUTCPU = (uint32_t*)calloc(320, sizeof(uint32_t));
-
-
-    ////cudaMallocAsync(&mainArr, sizeB, 0);
-    //cudaMalloc(&globalInGPUA, sizeC);
-    //cudaMemcpy(globalInGPUA, globalInCPUA, sizeC, cudaMemcpyHostToDevice);
-
-    //cudaMalloc(&globalInGPUB, sizeC);
-    //cudaMemcpy(globalInGPUB, globalInCPUB, sizeC, cudaMemcpyHostToDevice);
-
-    //cudaMalloc(&globalInGPUC, sizeC);
-    //cudaMemcpy(globalInGPUC, globalInCPUC, sizeC, cudaMemcpyHostToDevice);
-
-
-    //cudaMalloc(&globalOutGPU, sizeC);
-    //cudaMemcpy(globalOutGPU, globalOUTCPU, sizeC, cudaMemcpyHostToDevice);
-
-    //with_staging << <1,32 >> > (globalOutGPU, globalInGPUA, globalInGPUB, globalInGPUC);
-
-
-    //checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-    //
-    //cudaMemcpy(globalOUTCPU, globalOutGPU, sizeC, cudaMemcpyDeviceToHost);
-
-    //for (int i = 0; i < 96; i++) {
-    //   printf("val %d in %d \n", globalOUTCPU[i],i);
-    //};
-
+//    cudaError_t syncErr;
+//    cudaError_t asyncErr;
+////    creating test data for pipeline concept
+//    uint32_t* globalInGPUA;
+//    uint32_t* globalInGPUB;
+//    uint32_t* globalInGPUC;
+//
+//
+//    uint32_t* globalOutGPU;
+//    size_t sizeC = (320 * sizeof(uint32_t));
+//    uint32_t* globalInCPUA = (uint32_t*)calloc(320 , sizeof(uint32_t));
+//    uint32_t* globalInCPUB = (uint32_t*)calloc(320 , sizeof(uint32_t));
+//    uint32_t* globalInCPUC = (uint32_t*)calloc(320 , sizeof(uint32_t));
+//
+//    //populating to ones
+//    for (int i = 0; i < 96; i++) {
+//        globalInCPUA[i] = i;
+//    };
+//
+//    //populating to ones
+//    for (int i = 0; i < 96; i++) {
+//        globalInCPUB[i] = 100;
+//    };
+//
+//
+//    //populating to ones
+//    for (int i = 0; i < 96; i++) {
+//        globalInCPUC[i] = 1000;
+//    };
+//
+//    uint32_t* globalOUTCPU = (uint32_t*)calloc(320, sizeof(uint32_t));
+//
+//
+//    //cudaMallocAsync(&mainArr, sizeB, 0);
+//    cudaMalloc(&globalInGPUA, sizeC);
+//    cudaMemcpy(globalInGPUA, globalInCPUA, sizeC, cudaMemcpyHostToDevice);
+//
+//    cudaMalloc(&globalInGPUB, sizeC);
+//    cudaMemcpy(globalInGPUB, globalInCPUB, sizeC, cudaMemcpyHostToDevice);
+//
+//    cudaMalloc(&globalInGPUC, sizeC);
+//    cudaMemcpy(globalInGPUC, globalInCPUC, sizeC, cudaMemcpyHostToDevice);
+//
+//
+//    cudaMalloc(&globalOutGPU, sizeC);
+//    cudaMemcpy(globalOutGPU, globalOUTCPU, sizeC, cudaMemcpyHostToDevice);
+//
+//    with_staging << <1,32 >> > (globalOutGPU, globalInGPUA, globalInGPUB, globalInGPUC);
+//
+//
+//    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
+//    
+//    cudaMemcpy(globalOUTCPU, globalOutGPU, sizeC, cudaMemcpyDeviceToHost);
+//
+//    for (int i = 0; i < 96; i++) {
+//        if (globalOUTCPU[i]!= 2* i) {
+//            printf("val %d in %d \n", globalOUTCPU[i], i);
+//        }
+//    };
+//
+//    syncErr = cudaGetLastError();
+//    asyncErr = cudaDeviceSynchronize();
+//    if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
+//    if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
+//
 
     //workqueue
 

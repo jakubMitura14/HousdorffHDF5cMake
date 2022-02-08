@@ -5,10 +5,11 @@
 constexpr auto localWorkQueLength = 372;
 constexpr auto startOfLocalWorkQ = 4128;
 constexpr auto lengthOfMainShmem = 4500;
-constexpr auto begResShmem = 1024;
-constexpr auto begfirstRegShmem = 2048;
-constexpr auto begSecRegShmem = 3072;
-constexpr auto begThirdRegShmem = 4096;
+constexpr auto begResShmem = 1056;
+constexpr auto begfirstRegShmem = 2080;
+constexpr auto begSecRegShmem = 3104;
+constexpr auto begSMallRegShmem = 0;
+constexpr auto begSourceShmem = 32;
 
 /**
 In order to be able to use cuda malloc 3d we will implemnt it as a series
@@ -166,6 +167,17 @@ struct ForBoolKernelArgs {
     array3dWithDimsGPU goldArr;
     array3dWithDimsGPU segmArr;
     TFB numberToLookFor;
+
+    uint32_t* resultListPointerMeta;
+    uint16_t* resultListPointerLocal;
+    uint16_t* resultListPointerIterNumb;
+
+    uint32_t* origArrsPointer;
+    uint32_t* mainArrPointer;
+    uint16_t* metaDataArrPointer;
+
+    uint32_t* workQueuePointer;
+    unsigned int* minMaxes;
 
 
     /*

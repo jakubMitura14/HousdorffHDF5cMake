@@ -80,14 +80,12 @@ sync(cta);
 for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
     //goldpass
 
-    , size_t predicateAa, size_t predicateAb, size_t predicateAc
-        , size_t predicateBa, size_t predicateBb, size_t predicateBc
 
     if (isGoldPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAa]
         && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAb]
-        && ((isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAc) ]) {
+        && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAc])) {
 
-        unsigned int old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
+        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
             mainShmem[old] = uint32_t(linIdexMeta + UINT16_MAX);
         }
@@ -105,9 +103,9 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
     //segm pass
     if (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBa]
         && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBb]
-        && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBc)] ) {
+        && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBc]) ) {
 
-        unsigned int old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
+        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
             mainShmem[old] = uint32_t(linIdexMeta);
         }
