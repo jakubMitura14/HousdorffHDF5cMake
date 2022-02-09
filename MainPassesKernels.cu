@@ -427,7 +427,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-        mainDilatation(false, fbArgs, fbArgs.mainArrPointer , fbArgs.metaData   , fbArgs.minMaxes   
+    
+
+        mainDilatation(false, fbArgs, fbArgs.mainArrAPointer,fbArgs.mainArrBPointer , fbArgs.metaData   , fbArgs.minMaxes   
             , fbArgs.workQueuePointer 
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
             ,cta, tile, grid, mainShmem
@@ -619,7 +621,10 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     fbArgs.resultListPointerLocal = resultListPointerLocal;
     fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
     fbArgs.origArrsPointer = origArrsPointer;
-    fbArgs.mainArrPointer = mainArrPointer;
+    fbArgs.mainArrAPointer = mainArrAPointer;
+    fbArgs.mainArrBPointer = mainArrBPointer;
+
+    
     fbArgs.metaDataArrPointer = metaDataArrPointer;
     fbArgs.workQueuePointer = workQueuePointer;
     fbArgs.minMaxes = minMaxes;
