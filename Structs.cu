@@ -174,7 +174,8 @@ struct ForBoolKernelArgs {
     uint16_t* resultListPointerIterNumb;
 
     uint32_t* origArrsPointer;
-    uint32_t* mainArrPointer;
+uint32_t* mainArrAPointer;
+    uint32_t* mainArrBPointer;
     uint16_t* metaDataArrPointer;
 
     uint32_t* workQueuePointer;
