@@ -126,11 +126,11 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     uint32_t column = origArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
                     //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
 
-                 if (x==33 && y==1 && z==71) {
-                     printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
-                         , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                         , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
-                 }
+                 //if (x==33 && y==1 && z==71) {
+                 //    printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                 //        , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                 //        , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
+                 //}
 
                  
                  
@@ -151,11 +151,11 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     column = origArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
 
 
-                    if (x == 33 && y == 1 && z == 71) {
-                        printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
-                            , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                            , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
-                    }
+                    //if (x == 33 && y == 1 && z == 71) {
+                    //    printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                    //        , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                    //        , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
+                    //}
 
                     if (isBitAt(column, zLoc) && column > 0) {
                         // if (x==33 && y==1 && z==71) {

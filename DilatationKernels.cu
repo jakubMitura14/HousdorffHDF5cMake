@@ -174,10 +174,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                            //saving data from res shmem back to global memory
                            //if (((bigloop + i + 1) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i + 1) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
 
-                               cuda::memcpy_async(cta, &mainArr[getIndexForSaveResShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData)]
+          /*                     cuda::memcpy_async(cta, &mainArr[getIndexForSaveResShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData)]
                                    , (&mainShmem[begResShmem])
                                    , cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                                   , pipeline);
+                                   , pipeline);*/
                            //}
                            //todo - remove
                            pipeline.producer_commit();
