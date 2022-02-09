@@ -129,9 +129,12 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     sync(cta);
 
     //exporting to global work queue
-    cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (localWorkQueue), (sizeof(uint32_t) * localWorkQueueCounter[0]));
+    //cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (localWorkQueue), (sizeof(uint32_t) * localWorkQueueCounter[0]));
+
+    
     //setting offsets
     for (uint16_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
+        workQueue[globalWorkQueueCounter[0] +i]=localWorkQueue[i]; 
 
         //FP pass
         if (localWorkQueue[i]>= UINT16_MAX) {
