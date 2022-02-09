@@ -4,7 +4,14 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 #pragma once
 template <typename ZZR>
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
-    uint32_t*& resultListPointerMeta,uint16_t*& resultListPointerLocal,uint16_t*& resultListPointerIterNumb) {
+    uint32_t*& resultListPointerMeta,uint16_t*& resultListPointerLocal,uint16_t*& resultListPointerIterNumb,    uint32_t* origArrsPointer,
+    uint32_t* mainArrAPointer,
+    uint32_t* mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
+    
+    //free no longer needed arrays
+    cudaFreeAsync(goldArr.arrPStr.ptr, 0);
+    cudaFreeAsync(segmArr.arrPStr.ptr, 0);
+    
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
     cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost);
@@ -18,6 +25,25 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
     cudaMallocAsync(&resultListPointerLocal, size, 0);
     cudaMallocAsync(&resultListPointerIterNumb, size, 0);
 
+   auto xRange  = metaData.metaXLength ;
+   auto yRange =  metaData.MetaYLength ;
+   auto zRange = metaData.MetaZLength ;
+    
+    
+
+    
+    size_t sizeB = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
+
+    cudaMallocAsync(&mainArrAPointer, sizeB, 0);
+    cudaMallocAsync(mainArrAPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice);
+
+    
+    cudaMallocAsync(&mainArrBPointer, sizeB, 0);
+    cudaMallocAsync(mainArrBPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice);
+
+    
+    size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
+    
    // metaData.resultList = resultListPointer;
 
 
@@ -33,9 +59,8 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 
 #pragma once
 template <typename ZZR>
-inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs
-            , uint32_t*& mainArr, uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr, uint16_t*& metaDataArr
-) {
+inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs,
+             uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr, uint16_t*& metaDataArr) {
     ////reduced arrays
 
 
@@ -73,7 +98,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //allocating needed memory
     // main array
     unsigned int mainArrXLength = cpuArgs.dbXLength * cpuArgs.dbYLength;
-    unsigned int mainArrSectionLength = (mainArrXLength * 4);
+    unsigned int mainArrSectionLength = (mainArrXLength * 2);
     metaData.mainArrXLength = mainArrXLength;
     metaData.mainArrSectionLength = mainArrSectionLength;
     
@@ -83,21 +108,6 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     std::cout << "\n";
 
 
-    //std::cout << "xRange  ";
-    //std::cout << xRange;
-    //std::cout << "\n";
-
-    //std::cout << "yRange  ";
-    //std::cout << yRange;
-    //std::cout << "\n";
-
-    //std::cout << "zRange  ";
-    //std::cout << zRange;
-    //std::cout << "\n";
-
-
-    //uint32_t* mainArrCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-
     cudaMallocAsync(&mainArr, sizeB, 0);
     size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
     cudaMallocAsync(&origArr, sizeorigArr, 0);
@@ -105,89 +115,12 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
 
     
- 
-    
-    
-    //cudaMemcpy(mainArr, mainArrCPU, sizeB, cudaMemcpyHostToDevice);
-    
-    
-    //free(mainArrCPU);
-    //workqueue
-
     size_t sizeC = (totalMetaLength * sizeof(uint32_t));
    //cudaMallocAsync(&workQueue, size, 0);
     cudaMallocAsync(&workQueue, size,0);
 
    return metaData;
 };
-
-
-
-
-#pragma once
-template <typename ZZR>
-inline void printForDebug(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, uint32_t* resultListPointer
-    , uint32_t* mainArrPointer, uint32_t* workQueuePointer, MetaDataGPU metaData) {
-    // getting arrays allocated on  cpu to be able to print and test them easier
-    size_t size = sizeof(uint32_t) * metaData.totalMetaLength * metaData.mainArrSectionLength;
-    //size_t size = sizeof(uint32_t) * metaData.totalMetaLength * metaData.mainArrSectionLength;
-    uint32_t* mainArrCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-    cudaMemcpy(mainArrCPU, mainArr, size, cudaMemcpyDeviceToHost);
-
-    uint32_t column = mainArrCPU[33];
-    printf("column\n ");
-    std::cout<<column;
-    //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
-    //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-
-    for (int linIdexMeta = 0; linIdexMeta < metaData.totalMetaLength; linIdexMeta++) {
-        uint8_t xMeta = linIdexMeta % metaData.metaXLength;
-        uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
-        uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
-
-        for (int threadIdxX = 0; threadIdxX < 32; threadIdxX++) {
-         
-                    for (int threadIdxY = 0; threadIdxY < 18; threadIdxY++) {
-
-                        uint8_t xLoc = threadIdxX;
-                        uint16_t x = (xMeta + metaData.minX) * gpuArgs.dbXLength + xLoc;//absolute position
-                            uint8_t yLoc = threadIdxY;
-                                uint16_t  y = (yMeta + metaData.minY) * gpuArgs.dbYLength + yLoc;//absolute position
-
-                                uint32_t columnGold = mainArrCPU[linIdexMeta * metaData.mainArrSectionLength + gpuArgs.dbXLength * threadIdxY + threadIdxX];
-                                if(columnGold >0){
-                                    printf("found set at x %d y%d columnGold %d \n", x, y,  columnGold);
-                                        for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
-                                            uint16_t z = (zMeta + metaData.minZ) * gpuArgs.dbZLength + bitPos;//absolute position
-                                            //if any bit here is set it means it should be added to result list 
-                                            if (isBitAtCPU(columnGold, bitPos)) {
-                                               // printf("found set at x %d y%d z %d  \n",x,y,z);
-
-                                            
-                                        }
-                                    }
-
-                                }
-
-
-            }
-        }
-    }
-
-        
-        
-        
-        
-        
-        
-        //gold pass
-        
-        //segm pass
-       // mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength]
-
-
-
-    }
 
 
 
