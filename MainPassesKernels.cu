@@ -553,7 +553,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         //pointers ...
     uint32_t* resultListPointerMeta;
     uint16_t* resultListPointerLocal;
-    uint16_t* resultListPointerIterNumb;
+    uint32_t* resultListPointerIterNumb;
     
     uint32_t* origArrsPointer;
     uint32_t* mainArrAPointer;
