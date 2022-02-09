@@ -141,20 +141,22 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                        pipeline.producer_acquire();
                            //posterior of the block to anterior we load it using single threads and multple mempcy async becouse memory is non aligned
                            if (localBlockMetaData[17] < UINT16_MAX  && miniTile.meta_group_rank()< fbArgs.dbYLength) {
-                               cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+32+ miniTile.meta_group_rank()]),
-                                   (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17) //basic offset
-                                       //we look for indicies 0,32,64... up to metaData.mainArrXLength
-                                       + miniTile.meta_group_rank()*32] )
-                                   , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+
+                               cuda::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem + 32 + miniTile.meta_group_rank()]), 
+                                   &mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17) //basic offset
+                                   + miniTile.meta_group_rank() * 32 ], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+                                   cuda::aligned_size_t<4>(sizeof(uint32_t))
+                                   , pipeline);
+
                            }
                            //anterior of the block to posterior
-                           if (localBlockMetaData[18] < UINT16_MAX&& miniTile.meta_group_rank()< fbArgs.dbYLength*2) {
-                               cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+64+ miniTile.meta_group_rank() ]),
-                                   (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 18)
-                                       //we look for indicies 31,63... up to metaData.mainArrXLength
-                                       + (miniTile.meta_group_rank() * 32)+31  ])
-                                   , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
-                           }
+                           //if (localBlockMetaData[18] < UINT16_MAX&& miniTile.meta_group_rank()< fbArgs.dbYLength*2) {
+                           //    cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+64+ miniTile.meta_group_rank() ]),
+                           //        (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 18)
+                           //            //we look for indicies 31,63... up to metaData.mainArrXLength
+                           //            + (miniTile.meta_group_rank() * 32)+31  ])
+                           //        , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+                           //}
                        pipeline.producer_commit();
                    }
                      //compute - now we have data in source shmem about this block and left and right padding
