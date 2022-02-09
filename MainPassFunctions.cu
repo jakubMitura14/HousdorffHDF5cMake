@@ -300,8 +300,24 @@ worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
               }
 }
 
+/// we need to define here the function that will update the metadata result for the given block - also if it is not padding pass we need to set the neighbouring blocks as to be activated according to the data in shmem
 
 
+  if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
+      blockFpConter[0]+=localFpConter[0]
+        localFpConter[0] = 0;
+    };
+    if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
+        blockFnConter[0]+=localFnConter[0] ;
+        localFnConter[0]=0;
+    };
+    if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
+        localFpConter[0] = 0;
+    };
+    if (tile.thread_rank() == 4 && tile.meta_group_rank() == 0) {
+        localFnConter[0] = 0;
+    };
+          add info about increase fp or fn count to metadata block and to block variable in thread block
 
 
 
