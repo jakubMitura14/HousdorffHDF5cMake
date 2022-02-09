@@ -216,33 +216,31 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 }
 
-//
-//#pragma once
-//template <typename TXTOI>
-//inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-//, uint32_t mainShmem[], bool isAnythingInPadding[6], pipeline,localBlockMetaData
-//,uint8_t metaDataCoordIndex
-//, uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
-//, uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
-//, uint16_t targetShmemOffset
-//) {
-//        pipeline.consumer_wait();
-//        // now we need to load the data from the neigbouring blocks
-//        //first checking is there anything to look to 
-//        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
-//            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-//            if (mainShmem[threadIdx.x + threadIdx.y * 32] & numberbitOfIntrestInBlock) {
-//                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-//                               isAnythingInPadding[0] = true;
-//            };
-//            mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = 
-//                mainShmem[begResShmem+threadIdx.x+threadIdx.y*32]
-//                    | (mainShmem[targetShmemOffset+forBorderXcoord+forBorderYcoord*32] & numberWithCorrBitSetInNeigh )
-//
-//        }   
-//         pipeline.consumer_release();
-//
-//}
+
+#pragma once
+template <typename TXTOI>
+inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
+, uint32_t mainShmem[], bool isAnythingInPadding[6], localBlockMetaData
+,uint8_t metaDataCoordIndex
+, uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
+, uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
+, uint16_t targetShmemOffset
+) {
+       // now we need to load the data from the neigbouring blocks
+       //first checking is there anything to look to 
+       if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
+           //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+           if (mainShmem[threadIdx.x + threadIdx.y * 32] & numberbitOfIntrestInBlock) {
+                              // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
+                              isAnythingInPadding[0] = true;
+           };
+           mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = 
+               mainShmem[begResShmem+threadIdx.x+threadIdx.y*32]
+                   | (mainShmem[targetShmemOffset+forBorderXcoord+forBorderYcoord*32] & numberWithCorrBitSetInNeigh )
+
+       }   
+
+}
 //
 //
 //
@@ -289,22 +287,20 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 //}
 //
 //
-///*
-//constitutes end of pipeline  where we load data for next iteration if such is present
-//*/
-//inline __device__  void lastLoad(pipeline,cta//some needed CUDA objects
-//worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
-//){
-//               if (i + 1<= worQueueStep[0]) {
-//                   pipeline.producer_acquire();
-//                   cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) 
-//                   * metaData.mainArrSectionLength + metaData.metaDataOffset])
-//                       , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
-//                   pipeline.producer_commit();
-//               }
-//}
-//
-//
+/*
+constitutes end of pipeline  where we load data for next iteration if such is present
+*/
+inline __device__  void lastLoad(cta//some needed CUDA objects
+worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
+){
+              if (i + 1<= worQueueStep[0]) {
+                  cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) 
+                  * metaData.mainArrSectionLength + metaData.metaDataOffset])
+                      , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
+              }
+}
+
+
 
 
 
