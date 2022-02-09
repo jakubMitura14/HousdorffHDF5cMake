@@ -330,7 +330,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     __shared__ unsigned int worQueueStep[1];
     __shared__ uint32_t isGold[1];
-    __shared__ uint32_t currLinIndM[1];
+    __shared__ uint16_t currLinIndM[1];
 
     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
     0 : global FP count;

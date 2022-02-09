@@ -498,7 +498,7 @@ inline __device__ uint16_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t
 calculate index in main shmem where array that is source for this dilatation round is present in the neighboutring block ...
 */
 inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint32_t iterationNumb[1], uint32_t isGold[1], uint32_t currLinIndM[1], uint32_t localBlockMetaData[19],  size_t inMetaIndex) {
+    , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19],  size_t inMetaIndex) {
        return  metaData.mainArrXLength * 
     ((1 - (isGold[1]) + (( (iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
@@ -521,7 +521,7 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
     uint8_t paddingPos,    uint8_t  normalXChange, uint8_t normalYchange
 , uint32_t mainShmem[], bool isAnythingInPadding[6]
 ,uint8_t forBorderYcoord, uint8_t forBorderXcoord
-,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset   ) {
+,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset , uint16_t localBlockMetaData[20]) {
     // so we first check for corner cases 
     if (predicate) {
         // now we need to load the data from the neigbouring blocks

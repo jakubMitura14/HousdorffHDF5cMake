@@ -28,7 +28,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     unsigned int localFnConter[1], unsigned int blockFpConter[1],
     unsigned int blockFnConter[1], unsigned int resultfpOffset[1],
     unsigned int resultfnOffset[1], unsigned int worQueueStep[1],
-    uint32_t isGold[1], uint32_t currLinIndM[1], unsigned int localMinMaxes[5]
+    uint32_t isGold[1], uint16_t currLinIndM[1], unsigned int localMinMaxes[5]
     , uint16_t localBlockMetaData[20], unsigned int fpFnLocCounter[1]
     , bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]
     , uint32_t* origArrs, uint16_t* metaDataArr
@@ -36,7 +36,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     auto pipeline = cuda::make_pipeline();
     auto bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (metaData.mainArrXLength));
     auto thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
-    thread_block_tile<1> miniTile = tiled_partition<1>(block);
+    thread_block_tile<1> miniTile = tiled_partition<1>(cta);
 
 
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0  && !isPaddingPass) {
@@ -137,15 +137,14 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                ////////#### pipeline step 2) 
                //load for next step - so we load posterior of anterior block  and anterior of posterior block given they exist
                    //anterior and posterior
-                   if (localBlockMetaData[17] < UINT16_MAX   || (localBlockMetaData[18] < UINT16_MAX) {
+                   if (localBlockMetaData[17] < UINT16_MAX   || localBlockMetaData[18] < UINT16_MAX) {
                        pipeline.producer_acquire();
                            //posterior of the block to anterior we load it using single threads and multple mempcy async becouse memory is non aligned
                            if (localBlockMetaData[17] < UINT16_MAX  && miniTile.meta_group_rank()< fbArgs.dbYLength) {
                                cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+32+ miniTile.meta_group_rank()]),
-                                   (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17)] //basic offset
+                                   (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17) //basic offset
                                        //we look for indicies 0,32,64... up to metaData.mainArrXLength
-                                       + miniTile.meta_group_rank()*32
-                                       )
+                                       + miniTile.meta_group_rank()*32] )
                                    , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
                            }
                            //anterior of the block to posterior
@@ -153,8 +152,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                                cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+64+ miniTile.meta_group_rank() ]),
                                    (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 18)
                                        //we look for indicies 31,63... up to metaData.mainArrXLength
-                                       + (miniTile.meta_group_rank() * 32)+31
-                                   ])
+                                       + (miniTile.meta_group_rank() * 32)+31  ])
                                    , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
                            }
                        pipeline.producer_commit();
