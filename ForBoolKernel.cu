@@ -313,9 +313,12 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
         setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData, localBlockMetaData);//anterior
         setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData, localBlockMetaData);//posterior
 
+  if ((threadIdx.x <20) && (threadIdx.y == 0)) {
+metaDataArr[linIdexMeta * metaData.metaDataSectionLength+ threadIdx.x]= localBlockMetaData[threadIdx.x];
+    };
 
         sync(cta); // just to reduce the warp divergence
-
+        
         // copy metadata to global memory
 
         //cuda::memcpy_async(cta, &metaDataArr[linIdexMeta * metaData.metaDataSectionLength], (&localBlockMetaData[0]), (sizeof(uint16_t) * 20), barrier);
