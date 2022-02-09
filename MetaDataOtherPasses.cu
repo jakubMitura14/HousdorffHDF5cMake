@@ -130,7 +130,11 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
     }
 }
 sync(cta);
-cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (&mainArr[0]), (sizeof(uint32_t) * localWorkQueueCounter[0]));
+for (uint16_t linI =hreadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
+  workQueue[globalWorkQueueCounter[0]+linI]=mainShmem[linI];
+}
+
+//cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (&mainArr[0]), (sizeof(uint32_t) * localWorkQueueCounter[0]));
 }
 
 
