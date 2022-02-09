@@ -15,151 +15,39 @@ using namespace cooperative_groups;
 
 
 /*
-gettinng source array for dilatations
+gettinng  array for dilatations
 basically arrays will alternate between iterations once one will be source other target then they will switch - we will decide upon knowing 
 wheather the iteration number is odd or even
 */
 template <typename TXPI>
-inline __device__ array3dWithDimsGPU getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs
-    , uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i, unsigned int iterationNumb[1]) {
+inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, uint32_t iterationNumb[1]) {
 
 
     if ((iterationNumb[0] & 1) == 0) {
-        if (localWorkQueue[i][3] == 1) {
-            return fbArgs.reducedGoldPrev;
-        }
-        else {
-            return fbArgs.reducedSegmPrev;
-        }
+      return fbArgs.mainArrAPointer;
     }
     else {       
-        if (localWorkQueue[i][3] == 1) {
-            return fbArgs.reducedGold;
-        }
-        else {
-            return fbArgs.reducedSegm;
-        }    
+       return fbArgs.mainArrBPointer;
     }
 
 
 }
+
+
 /*
 gettinng target array for dilatations
 */
 template <typename TXPPI>
-inline __device__ array3dWithDimsGPU getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs
-    , uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i, unsigned int iterationNumb[1]) {
+inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPI> fbArgs, uint32_t iterationNumb[1]) {
 
-
-    if ((iterationNumb[0] & 1) != 0) {
-        if (localWorkQueue[i][3] == 1) {
-            return fbArgs.reducedGoldPrev;
-        }
-        else {
-            return fbArgs.reducedSegmPrev;
-        }
+    if ((iterationNumb[0] & 1) == 0) {
+      return fbArgs.mainArrBPointer;
     }
-    else {     
-        if (localWorkQueue[i][3] == 1) {
-            return fbArgs.reducedGold;
-        }
-        else {
-            return fbArgs.reducedSegm;
-        }
+    else {       
+       return fbArgs.mainArrAPointer  ;
     }
 
-
 }
-/*
-loading data from appropriate reduce Arr to shared memory 
-*/
-#pragma once
-template <typename TXI>
-inline __device__ void loadDataToShmem(ForBoolKernelArgs<TXI> fbArgs, char* tensorslice, uint32_t sourceShared[32][32], array3dWithDimsGPU sourceReduced
-, uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i ) {
-      sourceShared[threadIdx.x][ threadIdx.y]  
-          = getTensorRow<uint32_t>(tensorslice, sourceReduced, sourceReduced.Ny
-              , localWorkQueue[i][1] * fbArgs.dbYLength+ threadIdx.y
-              , localWorkQueue[i][2])[localWorkQueue[i][0] *fbArgs.dbXLength+ threadIdx.x];
-    //if (sourceShared[threadIdx.x][threadIdx.y] > 0) {
-    //    printf("non zero in idX %d idY %d \n ", threadIdx.x, threadIdx.y);
-    //}
-}
-
-/*
-in order to be later able to analyze paddings we will save copy of the currently dilatated array 
-(before dilatation) to global memory
-*/
-//template <typename TPYXI>
-//inline __device__ void fromShmemToGlobal(ForBoolKernelArgs<TPYXI> fbArgs, char* tensorslice, uint32_t sourceShared[32][32], array3dWithDimsGPU target
-//    , uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i
-//) {
-//    
-//    getTensorRow<uint32_t>(tensorslice, target, target.Ny, yMeta * fbArgs.dbYLength + threadIdx.y, zMeta)[xMeta * fbArgs.dbXLength + threadIdx.x]= sourceShared[threadIdx.x][ threadIdx.y];
-//}
-//
-
-
-/*
-saving dilatated data to global memory
-*/
-#pragma once
-template <typename TXTI>
-inline __device__ void saveToDilatationArr(ForBoolKernelArgs<TXTI> fbArgs, char* tensorslice, uint32_t resShared[32][32], array3dWithDimsGPU resDilatated
-    , uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i
-) {
-    //if (resShared[threadIdx.x][threadIdx.y]>0) {
-    //    printf("non zero in saving  in idX %d idY %d zMeta %d \n ", threadIdx.x, threadIdx.y, localWorkQueue[i][2]);
-
-    //}
-    //    getTensorRow<uint32_t>(tensorslice, resDilatated, resDilatated.Ny,localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y, localWorkQueue[i][2])[localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x]; 
-
-    getTensorRow<uint32_t>(tensorslice, resDilatated, resDilatated.Ny, localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y, localWorkQueue[i][2])[localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x]
-    = resShared[threadIdx.x][ threadIdx.y];
-}
-
-
-
-
-///*
-//checking in metadata weather block need to be validated
-//*/
-//#pragma once
-//inline __device__ void isBlockToBeValidatedd(char* tensorslice, bool isBlockToBeValidated[1], array3dWithDimsGPU sourceReduced
-//    , uint16_t xMeta, uint16_t yMeta, uint16_t zMeta)
-//{
-//    isBlockToBeValidated[0] = getTensorRow<bool>(tensorslice, sourceReduced, sourceReduced.Ny, yMeta , zMeta)[xMeta ];
-//}
-//
-
-/*
-marking that block is already full*/
-#pragma once
-inline __device__ void markIsBlockFull(char* tensorslice
-    , uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i, bool isBlockFull, array3dWithDimsGPU targetMeta, coalesced_group active)
-{
-    if (isBlockFull && isToBeExecutedOnActive(active, 8)) {
-        
-      //  printf("set block as full  %d %d %d " , localWorkQueue[i][0], localWorkQueue[i][1], localWorkQueue[i][2]);
-
-        getTensorRow<bool>(tensorslice, targetMeta, targetMeta.Ny, localWorkQueue[i][1], localWorkQueue[i][2])[localWorkQueue[i][0]] = true;
-    }
-}
-
-/*
-set the fp or fn counters of metadata
-*/
-#pragma once
-inline __device__ void updateMetaCounters(char* tensorslice
-    , uint16_t xMeta, uint16_t yMeta, uint16_t zMeta, uint16_t isGold,   array3dWithDimsGPU targetMeta,unsigned int fpOrFnCount,  coalesced_group active)
-{
-    if ( isToBeExecutedOnActive(active, 9)) {
-        getTensorRow<unsigned int>(tensorslice, targetMeta, targetMeta.Ny, yMeta, zMeta)[xMeta] += fpOrFnCount;
-    }
-}
-
-
-
 
 
 /*
@@ -185,94 +73,6 @@ inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
 
 
 
-
-
-
-inline __device__ void clearisAnythingInPadding (bool isAnythingInPadding[6]) {
-
-    auto active = coalesced_threads();
-    #pragma unroll
-    for (int ii; ii < 6; ii++) {
-        if (isToBeExecutedOnActive(active, ii)) { isAnythingInPadding[ii] = 0; };
-    };
-}
-
-/**
-loading some data on single threads to shared memory that can be needed by all blocks 
-*/
-
-#pragma once
-template <typename TYXI>
-inline __device__ void loadSmallVars(ForBoolKernelArgs<TYXI> fbArgs, char* tensorslice
-    , unsigned int resultfpOffset[1], unsigned int resultfnOffset[1], bool isBlockToBeValidated[1]
-    ,uint16_t xMeta, uint16_t yMeta, uint16_t zMeta,uint16_t isGold, coalesced_group active
-    , unsigned int localFpConter[1], unsigned int localFnConter[1]
-) {
-
-    //is to be validates
-    if (isToBeExecutedOnActive(active, 0) && isGold == 1) {
-       
-        //printf("\n isToBeValidatedFp %d count %d counter %d     %d xMeta %d yMeta %d zMeta %d \n  ",
-        //    getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCounter, fbArgs.metaData.fpCounter.Ny, yMeta, zMeta)[xMeta]
-        //    < getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta]
-        //    , getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta]
-        //    , getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCounter, fbArgs.metaData.fpCounter.Ny, yMeta, zMeta)[xMeta]
-        //    , xMeta, yMeta, zMeta);
-
-
-   /*     getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeValidatedFp, fbArgs.metaData.isToBeValidatedFp.Ny, yMeta, zMeta)[xMeta]
-            = (getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCounter, fbArgs.metaData.fpCounter.Ny, yMeta, zMeta)[xMeta]
-                < getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta]);*/
-
-        isBlockToBeValidated[0] = (getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCounter, fbArgs.metaData.fpCounter.Ny, yMeta, zMeta)[xMeta]
-            < getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCount, fbArgs.metaData.fpCount.Ny, yMeta, zMeta)[xMeta]);
-       // isBlockToBeValidated[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.isToBeValidatedFp, fbArgs.metaData.fpOffset.Ny, yMeta, zMeta)[xMeta];
-    };
-    if (isToBeExecutedOnActive(active, 1) && isGold == 0) {
-       
-    //    printf("\n isToBeValidated Fn  %d count %d counter %d     xMeta %d yMeta %d zMeta %d   \n  ",
-    //getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCounter, fbArgs.metaData.fnCounter.Ny, yMeta, zMeta)[xMeta]
-    //< getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCount, fbArgs.metaData.fnCount.Ny, yMeta, zMeta)[xMeta]
-    //, getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCount, fbArgs.metaData.fnCount.Ny, yMeta, zMeta)[xMeta]
-    //, getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCounter, fbArgs.metaData.fnCounter.Ny, yMeta, zMeta)[xMeta]
-    //, xMeta, yMeta, zMeta);
-
-
-
-   /*     getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeValidatedFn, fbArgs.metaData.isToBeValidatedFn.Ny, yMeta, zMeta)[xMeta]
-            = (getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCounter, fbArgs.metaData.fnCounter.Ny, yMeta, zMeta)[xMeta]
-                < getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCount, fbArgs.metaData.fnCount.Ny, yMeta, zMeta)[xMeta]);
-  */      
-        isBlockToBeValidated[0] = (getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCounter, fbArgs.metaData.fnCounter.Ny, yMeta, zMeta)[xMeta]
-            < getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCount, fbArgs.metaData.fnCount.Ny, yMeta, zMeta)[xMeta]);
-        //isBlockToBeValidated[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.isToBeValidatedFn, fbArgs.metaData.fpOffset.Ny, yMeta, zMeta)[xMeta];
-    };
-    //offsets
-    if (isToBeExecutedOnActive(active, 2)) {// && isGold == 1
-        resultfpOffset[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpOffset, fbArgs.metaData.fpOffset.Ny, yMeta, zMeta)[xMeta];
-      //  printf("\n resultfpOffset[0] %d xMeta %d yMeta %d  zMeta %d \n ", resultfpOffset[0], xMeta, yMeta, zMeta);
-
-    };
-    if (isToBeExecutedOnActive(active, 3) ) {//&& isGold == 0
-       //printf("\n resultfnOffset[0] %d xMeta %d yMeta %d  zMeta %d \n ", resultfnOffset[0], xMeta, yMeta, zMeta);
-
-
-        resultfnOffset[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnOffset, fbArgs.metaData.fnOffset.Ny, yMeta, zMeta)[xMeta];
-    };
-    // block counters
-    if (isToBeExecutedOnActive(active, 4) && isGold == 1) {
-        //auto xx = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCounter, fbArgs.metaData.fpCounter.Ny, yMeta, zMeta)[xMeta];
-        //printf("setting ");
-
-        localFpConter[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fpCounter, fbArgs.metaData.fpCounter.Ny, yMeta, zMeta)[xMeta];
-    };
-    if (isToBeExecutedOnActive(active, 5) && isGold == 0) {
-        localFnConter[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.fnCounter, fbArgs.metaData.fnCounter.Ny, yMeta, zMeta)[xMeta];
-    };
-
-
-
-}
 
 
 
@@ -339,146 +139,6 @@ inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t res
    // return target;
 }
 
-
-/*
-now we will  additionally get bottom bit of block above and top of block below given they exist
-*/
-#pragma once
-template <typename TXTIO>
-inline __device__ void checkBlockToUpAndBottom (ForBoolKernelArgs<TXTIO> fbArgs, char* tensorslice,
-    uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i, array3dWithDimsGPU sourceArr, uint32_t resShared[32][32]) {
- 
-    //looking up
-    if (localWorkQueue[i][2] > 0) {//boundary check
-     //auto  xx =   getTensorRow<unsigned int>(tensorslice, sourceArr, sourceArr.Ny, localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y, localWorkQueue[i][2] - 1)[localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x]
-
-      // printf(" looking up  ");
-        //source
-        setBitTo(getTensorRow<uint32_t>(tensorslice, sourceArr, sourceArr.Ny, localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y, localWorkQueue[i][2] - 1)[localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x]
-            , (fbArgs.dbZLength - 1) //sourceBit
-            , resShared//target
-            , 0//target bit
-        );
-
-    };
-    //look down 
-    if (localWorkQueue[i][2] < (fbArgs.metaData.MetaZLength - 1)) {//boundary check
-        //source
-        setBitTo(getTensorRow<uint32_t>(tensorslice, sourceArr, sourceArr.Ny, localWorkQueue[i][1] * fbArgs.dbYLength + threadIdx.y, localWorkQueue[i][2] + 1)[localWorkQueue[i][0] * fbArgs.dbXLength + threadIdx.x]
-            , 0 //sourceBit
-            , resShared//target
-            , (fbArgs.dbZLength - 1)//target bit
-        );
-
-    };
-
-
-}
-
-
-template <typename TXYYOI>
-inline __device__ void clearShmemBeforeDilatation(ForBoolKernelArgs<TXYYOI> fbArgs, char* tensorslice, unsigned int blockFpConter[1], unsigned int blockFnConter[1]
-    , unsigned int localWorkQueueCounter[1], unsigned int localFpConter[1], unsigned int localFnConter[1]
-) {
-
-    auto activeD = coalesced_threads();
-    //resetting
-    if (isToBeExecutedOnActive(activeD, 3)) {
-        localWorkQueueCounter[0] = 0;
-    };
-    if (isToBeExecutedOnActive(activeD, 4)) {
-        localFpConter[0] = 0;
-    };
-    if (isToBeExecutedOnActive(activeD, 5)) {
-        localFnConter[0] = 0;
-    };
-
-}
-
-
-
-
-/*
-establish wheather we still need dilatations in both passes
-*/
-template <typename TXTJIOP>
-inline __device__ void checkIsToBeDilatated(ForBoolKernelArgs<TXTJIOP> fbArgs, char* tensorslice, bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]) {
-    auto activeE = coalesced_threads();
-    if (isToBeExecutedOnActive(activeE, 0)) {
-        isGoldPassToContinue[0] = (ceilf(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[7] * fbArgs.robustnessPercent)
-    > getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[10]);
-   
-   //     isGoldPassToContinue[0] = (getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[7] 
-   // > getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[10]);
-
-    }
-    if (isToBeExecutedOnActive(activeE, 1)) {
-       
-        //TODO() remove 
-     /*   auto xx = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[8];
-        unsigned int counter = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[11];
-        printf("\n  setting is to be dilatated   global fn count %d times robustness %f counter %f is to be accepted %d \n",xx
-            , ceilf((float)xx * fbArgs.robustnessPercent), counter,  ( ceilf(xx* 0.95)> counter));
-        */
-
-
-       
-        isSegmPassToContinue[0] = (ceilf(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[8] * fbArgs.robustnessPercent)
-            > getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[11]);
-
-
-    //    isSegmPassToContinue[0] = (getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[8]
-      //      > getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[11]);
-
-    }
-
-}
-
-/*
-update global fp and fn counters and resets shared memory values after dilatations*/
-template <typename TXTJIOI>
-inline __device__ void updateGlobalCountersAndClear(ForBoolKernelArgs<TXTJIOI> fbArgs, char* tensorslice, unsigned int blockFpConter[1], unsigned int blockFnConter[1]
-    , unsigned int localWorkQueueCounter[1], unsigned int localFpConter[1], unsigned int localFnConter[1]
-) {
-  
-    auto activeD = coalesced_threads();
-    if (isToBeExecutedOnActive(activeD, 6)) {
-        //if (blockFpConter[0]>0) {
-        //    printf("\n adding to global fp counter  %d \n", blockFpConter[0]);
-
-        //}
-        atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[10]), (blockFpConter[0]));
-       // blockFpConter[0] = 0;
-    };
-    if (isToBeExecutedOnActive(activeD, 7)) {
-        //if (blockFnConter[0]) {
-        //    printf("\n adding to global fn counter  %d \n", blockFnConter[0]);
-        //}
-       // printf("\n  block fn counter %d curr value %d \n", blockFnConter[0], getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[11]);
-        atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[11]), (blockFnConter[0]));
-     //   blockFnConter[0] = 0;
-    };
-
-    if (isToBeExecutedOnActive(activeD, 8)) {
-        // printf("\n  block fn counter %d curr value %d \n", blockFnConter[0], getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[11]);
-        getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9] = 0;
-    };
-    //resetting
-    //if (isToBeExecutedOnActive(activeD, 3)) {
-    //    localWorkQueueCounter[0] = 0;
-    //};
-    //if (isToBeExecutedOnActive(activeD, 4)) {
-    //    localFpConter[0] = 0;
-    //};
-    //if (isToBeExecutedOnActive(activeD, 5)) {
-    //    localFnConter[0] = 0;
-    //};
-    //if (isToBeExecutedOnActive(activeD, 5)) {
-    //    localFnConter[0] = 0;
-    //};
-
-}
-
 ///////////////////////////////// new functions
 
 
@@ -488,7 +148,7 @@ calculate index in main shmem where array that is source for this dilatation rou
 inline __device__ uint16_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint32_t iterationNumb[1], uint16_t i){
     return  metaData.mainArrXLength * 
-    ((1 - ((mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))) + (( (iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
+    (1 - (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))// here calculating offset depending on what iteration and is gold;
         + (mainShmem[startOfLocalWorkQ + i] - (UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))) * metaData.mainArrSectionLength   ;// offset depending on linear index of metadata block of intrest
 
 }
@@ -500,7 +160,7 @@ calculate index in main shmem where array that is source for this dilatation rou
 inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19],  size_t inMetaIndex) {
        return  metaData.mainArrXLength * 
-    ((1 - (isGold[1]) + (( (iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
+    ((1 - (isGold[1]) )// here calculating offset depending on what iteration and is gold;
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
 }
 
@@ -511,7 +171,7 @@ calculating where to put the data from res shmem - so data after dilatation back
 inline __device__ uint16_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
     return  metaData.mainArrXLength *
-        (1 - (isGold[1]) + ((1-(iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
+        (1 - (isGold[1]) * 2))// here calculating offset depending on what iteration and is gold;
             + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
 }
 
