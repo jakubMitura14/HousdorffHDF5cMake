@@ -133,45 +133,121 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                        };
                    pipeline.consumer_release();
 
+                   ////////#### pipeline step 2)  load block from top and process center that is in source shmem; and both smallRegShmems
+                   //load for next step - so we load block to the top
+                               //posterior of the block to anterior we load it using single threads and multple mempcy async becouse memory is non aligned
+                               if (localBlockMetaData[13] < UINT16_MAX ) {
+                                   pipeline.producer_acquire();
 
-               ////////#### pipeline step 2) 
-               //load for next step - so we load posterior of anterior block  and anterior of posterior block given they exist
-                   //anterior and posterior
-                   if (localBlockMetaData[17] < UINT16_MAX   || localBlockMetaData[18] < UINT16_MAX) {
-                       pipeline.producer_acquire();
-                           //posterior of the block to anterior we load it using single threads and multple mempcy async becouse memory is non aligned
-                           if (localBlockMetaData[17] < UINT16_MAX  && miniTile.meta_group_rank()< fbArgs.dbYLength) {
+                                   cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+                                       &mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 13 )], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+                                           cuda::aligned_size_t<128>(sizeof(uint32_t)* metaData.mainArrXLength)
+                                       , pipeline);
 
-                               cuda::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem + 32 + miniTile.meta_group_rank()]), 
-                                   &mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17) //basic offset
-                                   + miniTile.meta_group_rank() * 32 ], //we look for indicies 0,32,64... up to metaData.mainArrXLength
-                                   cuda::aligned_size_t<4>(sizeof(uint32_t))
+                                   pipeline.producer_commit();
+                               }
+                       
+                         //compute - now we have data in source shmem about this block and left and right padding and we need to process it 
+                           pipeline.consumer_wait();
+                               // first we perform up and down dilatations inside the block
+                               mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[begSourceShmem+threadIdx.x + threadIdx.y * 32]);
+                               //we also do the left and right dilatations
+                               //left
+                               dilatateHelperForTransverse((threadIdx.x == 0),
+                                       2, (-1), (0), mainShmem, isAnythingInPadding
+                                       , 0, threadIdx.y + (32 - fbArgs.dbYLength) // we add offset depending on y dimension
+                                       , 15, begSMallRegShmemA, localBlockMetaData);
+                                       
+                               //right
+                               dilatateHelperForTransverse((threadIdx.x == (fbArgs.dbXLength - 1)),
+                                       3, (1), (0), mainShmem, isAnythingInPadding
+                                       , 0, threadIdx.y
+                                       , 16, begSMallRegShmemB, localBlockMetaData);
+
+                           pipeline.consumer_release();
+            ////////#### pipeline step 3) 
+
+
+                           //todo - remove
+                           pipeline.producer_acquire();
+                           //todo - remove
+                           //saving data from res shmem back to global memory
+                           //if (((bigloop + i + 1) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i + 1) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
+
+                               cuda::memcpy_async(cta, &mainArr[getIndexForSaveResShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData)]
+                                   , (&mainShmem[begResShmem])
+                                   , cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
                                    , pipeline);
-
-                           }
-                           //anterior of the block to posterior
-                           //if (localBlockMetaData[18] < UINT16_MAX&& miniTile.meta_group_rank()< fbArgs.dbYLength*2) {
-                           //    cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+64+ miniTile.meta_group_rank() ]),
-                           //        (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 18)
-                           //            //we look for indicies 31,63... up to metaData.mainArrXLength
-                           //            + (miniTile.meta_group_rank() * 32)+31  ])
-                           //        , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
                            //}
-                       pipeline.producer_commit();
-                   }
-                     //compute - now we have data in source shmem about this block and left and right padding
-                       pipeline.consumer_wait();
-                           // first we perform up and down dilatations inside the block
-                           mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[begSourceShmem+threadIdx.x + threadIdx.y * 32]);
-                           //we also do the left and right dilatations
-                           if (localBlockMetaData[17] < UINT16_MAX) {
+                           //todo - remove
+                           pipeline.producer_commit();
+                           //todo - remove
 
-                           };
-                           if (localBlockMetaData[18] < UINT16_MAX) {
+                           pipeline.consumer_wait();
+                           //todo - remove
 
-                           };
+                           pipeline.consumer_release();
+                           //todo - remove
+                               pipeline.producer_acquire();
+                               //todo - remove
+                               //auto col = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+                               auto col = mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32];
+                               if (col>0) {
+                                   //printf("col saving %d   index where saving %d linIndexMeta %d  \n  "
+                                   //    , col, getIndexForSaveResShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData)
+                                   //    + threadIdx.x + threadIdx.y * 32  , currLinIndM[0]) ;
+                               }
+                              // cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&metaDataArr[(mainShmem[startOfLocalWorkQ + i + 1] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i + 1] >= UINT16_MAX)) * metaData.metaDataSectionLength])
+                               //    , cuda::aligned_size_t<4>(sizeof(uint16_t) * 20), pipeline);
 
-                       pipeline.consumer_release();
+
+                               //todo - remove
+
+                               pipeline.producer_commit();
+                           
+
+               //////////#### pipeline step 2) 
+               ////load for next step - so we load posterior of anterior block  and anterior of posterior block given they exist
+               //    //anterior and posterior
+               //    if (localBlockMetaData[17] < UINT16_MAX   || localBlockMetaData[18] < UINT16_MAX) {
+               //        pipeline.producer_acquire();
+               //            //posterior of the block to anterior we load it using single threads and multple mempcy async becouse memory is non aligned
+               //            if (localBlockMetaData[17] < UINT16_MAX  && miniTile.meta_group_rank()< fbArgs.dbXLength) {
+
+               //                cuda::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem + 32 + miniTile.meta_group_rank()]), 
+               //                    &mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 17) //basic offset
+               //                    + miniTile.meta_group_rank() * 32 ], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+               //                    cuda::aligned_size_t<4>(sizeof(uint32_t))
+               //                    , pipeline);
+
+               //            }
+               //            //anterior of the block to posterior
+               //            //if (localBlockMetaData[18] < UINT16_MAX && miniTile.meta_group_rank()>= fbArgs.dbXLength    && miniTile.meta_group_rank()< fbArgs.dbXLength*2) {
+               //            //    cooperative_groups::memcpy_async(miniTile, (&mainShmem[begfirstRegShmem+64+ miniTile.meta_group_rank() ]),
+               //            //        (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData, 18)
+               //            //            //we look for indicies 31,63... up to metaData.mainArrXLength
+               //            //            + (miniTile.meta_group_rank() * 32)+31  ])
+               //            //        , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+               //            //}
+               //        pipeline.producer_commit();
+               //    }
+               //      //compute - now we have data in source shmem about this block and left and right padding
+               //        pipeline.consumer_wait();
+               //            // first we perform up and down dilatations inside the block
+               //            mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = bitDilatate(mainShmem[begSourceShmem+threadIdx.x + threadIdx.y * 32]);
+               //            //we also do the left and right dilatations
+               //            if (localBlockMetaData[17] < UINT16_MAX) {
+
+               //            };
+               //            if (localBlockMetaData[18] < UINT16_MAX) {
+
+               //            };
+
+               //        pipeline.consumer_release();
+
+
+
+
 
 
         //         ////////#### pipeline step 3) process anterior block data and load posterior

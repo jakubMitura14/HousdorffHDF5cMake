@@ -506,6 +506,16 @@ inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, ui
 
 
 /*
+calculating where to put the data from res shmem - so data after dilatation back to global memory
+*/
+inline __device__ uint16_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
+    return  metaData.mainArrXLength *
+        (1 - (isGold[1]) + ((1-(iterationNumb[0] & 1)) * 2))// here calculating offset depending on what iteration and is gold;
+            + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
+}
+
+/*
 to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
 works only for anterior - posterior lateral an medial dilatations
 predicate - indicates what we consider border case here

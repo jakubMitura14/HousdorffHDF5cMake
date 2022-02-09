@@ -2,14 +2,15 @@
 #include <cstdint>
 
 #pragma once
-constexpr auto localWorkQueLength = 372;
-constexpr auto startOfLocalWorkQ = 4128;
-constexpr auto lengthOfMainShmem = 4500;
-constexpr auto begResShmem = 1056;
-constexpr auto begfirstRegShmem = 2080;
-constexpr auto begSecRegShmem = 3104;
-constexpr auto begSMallRegShmem = 0;
-constexpr auto begSourceShmem = 32;
+constexpr uint16_t localWorkQueLength = 340;
+constexpr uint16_t startOfLocalWorkQ = 4160;
+constexpr uint16_t lengthOfMainShmem = 4500;
+constexpr uint16_t begResShmem = 1088;
+constexpr uint16_t begfirstRegShmem = 2112;
+constexpr uint16_t begSecRegShmem = 3136;
+constexpr uint16_t begSMallRegShmemA = 0;
+constexpr uint16_t begSMallRegShmemB = 1056;
+constexpr uint16_t begSourceShmem = 32;
 
 /**
 In order to be able to use cuda malloc 3d we will implemnt it as a series

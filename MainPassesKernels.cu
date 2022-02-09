@@ -84,7 +84,7 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 }
 
 template <typename TKKI>
-inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* workQueue) {
+inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* workQueue, uint32_t* origArr) {
     thread_block cta = this_thread_block();
 
     //work queue !!
@@ -121,18 +121,52 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                 for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
 
                     uint16_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
-                    uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
-                    
-                   // if (isBitAt(column, zLoc) && column>0) {
-                   //// if (x==33 && y==1 && z==71) {
-                   //// if (x==75 && y==20 && z==70) {
-                   //// if (column>0) {
-                   //     //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
-                   //     //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-                   //     printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d \n"
-                   //                 , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                   //             , column);
-                   // }
+                    uint8_t ww = 0;//absolute position
+                    //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength)*ww];//
+                    uint32_t column = origArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
+                    //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
+
+                 if (x==33 && y==1 && z==71) {
+                     printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                         , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                         , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
+                 }
+
+                 
+                 
+
+                    if (isBitAt(column, zLoc) && column>0) {
+                   // if (x==33 && y==1 && z==71) {
+                   // if (x==75 && y==20 && z==70) {
+                   // if (column>0) {
+                        //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
+                        //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
+                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                                    , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                                , column , linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
+                    }
+
+                    ww = 1;
+                   // uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
+                    column = origArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
+
+
+                    if (x == 33 && y == 1 && z == 71) {
+                        printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                            , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                            , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
+                    }
+
+                    if (isBitAt(column, zLoc) && column > 0) {
+                        // if (x==33 && y==1 && z==71) {
+                        // if (x==75 && y==20 && z==70) {
+                        // if (column>0) {
+                             //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
+                             //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
+                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                            , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                            , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
+                    }
 
                 }
             }
@@ -286,7 +320,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     thread_block cta = this_thread_block();
     thread_block_tile<32> tile = tiled_partition<32>(cta);
     grid_group grid = cooperative_groups::this_grid();
-    __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
 
 
     /*
@@ -588,7 +621,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     void* kernel_args[] = { &fbArgs };
 
 
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+   // cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
     //mainPassKernel << < blockForMainPass, dim3(32, warpsNumbForMainPass) >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, metaDataArrPointer);
 
 
@@ -666,7 +699,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrPointer, metaData, workQueuePointer);
+   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrPointer, metaData, workQueuePointer, origArrsPointer);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
