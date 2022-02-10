@@ -362,8 +362,13 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     __shared__ unsigned int resultfnOffset[1];
 
     __shared__ unsigned int worQueueStep[1];
+
     __shared__ uint32_t isGold[1];
     __shared__ uint16_t currLinIndM[1];
+
+
+    __shared__ uint32_t oldIsGold[1];
+    __shared__ uint16_t oldLinIndM[1];
 
     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
     0 : global FP count;
@@ -397,7 +402,22 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
  17 : anterior
  18 : posterior
     */
+
     __shared__ uint16_t localBlockMetaData[20];
+
+    /*
+ //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX
+ 
+ 0 : top
+ 1 : bottom
+ 2 : left
+ 3 : right
+ 4 : anterior
+ 5 : posterior
+    
+    */
+
+    __shared__ uint16_t localBlockMetaDataOld[6];
 
     /////used mainly in meta passes
 
@@ -437,11 +457,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             globalWorkQueueCounter, localWorkQueueCounter,localTotalLenthOfWorkQueue,localFpConter,
             localFnConter, blockFpConter,blockFnConter, resultfpOffset,
              resultfnOffset, worQueueStep,isGold, currLinIndM,localMinMaxes
-            ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer, fbArgs.metaDataArrPointer);
-
-
+            ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer, fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld);
 
         
+
+
 
 
 
@@ -589,7 +609,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, mainArrPointer, workQueuePointer,minMaxes, metaData, origArrsPointer, metaDataArrPointer);
+    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs,  workQueuePointer,minMaxes, metaData, origArrsPointer, metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
@@ -608,7 +628,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
 
 
-        firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
+        firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs,  metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a5");
     //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };

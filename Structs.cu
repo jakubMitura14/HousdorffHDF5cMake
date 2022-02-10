@@ -171,7 +171,7 @@ struct ForBoolKernelArgs {
 
     uint32_t* resultListPointerMeta;
     uint16_t* resultListPointerLocal;
-    uint16_t* resultListPointerIterNumb;
+    uint32_t* resultListPointerIterNumb;
 
     uint32_t* origArrsPointer;
 uint32_t* mainArrAPointer;
@@ -186,11 +186,12 @@ uint32_t* mainArrAPointer;
 main array with all required data  organized in sections for each metadata block
 x-  is block dimx times block dimy
 now what occupies what positions
-##mainArr
+##mainArrA
 (0) - x-1 : reducedGoldRef
 (x) - 2x-1 : reducedSegmRef
-(3x) - 3x-1 : reducedGoldPrev
-(4x) - 4x-1 : reducedSegmPrev
+##mainArrB
+() - 3x-1 : reducedGoldPrev
+(x) - 4x-1 : reducedSegmPrev
 
 ##metaDataArr
 0: empty

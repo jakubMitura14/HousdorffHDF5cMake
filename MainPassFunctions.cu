@@ -38,7 +38,7 @@ inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, uin
 gettinng target array for dilatations
 */
 template <typename TXPPI>
-inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPI> fbArgs, uint32_t iterationNumb[1]) {
+inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs, uint32_t iterationNumb[1]) {
 
     if ((iterationNumb[0] & 1) == 0) {
       return fbArgs.mainArrBPointer;
@@ -170,8 +170,7 @@ calculating where to put the data from res shmem - so data after dilatation back
 */
 inline __device__ uint16_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
-    return  metaData.mainArrXLength *
-        (1 - (isGold[1]) * 2))// here calculating offset depending on what iteration and is gold;
+    return  metaData.mainArrXLength * (1 - (isGold[1]) * 2)// here calculating offset depending on what iteration and is gold;
             + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
 }
 
@@ -220,7 +219,7 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 #pragma once
 template <typename TXTOI>
 inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-, uint32_t mainShmem[], bool isAnythingInPadding[6], localBlockMetaData
+uint32_t mainShmem[], bool isAnythingInPadding[6], uint16_t localBlockMetaData[20]
 ,uint8_t metaDataCoordIndex
 , uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
 , uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
@@ -287,11 +286,18 @@ inline __device__ void dilatateHelperTopDown( uint8_t paddingPos,
 //}
 //
 //
+
+
+
+
+
 /*
 constitutes end of pipeline  where we load data for next iteration if such is present
 */
-inline __device__  void lastLoad(cta//some needed CUDA objects
-worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
+template <typename TXPPI>
+inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
+   , unsigned int worQueueStep[1], uint16_t localBlockMetaData[20]
+    ,uint32_t mainShmem[lengthOfMainShmem], uint16_t i , MetaDataGPU metaData
 ){
               if (i + 1<= worQueueStep[0]) {
                   cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) 
@@ -300,24 +306,78 @@ worQueueStep, localBlockMetaData, mainArr, mainShmem, i, metaData
               }
 }
 
-/// we need to define here the function that will update the metadata result for the given block - also if it is not padding pass we need to set the neighbouring blocks as to be activated according to the data in shmem
+/*
+we need to define here the function that will update the metadata result for the given block -
+also if it is not padding pass we need to set the neighbouring blocks as to be activated according to the data in shmem
+this will also include preparations for next round of iterations through blocks from work queue
+isInPipeline - marks is it meant to be executed at the begining of the pipeline or after the pipeline
+finilizing operations for last block
+*/
+inline __device__  void afterBlockClean ( thread_block cta
+    , unsigned int worQueueStep[1], uint16_t localBlockMetaDataOld[6]
+    , uint32_t mainShmem[lengthOfMainShmem], uint16_t i, MetaDataGPU metaData
+    , thread_block_tile<32> tile
+    , unsigned int localFpConter[1], unsigned int localFnConter[1]
+    , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
+    , uint16_t* metaDataArr, uint16_t oldLinIndM[1], bool oldIsGold[1]
+    , bool isAnythingInPadding[6],bool isBlockFull[1]) {
 
 
-  if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
-      blockFpConter[0]+=localFpConter[0]
-        localFpConter[0] = 0;
+
+    if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+                    //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
+        if (localFpConter[0] > 0) {
+            metaDataArr[oldLinIndM[0] * metaData.metaDataSectionLength + 3] += localFpConter[0];
+            blockFpConter[0] += localFpConter[0];
+            localFpConter[0] = 0;
+        }
+    }
+    if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+
+        if (localFnConter[0] > 0) {
+            metaDataArr[oldLinIndM[0] * metaData.metaDataSectionLength + 4] += localFnConter[0];
+
+            blockFnConter[0] += localFnConter[0];
+            localFnConter[0] = 0;
+        }
+    }
+    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
+
+        //executed in case of previous block
+        if (isBlockFull[0] && i > 0) {
+            //setting data in metadata that block is full
+            metaDataArr[oldLinIndM[0] * metaData.metaDataSectionLength + 10 - (oldIsGold[0] * 2)] = true;
+        }
+        //resetting
+        isBlockFull[0] = true;
+        //setting for new iteration
+       // oldIsGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
+
+
     };
-    if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
-        blockFnConter[0]+=localFnConter[0] ;
-        localFnConter[0]=0;
+        //if (oldIsGold[0]) {
+        //    //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
+        //    if (isInPipeline) {
+        //        oldLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
+        //    }
+        //}
+    //};
+
+
+    if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 ) {// this is how it is encoded wheather it is gold or segm block
+        //executed in case of previous block
+        if (i>0) {
+            if (localBlockMetaDataOld[tile.thread_rank()] < UINT16_MAX) {
+                metaDataArr[localBlockMetaDataOld[tile.thread_rank()] * metaData.metaDataSectionLength + 12 - oldIsGold[0]] = isAnythingInPadding[tile.thread_rank()];
+            }
+        }
+
+        isAnythingInPadding[0] = false;
     };
-    if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
-        localFpConter[0] = 0;
-    };
-    if (tile.thread_rank() == 4 && tile.meta_group_rank() == 0) {
-        localFnConter[0] = 0;
-    };
-          add info about increase fp or fn count to metadata block and to block variable in thread block
+
+
+
+}
 
 
 

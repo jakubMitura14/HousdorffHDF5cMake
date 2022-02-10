@@ -66,7 +66,7 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 */
 #pragma once
 template <typename TYU>
-__device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs, uint32_t* mainArr
+__device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
     , MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
 
     ////////////some initializations
@@ -353,7 +353,8 @@ collecting all needed functions for GPU execution to prepare data from calculati
 */
 #pragma once
 template <typename TYO>
-__global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
-    metaDataIter(fbArgs, mainArr, metaData, origArrs, metaDataArr);
+__global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
+    , MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
+    metaDataIter(fbArgs,  metaData, origArrs, metaDataArr);
 }
 
