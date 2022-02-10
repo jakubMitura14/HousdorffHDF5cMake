@@ -145,18 +145,50 @@ inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t res
 /*
 calculate index in main shmem where array that is source for this dilatation round is present
 */
+#pragma once
 inline __device__ uint16_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint32_t iterationNumb[1], uint16_t i){
+    ,  uint16_t i, bool isGold){
     return  metaData.mainArrXLength * 
-    (1 - (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))// here calculating offset depending on what iteration and is gold;
-        + (mainShmem[startOfLocalWorkQ + i] - (UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))) * metaData.mainArrSectionLength   ;// offset depending on linear index of metadata block of intrest
+    ((1 -isGold)// here calculating offset depending on what iteration and is gold;
+        + (mainShmem[startOfLocalWorkQ + i] - (UINT16_MAX * (isGold))) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
 
 }
+#pragma once
+inline __device__ uint16_t getFullIndexForSourceShmemTotal(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint16_t i, bool isGold) {
+    return  (( (mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * isGold) >0)* (-32)) // we check weather there is anything to the left - not on left border if so we load left 32 entries
+        + getIndexForSourceShmem(metaData, mainShmem,  i, isGold);
+}
+
+
+
+
+/*
+getting index where we should put first load - so data about this block and if apply block to the left and right
+*/
+#pragma once
+inline __device__ uint16_t getIndexOfShmemToFirstLoad(uint32_t mainShmem[lengthOfMainShmem], uint16_t i, bool isGold) {
+    return  (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX 
+        * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0)* (-32)) + begSourceShmem;
+}
+
+/*
+calculating where to put the data from res shmem - so data after dilatation back to global memory
+*/
+#pragma once
+inline __device__ uint16_t getLengthOfShmemToFirstLoad(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint16_t i, bool isGold) {
+    return    (metaData.mainArrXLength + 32 * (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (isGold)) > 0)
+        + ((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (isGold)) < (metaData.totalMetaLength - 1))));// offset depending on linear index of this block
+}
+
+
 
 
 /*
 calculate index in main shmem where array that is source for this dilatation round is present in the neighboutring block ...
 */
+#pragma once
 inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19],  size_t inMetaIndex) {
        return  metaData.mainArrXLength * 
@@ -164,15 +196,16 @@ inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, ui
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
 }
 
-
 /*
 calculating where to put the data from res shmem - so data after dilatation back to global memory
 */
 inline __device__ uint16_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
-    return  metaData.mainArrXLength * (1 - (isGold[1]) * 2)// here calculating offset depending on what iteration and is gold;
-            + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
+    return  metaData.mainArrXLength * (isGold[1])// here calculating offset depending on what iteration and is gold;
+        + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
 }
+
+
 
 /*
 to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
@@ -187,7 +220,7 @@ targetShmemOffset - offset where loaded data needed for dilatation of outside of
 */
 #pragma once
 inline __device__ void dilatateHelperForTransverse(bool predicate,
-    uint8_t paddingPos,    uint8_t  normalXChange, uint8_t normalYchange
+    uint8_t paddingPos,    int8_t  normalXChange, int8_t normalYchange
 , uint32_t mainShmem[], bool isAnythingInPadding[6]
 ,uint8_t forBorderYcoord, uint8_t forBorderXcoord
 ,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset , uint16_t localBlockMetaData[20]) {
@@ -195,19 +228,21 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
     if (predicate) {
         // now we need to load the data from the neigbouring blocks
         //first checking is there anything to look to 
-        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
+        if (localBlockMetaData[metaDataCoordIndex] < UINT16_MAX) {
             //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-            if (mainShmem[threadIdx.x+threadIdx.y*32] > 0) {
+            if (mainShmem[threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
             };
             mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
                 mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
                 | mainShmem[targetShmemOffset + forBorderXcoord + forBorderYcoord * 32];
 
-        }
+        };
     }
     else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
-        mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] 
+
+
+         mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] 
         = mainShmem[(threadIdx.x+ normalXChange)+(threadIdx.y+ normalYchange)*32] | mainShmem[begResShmem+threadIdx.x+threadIdx.y*32];
     
     }
@@ -240,52 +275,6 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint16_t localBlockMetaData[20
 
 }
 
-//
-//
-//
-///*
-//in pipeline defined to load data for next step and simultaneously process the previous step data  
-//used for left,right,anterior,posterior dilatations
-//*/
-//inline __device__  void loadNextAndProcessPreviousSides(pipeline,cta//some needed CUDA objects
-//localBlockMetaData,mainShmem,iterationNumb,isGold, currLinIndM// shared memory arrays used block wide
-//, metaData,mainArr, //pointers to arrays with data
-////now some variables needed to load data  
-//    uint8_t metaDataCoordIndexToLoad // where is the index describing linear index of the neighbour in direction of intrest
-//    ,uint16_t targetShmemOffset //offset defined in shared memory used to load data into 
-//    , shape // shape and alignment of data in load - inludes length of data
-////now variables needed for dilatations
-//    uint8_t metaDataCoordIndexToProcess // where is the index describing linear index of the neighbour in direction of intrest
-//    ,uint16_t sourceShmemOffset //offset defined in shared memory used to process  data from 
-//,bool predicate // defining when our thread is a corner case and need to load data from outside of the block
-//,uint8_t paddingPos,// needed to know wheather block in given direction should be marked as to be activated
-//uint8_t  normalXChange, uint8_t normalYchange
-//, uint8_t forBorderYcoord, uint8_t forBorderXcoord
-//
-//){
-//
-//krowa rethink weather pipeline.producer_acquire() and commit should not be inside the if statements for border cases
-//
-//               pipeline.producer_acquire();
-//                       if (localBlockMetaData[metaDataCoordIndexToLoad]<UINT16_MAX) {
-//                           cooperative_groups::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-//                              (&mainArr[getIndexForNeighbourForShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData,metaDataCoordIndexToLoad )]) 
-//                              , shape, pipeline);
-//
-//                       }
-//                     
-//               pipeline.producer_commit();
-//               //compute 
-//                    //if we want to do left riaght, anterior , posterior dilatations
-//                  dilatateHelperForTransverse(predicate), paddingPos, normalXChange, normalYchange, mainShmem
-//                     , isAnythingInPadding,  iterationNumb,forBorderYcoord, forBorderXcoord,metaDataCoordIndexToProcess,sourceShmemOffset );
-//  
-//                     
-//                     
-//              
-//}
-//
-//
 
 //inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
 //    , unsigned int worQueueStep[1], uint16_t localBlockMetaData[]

@@ -5,9 +5,9 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 template <typename ZZR>
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
     uint32_t*& resultListPointerMeta,uint16_t*& resultListPointerLocal,uint32_t*& resultListPointerIterNumb,
-    uint32_t* origArrsPointer,
-    uint32_t* mainArrAPointer,
-    uint32_t* mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
+    uint32_t*& origArrsPointer,
+    uint32_t*& mainArrAPointer,
+    uint32_t*& mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
     
     //free no longer needed arrays
     cudaFreeAsync(goldArr.arrPStr.ptr, 0);
@@ -61,7 +61,8 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 #pragma once
 template <typename ZZR>
 inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs,
-             uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr, uint16_t*& metaDataArr) {
+             uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr
+    , uint16_t*& metaDataArr) {
     ////reduced arrays
 
 

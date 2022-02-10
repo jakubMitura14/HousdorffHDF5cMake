@@ -558,6 +558,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     int warpsNumbForMainPass = blockSize / 32;
     int blockForMainPass = minGridSize;
 
+    printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
 
 
@@ -618,6 +619,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a3");  
     
+
         allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb,origArrsPointer,mainArrAPointer,mainArrBPointer  ,metaData, goldArr, segmArr);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
@@ -645,7 +647,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     void* kernel_args[] = { &fbArgs };
 
 
-   // cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
     //mainPassKernel << < blockForMainPass, dim3(32, warpsNumbForMainPass) >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, metaDataArrPointer);
 
 
@@ -723,7 +725,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrAPointer, metaData, workQueuePointer, origArrsPointer);
+  // testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrAPointer, metaData, workQueuePointer, origArrsPointer);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
@@ -741,8 +743,8 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
 
 
-    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+    //copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+    //copyDeviceToHost3d(segmArr, fFArgs.segmArr);
     // getting arrays allocated on  cpu to 
 
 
@@ -766,6 +768,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFreeAsync(origArrsPointer, 0);
     cudaFreeAsync(metaDataArrPointer, 0);
 
+    checkCuda(cudaDeviceSynchronize(), "last ");
 
  /*   cudaFree(reducedGold.arrPStr.ptr);
     cudaFree(reducedSegm.arrPStr.ptr);
