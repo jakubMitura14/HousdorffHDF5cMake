@@ -4,7 +4,8 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 #pragma once
 template <typename ZZR>
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
-    uint32_t*& resultListPointerMeta,uint16_t*& resultListPointerLocal,uint16_t*& resultListPointerIterNumb,    uint32_t* origArrsPointer,
+    uint32_t*& resultListPointerMeta,uint16_t*& resultListPointerLocal,uint32_t*& resultListPointerIterNumb,
+    uint32_t* origArrsPointer,
     uint32_t* mainArrAPointer,
     uint32_t* mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
     
@@ -35,14 +36,14 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
     size_t sizeB = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
 
     cudaMallocAsync(&mainArrAPointer, sizeB, 0);
-    cudaMallocAsync(mainArrAPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(mainArrAPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice,0);
 
     
     cudaMallocAsync(&mainArrBPointer, sizeB, 0);
-    cudaMallocAsync(mainArrBPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(mainArrBPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice,0);
 
     
-    size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
+   // size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
     
    // metaData.resultList = resultListPointer;
 
@@ -108,7 +109,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     std::cout << "\n";
 
 
-    cudaMallocAsync(&mainArr, sizeB, 0);
+    //cudaMallocAsync(&mainArr, sizeB, 0);
     size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
     cudaMallocAsync(&origArr, sizeorigArr, 0);
     size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint16_t);

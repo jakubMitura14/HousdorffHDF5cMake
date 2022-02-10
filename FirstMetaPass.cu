@@ -57,7 +57,7 @@ __device__ inline void addToQueue( uint16_t linIdexMeta, uint8_t isGold
 #pragma once
 template <typename PYO>
 __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
-    , uint32_t* mainArr, MetaDataGPU metaData, unsigned int* minMaxes, uint32_t* workQueue
+    , MetaDataGPU metaData, unsigned int* minMaxes, uint32_t* workQueue
     , uint32_t* origArrs, uint16_t* metaDataArr) {
 
     //////initializations

@@ -616,17 +616,11 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs,  metaData, origArrsPointer, metaDataArrPointer);
         //uint32_t* origArrs, uint16_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
 
-    checkCuda(cudaDeviceSynchronize(), "a3");
-
-
-
+    checkCuda(cudaDeviceSynchronize(), "a3");  
     
-    
-        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb,origArrsPointer,mainArrAPointer,mainArrBPointer  ,metaData);
+        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb,origArrsPointer,mainArrAPointer,mainArrBPointer  ,metaData, goldArr, segmArr);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
-
-
 
         firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs,  metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
@@ -729,7 +723,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrPointer, metaData, workQueuePointer, origArrsPointer);
+   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrAPointer, metaData, workQueuePointer, origArrsPointer);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
@@ -768,7 +762,6 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     cudaFreeAsync(resultListPointerMeta,0);
     cudaFreeAsync(resultListPointerLocal,0);
     cudaFreeAsync(resultListPointerIterNumb,0);
-    cudaFreeAsync(mainArrPointer, 0);
     cudaFreeAsync(workQueuePointer, 0);
     cudaFreeAsync(origArrsPointer, 0);
     cudaFreeAsync(metaDataArrPointer, 0);

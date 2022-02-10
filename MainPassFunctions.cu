@@ -217,9 +217,8 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 
 #pragma once
-template <typename TXTOI>
 inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-uint32_t mainShmem[], bool isAnythingInPadding[6], uint16_t localBlockMetaData[20]
+uint32_t* mainShmem, bool isAnythingInPadding[6], uint16_t localBlockMetaData[20]
 ,uint8_t metaDataCoordIndex
 , uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
 , uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
@@ -233,13 +232,14 @@ uint32_t mainShmem[], bool isAnythingInPadding[6], uint16_t localBlockMetaData[2
                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
                               isAnythingInPadding[0] = true;
            };
-           mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] = 
-               mainShmem[begResShmem+threadIdx.x+threadIdx.y*32]
-                   | (mainShmem[targetShmemOffset+forBorderXcoord+forBorderYcoord*32] & numberWithCorrBitSetInNeigh )
+           mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+               mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+               | (mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] & numberWithCorrBitSetInNeigh);
 
        }   
 
 }
+
 //
 //
 //
@@ -287,24 +287,31 @@ uint32_t mainShmem[], bool isAnythingInPadding[6], uint16_t localBlockMetaData[2
 //
 //
 
+//inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
+//    , unsigned int worQueueStep[1], uint16_t localBlockMetaData[]
+//    , uint32_t mainShmem[], uint16_t i, MetaDataGPU metaData
+//) {
 
 
-
-
-/*
-constitutes end of pipeline  where we load data for next iteration if such is present
-*/
-template <typename TXPPI>
-inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
-   , unsigned int worQueueStep[1], uint16_t localBlockMetaData[20]
-    ,uint32_t mainShmem[lengthOfMainShmem], uint16_t i , MetaDataGPU metaData
-){
-              if (i + 1<= worQueueStep[0]) {
-                  cuda::memcpy_async(cta, (&localBlockMetaData[0]), (&mainArr[(mainShmem[startOfLocalWorkQ+1+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i+1] >= UINT16_MAX)) 
-                  * metaData.mainArrSectionLength + metaData.metaDataOffset])
-                      , cuda::aligned_size_t<4>(sizeof(uint32_t) * 18), pipeline);
-              }
-}
+//
+///*
+//constitutes end of pipeline  where we load data for next iteration if such is present
+//*/
+//template <typename TXPPI>
+//inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block& cta//some needed CUDA objects
+//    , unsigned int worQueueStep[1], uint16_t localBlockMetaData[]
+//    , uint32_t mainShmem[], uint16_t i, MetaDataGPU metaData, uint16_t* metaDataArr
+//) {
+//
+//    if (i + 1 <= worQueueStep[0]) {
+//        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+//            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
+//                * metaData.metaDataSectionLength]])
+//            , cuda::aligned_size_t<4>(sizeof(uint16_t) * 20), pipeline);
+//    }
+//
+//
+//};
 
 /*
 we need to define here the function that will update the metadata result for the given block -
@@ -313,14 +320,19 @@ this will also include preparations for next round of iterations through blocks 
 isInPipeline - marks is it meant to be executed at the begining of the pipeline or after the pipeline
 finilizing operations for last block
 */
-inline __device__  void afterBlockClean ( thread_block cta
+
+
+
+
+
+inline __device__  void afterBlockClean(thread_block cta
     , unsigned int worQueueStep[1], uint16_t localBlockMetaDataOld[6]
-    , uint32_t mainShmem[lengthOfMainShmem], uint16_t i, MetaDataGPU metaData
+    , uint32_t mainShmem[], uint16_t i, MetaDataGPU metaData
     , thread_block_tile<32> tile
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
-    , uint16_t* metaDataArr, uint16_t oldLinIndM[1], bool oldIsGold[1]
-    , bool isAnythingInPadding[6],bool isBlockFull[1]) {
+    , uint16_t* metaDataArr, uint16_t oldLinIndM[1], uint32_t oldIsGold[1]
+    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass) {
 
 
 
@@ -331,7 +343,7 @@ inline __device__  void afterBlockClean ( thread_block cta
             blockFpConter[0] += localFpConter[0];
             localFpConter[0] = 0;
         }
-    }
+    };
     if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
 
         if (localFnConter[0] > 0) {
@@ -340,7 +352,7 @@ inline __device__  void afterBlockClean ( thread_block cta
             blockFnConter[0] += localFnConter[0];
             localFnConter[0] = 0;
         }
-    }
+    };
     if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
         //executed in case of previous block
@@ -350,21 +362,11 @@ inline __device__  void afterBlockClean ( thread_block cta
         }
         //resetting
         isBlockFull[0] = true;
-        //setting for new iteration
-       // oldIsGold[0] = uint32_t(mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
-
-
     };
-        //if (oldIsGold[0]) {
-        //    //removing info about wheather it is gold or not pass so we will be able to use it as linear metadata index
-        //    if (isInPipeline) {
-        //        oldLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX;
-        //    }
-        //}
-    //};
 
 
-    if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 ) {// this is how it is encoded wheather it is gold or segm block
+    //we do it only for non padding pass
+    if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
         if (i>0) {
             if (localBlockMetaDataOld[tile.thread_rank()] < UINT16_MAX) {

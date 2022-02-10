@@ -130,7 +130,7 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
     }
 }
 sync(cta);
-for (uint16_t linI =hreadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
+for (uint16_t linI =threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
   workQueue[globalWorkQueueCounter[0]+linI]=mainShmem[linI];
 }
 
