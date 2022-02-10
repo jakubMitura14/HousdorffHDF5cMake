@@ -20,7 +20,7 @@ basically arrays will alternate between iterations once one will be source other
 wheather the iteration number is odd or even
 */
 template <typename TXPI>
-inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, uint32_t iterationNumb[1]) {
+inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, int iterationNumb[1]) {
 
 
     if ((iterationNumb[0] & 1) == 0) {
@@ -38,7 +38,7 @@ inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, uin
 gettinng target array for dilatations
 */
 template <typename TXPPI>
-inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs, uint32_t iterationNumb[1]) {
+inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs, int iterationNumb[1]) {
 
     if ((iterationNumb[0] & 1) == 0) {
       return fbArgs.mainArrBPointer;
@@ -190,7 +190,7 @@ calculate index in main shmem where array that is source for this dilatation rou
 */
 #pragma once
 inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19],  size_t inMetaIndex) {
+    , int iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19],  size_t inMetaIndex) {
        return  metaData.mainArrXLength * 
     ((1 - (isGold[1]) )// here calculating offset depending on what iteration and is gold;
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
@@ -200,7 +200,7 @@ inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, ui
 calculating where to put the data from res shmem - so data after dilatation back to global memory
 */
 inline __device__ uint16_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint32_t iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
+    , int iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
     return  metaData.mainArrXLength * (isGold[1])// here calculating offset depending on what iteration and is gold;
         + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
 }
@@ -243,7 +243,8 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 
          mainShmem[begResShmem+threadIdx.x+threadIdx.y*32] 
-        = mainShmem[(threadIdx.x+ normalXChange)+(threadIdx.y+ normalYchange)*32] | mainShmem[begResShmem+threadIdx.x+threadIdx.y*32];
+        = mainShmem[begSourceShmem+(threadIdx.x+ normalXChange)+(threadIdx.y+ normalYchange)*32]
+             | mainShmem[begResShmem+threadIdx.x+threadIdx.y*32];
     
     }
    

@@ -138,17 +138,21 @@ extern "C" inline void testMainPasswes() {
 	//
 	//}
 
-	setArrCPU(arrGoldObj, 33, 1, 71, 2);
-	//setArrCPU(arrGoldObj, 33, 1, 99, 2);
-	setArrCPU(arrGoldObj, 75, 20, 70, 2);//
-	setArrCPU(arrGoldObj, 100, 70, 70, 2);//
-	setArrCPU(arrGoldObj, 99, 70, 70, 2);//
+	//setArrCPU(arrGoldObj, 33, 1, 71, 2);
+	////setArrCPU(arrGoldObj, 33, 1, 99, 2);
+	//setArrCPU(arrGoldObj, 75, 20, 70, 2);//
+	//setArrCPU(arrGoldObj, 100, 70, 70, 2);//
+	//setArrCPU(arrGoldObj, 99, 70, 70, 2);//
 
 
 
-	setArrCPU(arrSegmObj, 33, 1, 110, 2);//
-	setArrCPU(arrSegmObj, 75, 20, 161, 2);//
-	setArrCPU(arrSegmObj, 75, 21, 161, 2);//
+	//setArrCPU(arrSegmObj, 33, 3, 110, 2);//
+	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+
+
+	//setArrCPU(arrSegmObj, 75, 20, 161, 2);//
+
+	//setArrCPU(arrSegmObj, 75, 21, 161, 2);//
 
 
 

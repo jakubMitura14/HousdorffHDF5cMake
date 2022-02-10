@@ -23,7 +23,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     , unsigned int* minMaxes, uint32_t* workQueue
     , uint32_t* resultListPointerMeta, uint16_t* resultListPointerLocal, uint32_t* resultListPointerIterNumb,
     thread_block cta, thread_block_tile<32> tile, grid_group grid, uint32_t mainShmem[lengthOfMainShmem]
-    , bool isAnythingInPadding[6]  , bool isBlockFull[1], uint32_t iterationNumb[1], unsigned int globalWorkQueueOffset[1],
+    , bool isAnythingInPadding[6]  , bool isBlockFull[1], int iterationNumb[1], unsigned int globalWorkQueueOffset[1],
     unsigned int globalWorkQueueCounter[1], unsigned int localWorkQueueCounter[1],
     unsigned int localTotalLenthOfWorkQueue[1], unsigned int localFpConter[1],
     unsigned int localFnConter[1], unsigned int blockFpConter[1],
@@ -156,13 +156,6 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     , isAnythingInPadding, isBlockFull, isPaddingPass);
 
 
-                afterBlockClean(cta, worQueueStep, localBlockMetaDataOld, mainShmem, i,
-                    metaData, tile, localFpConter, localFnConter
-                    , blockFpConter, blockFnConter
-                    , metaDataArr, oldLinIndM, oldIsGold
-                    , isAnythingInPadding, isBlockFull, isPaddingPass);
-
-
 
                 pipeline.consumer_release();
 
@@ -279,6 +272,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     , 1
                     , begSecRegShmem);
                 //posterior
+                
                 dilatateHelperForTransverse((threadIdx.y == 0), 5
                     , (0), (-1), mainShmem, isAnythingInPadding
                     , 0, threadIdx.x // we add offset depending on y dimension
@@ -288,6 +282,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     , (0), (1), mainShmem, isAnythingInPadding
                     , 0, threadIdx.x
                     , 17, begSMallRegShmemA, localBlockMetaData);
+                
                // now all of the data is processed we need to save it into global memory
                // TODO try to use mempcy async here
                 getTargetReduced(fbArgs, iterationNumb)[getIndexForSaveResShmem(metaData, mainShmem, iterationNumb, isGold, currLinIndM, localBlockMetaData) + threadIdx.x + threadIdx.y * 32] = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];

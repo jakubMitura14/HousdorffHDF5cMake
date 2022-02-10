@@ -123,7 +123,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     uint16_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
                     uint8_t ww = 0;//absolute position
                     //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength)*ww];//
-                    uint32_t column = origArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
+                    uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
                     //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
 
                  //if (x==33 && y==1 && z==71) {
@@ -148,7 +148,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
                     ww = 1;
                    // uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
-                    column = origArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
+                    column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
 
 
                     //if (x == 33 && y == 1 && z == 71) {
@@ -341,7 +341,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     __shared__ bool isBlockFull[1];
     //variables needed for all threads
-    __shared__ uint32_t iterationNumb[1];
+    __shared__ int iterationNumb[1];
     __shared__ unsigned int globalWorkQueueOffset[1];
     __shared__ unsigned int globalWorkQueueCounter[1];
     __shared__ unsigned int localWorkQueueCounter[1];
@@ -724,7 +724,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrAPointer, metaData, workQueuePointer, origArrsPointer);
+   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrBPointer, metaData, workQueuePointer, origArrsPointer);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
