@@ -648,7 +648,6 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
 
     cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
-    //mainPassKernel << < blockForMainPass, dim3(32, warpsNumbForMainPass) >> > (fbArgs, mainArrPointer, metaData, minMaxes, workQueuePointer, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, metaDataArrPointer);
 
 
 
@@ -725,7 +724,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-  // testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrAPointer, metaData, workQueuePointer, origArrsPointer);
+   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrAPointer, metaData, workQueuePointer, origArrsPointer);
 
   //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
