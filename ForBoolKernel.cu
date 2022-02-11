@@ -289,11 +289,12 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
 //FP pass
         if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
             localBlockMetaData[7] = 1;
-          //  printf("in bool kernel mark as sctive linIdexMeta %d in index  %d \n  ", linIdexMeta, isGold);
+           // printf("in bool kernel mark fp as sctive linIdexMeta %d in index  %d \n  ", linIdexMeta);
 
         };
         //FN pass
         if ((threadIdx.x == 1) && (threadIdx.y == 0) && isNotEmpty && anyInSegm[0]) {
+            //printf("in bool kernel mark fn as sctive linIdexMeta %d in index  %d \n  ", linIdexMeta);
             localBlockMetaData[9] = 1;
 
         };

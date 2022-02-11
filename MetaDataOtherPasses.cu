@@ -38,13 +38,13 @@ https://stackoverflow.com/questions/13548172/bitshifts-to-obtain-remainder
 
 #pragma once
 template <typename TKKI>
-inline __global__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddingPass
-    , size_t predicateAa, size_t predicateAb, size_t predicateAc
-    , size_t predicateBa, size_t predicateBb, size_t predicateBc
-    ,uint32_t mainShmem[4468], unsigned int globalWorkQueueOffset[1], unsigned int globalWorkQueueCounter[1]
+inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddingPass
+    , uint8_t predicateAa, uint8_t predicateAb, uint8_t predicateAc
+    , uint8_t predicateBa, uint8_t predicateBb, uint8_t predicateBc
+    ,uint32_t mainShmem[], unsigned int globalWorkQueueOffset[1], unsigned int globalWorkQueueCounter[1]
     , unsigned int localWorkQueueCounter[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localMinMaxes[5]
     , unsigned int fpFnLocCounter[1], bool isGoldPassToContinue[1], bool isSegmPassToContinue[1], thread_block cta, thread_block_tile<32> tile
-    , uint32_t* mainArr, MetaDataGPU metaData
+    , MetaDataGPU metaData
     , unsigned int* minMaxes, uint32_t* workQueue, uint16_t* metaDataArr
 
 ) {
@@ -87,11 +87,11 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
-            mainShmem[old] = uint32_t(linIdexMeta + UINT16_MAX);
+            mainShmem[old] = uint32_t(linIdexMeta + (isGoldOffset) );
         }
         else {
             old = atomicAdd(&(minMaxes[9]), 1);
-            workQueue[old] = uint32_t(linIdexMeta + UINT16_MAX);
+            workQueue[old] = uint32_t(linIdexMeta + (isGoldOffset) );
         }
         if (isPaddingPass) {
             //setting to be activated to 0 

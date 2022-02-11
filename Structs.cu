@@ -2,6 +2,8 @@
 #include <cstdint>
 
 #pragma once
+
+//constants describing the meaning of main shared memory spaces
 constexpr uint16_t localWorkQueLength = 340;
 constexpr uint16_t startOfLocalWorkQ = 4160;
 constexpr uint16_t lengthOfMainShmem = 4500;
@@ -11,6 +13,10 @@ constexpr uint16_t begSecRegShmem = 3136;
 constexpr uint16_t begSMallRegShmemA = 0;
 constexpr uint16_t begSMallRegShmemB = 1056;
 constexpr uint16_t begSourceShmem = 32;
+// other
+//added to linear index meta in order to  mark weather block is of type gold or not 
+constexpr uint32_t  isGoldOffset = (UINT16_MAX * 10);
+
 
 /**
 In order to be able to use cuda malloc 3d we will implemnt it as a series

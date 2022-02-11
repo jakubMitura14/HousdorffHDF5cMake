@@ -109,7 +109,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         pipeline.producer_acquire();
 
         cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-            (&metaDataArr[(mainShmem[startOfLocalWorkQ] - UINT16_MAX * (mainShmem[startOfLocalWorkQ] >= UINT16_MAX)) 
+            (&metaDataArr[(mainShmem[startOfLocalWorkQ] - isGoldOffset * (mainShmem[startOfLocalWorkQ] >= isGoldOffset))
                 * metaData.metaDataSectionLength])
             , cuda::aligned_size_t<4>(sizeof(uint16_t) * 20), pipeline);
 
@@ -119,19 +119,11 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
                 ///#### pipeline step 1) now we load data for next step (to mainly sourceshmem and left-right if apply) and process data loaded in previous step
                 pipeline.producer_acquire();
-                //if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
-                //    printf( "mainShmemIndex %d mainArrIndex %d  length %d \n"
-                //        , getIndexOfShmemToFirstLoad(mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
-                //        , getFullIndexForSourceShmemTotal(metaData, mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
-                //        , getLengthOfShmemToFirstLoad(metaData, mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
-                //    );
 
-
-                //};
-                cuda::memcpy_async(cta, (&mainShmem[getIndexOfShmemToFirstLoad(mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))]), // we check weather there is anything to the left - not on left border if so we need place for left 32 entries
-                    &getSourceReduced(fbArgs, iterationNumb)[getFullIndexForSourceShmemTotal(metaData, mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))],
+                cuda::memcpy_async(cta, (&mainShmem[getIndexOfShmemToFirstLoad(mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset))]), // we check weather there is anything to the left - not on left border if so we need place for left 32 entries
+                    &getSourceReduced(fbArgs, iterationNumb)[getFullIndexForSourceShmemTotal(metaData, mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset))],
                     cuda::aligned_size_t<128>(sizeof(uint32_t) * //below we check weather we have block to the left and right if so we increase number of copied entries
-                        getLengthOfShmemToFirstLoad(metaData, mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)))
+                        getLengthOfShmemToFirstLoad(metaData, mainShmem, i, (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset)))
                     , pipeline);
 
                 pipeline.producer_commit();
@@ -141,13 +133,13 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 pipeline.consumer_wait();
 
                 if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
-                    isGold[0] = (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
+                    isGold[0] = (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset);
 
                 }
                 if (tile.thread_rank() == 11 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
 
-                    currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX);
-
+                    currLinIndM[0] = mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset);
+                    printf("in pipeline  linear index meta %d block %d \n ", currLinIndM[0], blockIdx.x);
                 }
                 afterBlockClean(cta, worQueueStep, localBlockMetaDataOld, mainShmem, i,
                     metaData, tile, localFpConter, localFnConter
@@ -177,7 +169,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 // first we perform up and down dilatations inside the block
                 mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
                 //we also do the left and right dilatations
-                //left
+                ////left
                 dilatateHelperForTransverse((threadIdx.x == 0),
                     2, (-1), (0), mainShmem, isAnythingInPadding
                     , 0, threadIdx.y + (32 - fbArgs.dbYLength) // we add offset depending on y dimension
@@ -188,6 +180,12 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     3, (1), (0), mainShmem, isAnythingInPadding
                     , 0, threadIdx.y
                     , 16, begSMallRegShmemB, localBlockMetaData);
+
+
+                //dilatateHelperForTransverse((threadIdx.x == (fbArgs.dbXLength - 1)),
+                //    3, (1), (0), mainShmem, isAnythingInPadding
+                //    , 0,threadIdx.y
+                //    , 16, begSMallRegShmemA, localBlockMetaData);
 
                 ///////////saving old
                 //additionally we save previous copies of data so refreshing will keep easier
@@ -257,7 +255,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 else {//if we are not validating we immidiately start loading data for next loop
                     if (i + 1 <= worQueueStep[0]) {
                         cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
+                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset))
                                 * metaData.metaDataSectionLength])
                             , cuda::aligned_size_t<4>(sizeof(uint16_t) * 20), pipeline);
                     }
@@ -303,7 +301,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         pipeline.producer_acquire();
             if (i + 1 <= worQueueStep[0]) {
                 cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-                    (&metaDataArr[(mainShmem[startOfLocalWorkQ+i] - UINT16_MAX * (mainShmem[startOfLocalWorkQ+i] >= UINT16_MAX))
+                    (&metaDataArr[(mainShmem[startOfLocalWorkQ+i] - isGoldOffset * (mainShmem[startOfLocalWorkQ+i] >= isGoldOffset))
                         * metaData.metaDataSectionLength])
                     , cuda::aligned_size_t<4>(sizeof(uint16_t) * 20), pipeline);
             }
@@ -332,7 +330,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     if (isGold[0]) { old = atomicAdd(&(localFpConter[0]), 1) + localBlockMetaData[6]; }
                     else { old = atomicAdd(&(localFnConter[0]), 1)-1 + localBlockMetaData[5]; };
                     //   add results to global memory    
-                    resultListPointerMeta[old] = currLinIndM[0] + UINT16_MAX * isGold[0];
+                    resultListPointerMeta[old] = currLinIndM[0] + isGoldOffset * isGold[0];
                     resultListPointerLocal[old] = (fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x);
                     resultListPointerIterNumb[old] = iterationNumb[0];
                 }

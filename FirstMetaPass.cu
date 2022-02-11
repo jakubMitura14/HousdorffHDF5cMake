@@ -24,7 +24,7 @@ offsetMetadataArr- arrays from metadata holding data about result list offsets i
 
 
 #pragma once
-__device__ inline void addToQueue( uint16_t linIdexMeta, uint8_t isGold
+__device__ inline void addToQueue( uint32_t linIdexMeta, uint8_t isGold
     , unsigned int fpFnLocCounter[1], uint32_t localWorkQueue[1600], uint32_t localOffsetQueue[1600], unsigned int localWorkQueueCounter[1]
     , uint8_t countIndexNumb, uint8_t isActiveIndexNumb, uint8_t offsetIndexNumb
     , uint16_t* metaDataArr, MetaDataGPU metaData, unsigned int* minMaxes,uint32_t* workQueue) {
@@ -33,20 +33,20 @@ __device__ inline void addToQueue( uint16_t linIdexMeta, uint8_t isGold
         //given fp is non zero we need to  add this to local queue
         if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + isActiveIndexNumb]==1) {
 
-           // printf("in first meta pass linIdexMeta %d isGold %d \n  ", linIdexMeta, isGold);
+            printf("adding to local in first meta pass linIdexMeta %d isGold %d isActiveIndexNumb %d \n  ", linIdexMeta, isGold, isActiveIndexNumb);
 
             count = atomicAdd_block(&fpFnLocCounter[0], count);
             unsigned int  old = atomicAdd_block(&localWorkQueueCounter[0], 1);
             //we check weather we still have space in shared memory
             if (old < 1590) {// so we still have space in shared memory
-                // will be equal or above UINT16_MAX if it is gold pass
-                localWorkQueue[old] = uint32_t(linIdexMeta+(UINT16_MAX* isGold));
+                // will be equal or above isGoldOffset  if it is gold pass
+                localWorkQueue[old] = uint32_t(linIdexMeta+(isGoldOffset * isGold));
                 localOffsetQueue[old] = uint32_t(count);
                      }
             else {// so we do not have any space more in the sared memory  - it is unlikely so we will just in this case save immidiately to global memory
                 old = atomicAdd(&(minMaxes[9]), old);
                 //workQueue
-                workQueue[old] = uint32_t(linIdexMeta + (UINT16_MAX * isGold));
+                workQueue[old] = uint32_t(linIdexMeta + (isGoldOffset * isGold));
                 //and offset 
                 metaDataArr[linIdexMeta * metaData.metaDataSectionLength + offsetIndexNumb] = atomicAdd(&(minMaxes[12]), count);
             };
@@ -91,19 +91,19 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
 
     // classical grid stride loop - in case of unlikely event we will run out of space we will empty it prematurly
     //main metadata iteration
-    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * gridDim.x) {
+    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * gridDim.x) {
          
        // if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-         //   printf("in first meta pass linIdexMeta %d \n  ", linIdexMeta);
+            printf("in first meta pass linIdexMeta %d blockIdx.x %d blockDim.x %d metaData.totalMetaLength %d threadIdx.x %d \n  ", linIdexMeta, blockIdx.x, blockDim.x, metaData.totalMetaLength, threadIdx.x );
         //}
         
         //goldpass
-        addToQueue( linIdexMeta, 0
+        addToQueue( linIdexMeta, 1
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 1, 9, 6
             , metaDataArr, metaData, minMaxes, workQueue);
           //segmPass  
-        addToQueue( linIdexMeta, 1
+        addToQueue( linIdexMeta, 0
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 2, 7, 5
             , metaDataArr, metaData, minMaxes, workQueue);
@@ -135,14 +135,18 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     //setting offsets
     for (uint16_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
         workQueue[globalWorkQueueCounter[0] +i]=localWorkQueue[i]; 
-
         //FP pass
-        if (localWorkQueue[i]>= UINT16_MAX) {
-            metaDataArr[(localWorkQueue[i] - UINT16_MAX) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
+        if (localWorkQueue[i]>= isGoldOffset) {
+            metaDataArr[(localWorkQueue[i] - isGoldOffset) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
+            printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i] - isGoldOffset);
+
         }
         //FN pass
         else {
             metaDataArr[(localWorkQueue[i]) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
+            printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i]);
+
+        
         };
 
         sync(cta);

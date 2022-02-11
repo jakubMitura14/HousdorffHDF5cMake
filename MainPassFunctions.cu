@@ -150,13 +150,13 @@ inline __device__ uint16_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t
     ,  uint16_t i, bool isGold){
     return  metaData.mainArrXLength * 
     ((1 -isGold)// here calculating offset depending on what iteration and is gold;
-        + (mainShmem[startOfLocalWorkQ + i] - (UINT16_MAX * (isGold))) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
+        + (mainShmem[startOfLocalWorkQ + i] - (isGoldOffset * (isGold))) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
 
 }
 #pragma once
 inline __device__ uint16_t getFullIndexForSourceShmemTotal(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint16_t i, bool isGold) {
-    return  (( (mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * isGold) >0)* (-32)) // we check weather there is anything to the left - not on left border if so we load left 32 entries
+    return  (( (mainShmem[startOfLocalWorkQ + i] - isGoldOffset * isGold) >0)* (-32)) // we check weather there is anything to the left - not on left border if so we load left 32 entries
         + getIndexForSourceShmem(metaData, mainShmem,  i, isGold);
 }
 
@@ -168,8 +168,8 @@ getting index where we should put first load - so data about this block and if a
 */
 #pragma once
 inline __device__ uint16_t getIndexOfShmemToFirstLoad(uint32_t mainShmem[lengthOfMainShmem], uint16_t i, bool isGold) {
-    return  (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX 
-        * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX)) > 0)* (-32)) + begSourceShmem;
+    return  (((mainShmem[startOfLocalWorkQ + i] - isGoldOffset
+        * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset)) > 0)* (-32)) + begSourceShmem;
 }
 
 /*
@@ -178,8 +178,8 @@ calculating where to put the data from res shmem - so data after dilatation back
 #pragma once
 inline __device__ uint16_t getLengthOfShmemToFirstLoad(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
     , uint16_t i, bool isGold) {
-    return    (metaData.mainArrXLength + 32 * (((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (isGold)) > 0)
-        + ((mainShmem[startOfLocalWorkQ + i] - UINT16_MAX * (isGold)) < (metaData.totalMetaLength - 1))));// offset depending on linear index of this block
+    return    (metaData.mainArrXLength + 32 * (((mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (isGold)) > 0)
+        + ((mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (isGold)) < (metaData.totalMetaLength - 1))));// offset depending on linear index of this block
 }
 
 

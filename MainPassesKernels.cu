@@ -91,7 +91,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
     //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
     //    for (uint16_t ii = blockIdx.x; ii < 7; ii += gridDim.x) {
     //        if (workQueue[ii] > 0) {
-    //            if (workQueue[ii] > (UINT16_MAX-1)) {
+    //            if (workQueue[ii] > (isGoldOffset-1)) {
     //                printf("in gold workqueue elment %d  \n", (workQueue[ii] - UINT16_MAX));
     //            }
     //            else {
@@ -141,7 +141,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                    // if (column>0) {
                         //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
                         //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d ww %d \n"
                                     , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
                                 , column , linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
                     }
@@ -163,7 +163,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                         // if (column>0) {
                              //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
                              //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
+                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d ww %d \n"
                             , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
                             , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
                     }
@@ -463,23 +463,16 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
-
-
-
        // grid.sync();
 
         //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
        /////////////// loading work queue for padding dilatations
-      //metadataPass(true, (isGoldPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 11]
-      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
-      //        && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
-      //        (isSegmPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 12]
-      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
-      //            && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
-      //        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-      //        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-      //        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-      //        , mainArr, metaData, minMaxes, workQueue,metaDataArr);
+      metadataPass(fbArgs,true,  11,7,8,
+                12,9,10
+              , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+              , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+              , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+              , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
        //////////// padding dilatations
 
 
