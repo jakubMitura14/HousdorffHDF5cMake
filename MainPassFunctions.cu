@@ -25,6 +25,7 @@ inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, int
 
     if ((iterationNumb[0] & 1) == 0) {
       return fbArgs.mainArrAPointer;
+
     }
     else {       
        return fbArgs.mainArrBPointer;
@@ -41,10 +42,16 @@ template <typename TXPPI>
 inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs, int iterationNumb[1]) {
 
     if ((iterationNumb[0] & 1) == 0) {
+        //printf(" BB ");
+
       return fbArgs.mainArrBPointer;
+
     }
     else {       
+       // printf(" AA ");
+
        return fbArgs.mainArrAPointer  ;
+
     }
 
 }

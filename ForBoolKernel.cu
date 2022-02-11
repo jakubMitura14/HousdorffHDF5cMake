@@ -162,9 +162,10 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
                             sumFn += (goldBool && !segmBool);
                             if (goldBool)  anyInGold[0] = true;
                             if (segmBool)  anyInSegm[0] = true;
-                          /*  if (goldBool) {
+                           
+                            if (goldBool) {
                                 printf("in kernel x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
-                            }*/
+                            }
 
 
                         }
@@ -202,7 +203,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
             }
         }
 
-        sync(cta);
+     //   sync(cta);
 
         //copy data to global memory from shmem
 
