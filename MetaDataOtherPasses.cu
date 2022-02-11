@@ -45,7 +45,7 @@ inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddi
     , unsigned int localWorkQueueCounter[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localMinMaxes[5]
     , unsigned int fpFnLocCounter[1], bool isGoldPassToContinue[1], bool isSegmPassToContinue[1], thread_block cta, thread_block_tile<32> tile
     , MetaDataGPU metaData
-    , unsigned int* minMaxes, uint32_t* workQueue, uint16_t* metaDataArr
+    , unsigned int* minMaxes, uint32_t* workQueue, uint32_t* metaDataArr
 
 ) {
   // preparation loads
@@ -77,7 +77,7 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { isGoldPassToContin
 sync(cta);
 
 //iterations 
-for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
     //goldpass
 
 
@@ -87,11 +87,11 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
-            mainShmem[old] = uint32_t(linIdexMeta + (isGoldOffset) );
+            mainShmem[old] = linIdexMeta + (isGoldOffset);
         }
         else {
             old = atomicAdd(&(minMaxes[9]), 1);
-            workQueue[old] = uint32_t(linIdexMeta + (isGoldOffset) );
+            workQueue[old] = linIdexMeta + (isGoldOffset) ;
         }
         if (isPaddingPass) {
             //setting to be activated to 0 
@@ -107,11 +107,11 @@ for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
         if (old < lengthOfMainShmem) {
-            mainShmem[old] = uint32_t(linIdexMeta);
+            mainShmem[old] = linIdexMeta;
         }
         else {
             old = atomicAdd(&(minMaxes[9]), 1);
-            workQueue[old] = uint32_t(linIdexMeta);
+            workQueue[old] = linIdexMeta;
         }
         if (isPaddingPass) {
             //setting to be activated to 0 
@@ -130,7 +130,7 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
     }
 }
 sync(cta);
-for (uint16_t linI =threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
+for (uint32_t linI =threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
   workQueue[globalWorkQueueCounter[0]+linI]=mainShmem[linI];
 }
 

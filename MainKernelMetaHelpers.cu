@@ -4,7 +4,7 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 #pragma once
 template <typename ZZR>
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
-    uint32_t*& resultListPointerMeta,uint16_t*& resultListPointerLocal,uint32_t*& resultListPointerIterNumb,
+    uint32_t*& resultListPointerMeta,uint32_t*& resultListPointerLocal,uint32_t*& resultListPointerIterNumb,
     uint32_t*& origArrsPointer,
     uint32_t*& mainArrAPointer,
     uint32_t*& mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
@@ -22,7 +22,7 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
     size = sizeof(uint32_t)* fpPlusFn + 1;
     cudaMallocAsync(&resultListPointerMeta, size, 0);
 
-    size = sizeof(uint16_t) * fpPlusFn + 1;
+    size = sizeof(uint32_t) * fpPlusFn + 1;
     cudaMallocAsync(&resultListPointerLocal, size, 0);
     cudaMallocAsync(&resultListPointerIterNumb, size, 0);
 
@@ -62,7 +62,7 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 template <typename ZZR>
 inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs,
              uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr
-    , uint16_t*& metaDataArr) {
+    , uint32_t*& metaDataArr) {
     ////reduced arrays
 
 
@@ -113,7 +113,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     //cudaMallocAsync(&mainArr, sizeB, 0);
     size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
     cudaMallocAsync(&origArr, sizeorigArr, 0);
-    size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint16_t);
+    size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint32_t);
     cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
 
     

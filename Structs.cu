@@ -4,15 +4,15 @@
 #pragma once
 
 //constants describing the meaning of main shared memory spaces
-constexpr uint16_t localWorkQueLength = 340;
-constexpr uint16_t startOfLocalWorkQ = 4160;
-constexpr uint16_t lengthOfMainShmem = 4500;
-constexpr uint16_t begResShmem = 1088;
-constexpr uint16_t begfirstRegShmem = 2112;
-constexpr uint16_t begSecRegShmem = 3136;
-constexpr uint16_t begSMallRegShmemA = 0;
-constexpr uint16_t begSMallRegShmemB = 1056;
-constexpr uint16_t begSourceShmem = 32;
+constexpr uint32_t localWorkQueLength = 340;
+constexpr uint32_t startOfLocalWorkQ = 4160;
+constexpr uint32_t lengthOfMainShmem = 4500;
+constexpr uint32_t begResShmem = 1088;
+constexpr uint32_t begfirstRegShmem = 2112;
+constexpr uint32_t begSecRegShmem = 3136;
+constexpr uint32_t begSMallRegShmemA = 0;
+constexpr uint32_t begSMallRegShmemB = 1056;
+constexpr uint32_t begSourceShmem = 32;
 // other
 //added to linear index meta in order to  mark weather block is of type gold or not 
 constexpr uint32_t  isGoldOffset = (UINT16_MAX * 10);
@@ -176,13 +176,13 @@ struct ForBoolKernelArgs {
     TFB numberToLookFor;
 
     uint32_t* resultListPointerMeta;
-    uint16_t* resultListPointerLocal;
+    uint32_t* resultListPointerLocal;
     uint32_t* resultListPointerIterNumb;
 
     uint32_t* origArrsPointer;
 uint32_t* mainArrAPointer;
     uint32_t* mainArrBPointer;
-    uint16_t* metaDataArrPointer;
+    uint32_t* metaDataArrPointer;
 
     uint32_t* workQueuePointer;
     unsigned int* minMaxes;

@@ -37,9 +37,9 @@ commit so we will have register shmem one free
 #pragma once
 template <typename TXTOIO>
 inline __device__ void loadAndDilatateAndSave(ForBoolKernelArgs<TXTOIO> fbArgs, char* tensorslice,
-    uint16_t localWorkQueue[localWorkQueLength][4], uint8_t bigloop,
+    uint32_t localWorkQueue[localWorkQueLength][4], uint8_t bigloop,
     uint32_t sourceShared[32][32], uint32_t resShared[32][32]
-    , bool isAnythingInPadding[6], unsigned int iterationNumb[1], bool& isBlockFull, thread_block cta, uint16_t i
+    , bool isAnythingInPadding[6], unsigned int iterationNumb[1], bool& isBlockFull, thread_block cta, uint32_t i
     , bool isBlockToBeValidated[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int resultfpOffset[1], unsigned int resultfnOffset[1], unsigned int worQueueStep[1]
     , uint32_t* mainArr, MetaDataGPU metaData , unsigned int* minMaxes, uint32_t* workQueue, unsigned int localMinMaxes[5], unsigned int localBlockMetaData[19]
@@ -139,9 +139,9 @@ load and dilatates the entries in gold or segm ...
 #pragma once
 template <typename TXTOIO>
 inline __device__ void validateAndUpMetaCounter(ForBoolKernelArgs<TXTOIO> fbArgs, char* tensorslice,
-    uint16_t localWorkQueue[localWorkQueLength][4], uint8_t bigloop,
+    uint32_t localWorkQueue[localWorkQueLength][4], uint8_t bigloop,
     uint32_t sourceShared[32][32], uint32_t resShared[32][32]
-    , bool isAnythingInPadding[6], unsigned int iterationNumb[1], bool isBlockFull, thread_block cta, uint16_t i
+    , bool isAnythingInPadding[6], unsigned int iterationNumb[1], bool isBlockFull, thread_block cta, uint32_t i
     , bool isBlockToBeValidated[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int resultfpOffset[1], unsigned int resultfnOffset[1], unsigned int worQueueStep[1], unsigned int& old
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]

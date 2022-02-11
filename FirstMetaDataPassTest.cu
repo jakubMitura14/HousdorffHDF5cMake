@@ -86,8 +86,8 @@
 //	int workQueueWidth = 4;
 //	int resultListWidth = 5;
 //	//allocating to semiarbitrrary size 
-//	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
-//	auto resultListPointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, resultListWidth, 1);
+//	auto workQueuePointer = alloc_tensorToZeros<uint32_t>(workQueueAndRLLength, workQueueWidth, 1);
+//	auto resultListPointer = alloc_tensorToZeros<uint32_t>(workQueueAndRLLength, resultListWidth, 1);
 //	metaData.workQueue = get3dArrCPU(workQueuePointer, workQueueAndRLLength, workQueueWidth, 1);
 //	metaData.resultList = get3dArrCPU(resultListPointer, workQueueAndRLLength, resultListWidth, 1);
 //

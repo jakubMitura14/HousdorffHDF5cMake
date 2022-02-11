@@ -63,16 +63,16 @@ __device__ void metaDataIterB(ForBoolKernelArgs<TYU> fbArgs, unsigned int* minMa
         uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
         //iterating over data block
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-            uint16_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
+            uint32_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-                uint16_t  y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
+                uint32_t  y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
                 if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
 
                     // resetting 
 
 
                     for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
-                        uint16_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
+                        uint32_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
                         if (z < fbArgs.goldArr.Nx) {
                             //first array gold
                             uint8_t& zLocRef = zLoc; uint8_t& yLocRef = yLoc; uint8_t& xLocRef = xLoc;

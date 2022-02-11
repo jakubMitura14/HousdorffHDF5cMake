@@ -78,7 +78,7 @@ inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
 
 #pragma once
 inline __device__ void setNextBlockAsIsToBeActivated(coalesced_group active, char* tensorslice,
-    int paddingNumb, uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i, 
+    int paddingNumb, uint32_t localWorkQueue[localWorkQueLength][4], uint32_t i, 
     int xMetaChange, int yMetaChange, int zMetaChange
     ,array3dWithDimsGPU targetArr,bool isAnythingInPadding[6], bool isInRagePred
 ) {
@@ -104,7 +104,7 @@ inline __device__ void setNextBlockAsIsToBeActivated(coalesced_group active, cha
 
 #pragma once
 inline __device__ void setNextBlocksActivity( char* tensorslice,
-    uint16_t localWorkQueue[localWorkQueLength][4], uint16_t i, array3dWithDimsGPU targetArr
+    uint32_t localWorkQueue[localWorkQueLength][4], uint32_t i, array3dWithDimsGPU targetArr
     , bool isAnythingInPadding[6], coalesced_group active) {
     //0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
     //top
@@ -146,16 +146,16 @@ inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t res
 calculate index in main shmem where array that is source for this dilatation round is present
 */
 #pragma once
-inline __device__ uint16_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    ,  uint16_t i, bool isGold){
+inline __device__ uint32_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    ,  uint32_t i, bool isGold){
     return  metaData.mainArrXLength * 
     ((1 -isGold)// here calculating offset depending on what iteration and is gold;
         + (mainShmem[startOfLocalWorkQ + i] - (isGoldOffset * (isGold))) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
 
 }
 #pragma once
-inline __device__ uint16_t getFullIndexForSourceShmemTotal(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint16_t i, bool isGold) {
+inline __device__ uint32_t getFullIndexForSourceShmemTotal(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint32_t i, bool isGold) {
     return  (( (mainShmem[startOfLocalWorkQ + i] - isGoldOffset * isGold) >0)* (-32)) // we check weather there is anything to the left - not on left border if so we load left 32 entries
         + getIndexForSourceShmem(metaData, mainShmem,  i, isGold);
 }
@@ -167,7 +167,7 @@ inline __device__ uint16_t getFullIndexForSourceShmemTotal(MetaDataGPU metaData,
 getting index where we should put first load - so data about this block and if apply block to the left and right
 */
 #pragma once
-inline __device__ uint16_t getIndexOfShmemToFirstLoad(uint32_t mainShmem[lengthOfMainShmem], uint16_t i, bool isGold) {
+inline __device__ uint32_t getIndexOfShmemToFirstLoad(uint32_t mainShmem[lengthOfMainShmem], uint32_t i, bool isGold) {
     return  (((mainShmem[startOfLocalWorkQ + i] - isGoldOffset
         * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset)) > 0)* (-32)) + begSourceShmem;
 }
@@ -176,8 +176,8 @@ inline __device__ uint16_t getIndexOfShmemToFirstLoad(uint32_t mainShmem[lengthO
 calculating where to put the data from res shmem - so data after dilatation back to global memory
 */
 #pragma once
-inline __device__ uint16_t getLengthOfShmemToFirstLoad(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint16_t i, bool isGold) {
+inline __device__ uint32_t getLengthOfShmemToFirstLoad(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , uint32_t i, bool isGold) {
     return    (metaData.mainArrXLength + 32 * (((mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (isGold)) > 0)
         + ((mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (isGold)) < (metaData.totalMetaLength - 1))));// offset depending on linear index of this block
 }
@@ -189,8 +189,8 @@ inline __device__ uint16_t getLengthOfShmemToFirstLoad(MetaDataGPU metaData, uin
 calculate index in main shmem where array that is source for this dilatation round is present in the neighboutring block ...
 */
 #pragma once
-inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , int iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19],  size_t inMetaIndex) {
+inline __device__ uint32_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , int iterationNumb[1], uint32_t isGold[1], uint32_t currLinIndM[1], uint32_t localBlockMetaData[19],  size_t inMetaIndex) {
        return  metaData.mainArrXLength * 
     ((1 - (isGold[1]) )// here calculating offset depending on what iteration and is gold;
         + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
@@ -199,8 +199,8 @@ inline __device__ uint16_t getIndexForNeighbourForShmem(MetaDataGPU metaData, ui
 /*
 calculating where to put the data from res shmem - so data after dilatation back to global memory
 */
-inline __device__ uint16_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , int iterationNumb[1], uint32_t isGold[1], uint16_t currLinIndM[1], uint16_t localBlockMetaData[19]) {
+inline __device__ uint32_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
+    , int iterationNumb[1], uint32_t isGold[1], uint32_t currLinIndM[1], uint32_t localBlockMetaData[19]) {
     return  metaData.mainArrXLength * (isGold[1])// here calculating offset depending on what iteration and is gold;
         + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
 }
@@ -223,7 +223,7 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
     uint8_t paddingPos,    int8_t  normalXChange, int8_t normalYchange
 , uint32_t mainShmem[], bool isAnythingInPadding[6]
 ,uint8_t forBorderYcoord, uint8_t forBorderXcoord
-,uint8_t metaDataCoordIndex, uint16_t targetShmemOffset , uint16_t localBlockMetaData[20]) {
+,uint8_t metaDataCoordIndex, uint32_t targetShmemOffset , uint32_t localBlockMetaData[20]) {
     // so we first check for corner cases 
     if (predicate) {
         // now we need to load the data from the neigbouring blocks
@@ -254,11 +254,11 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 #pragma once
 inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-uint32_t* mainShmem, bool isAnythingInPadding[6], uint16_t localBlockMetaData[20]
+uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20]
 ,uint8_t metaDataCoordIndex
 , uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
 , uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
-, uint16_t targetShmemOffset
+, uint32_t targetShmemOffset
 ) {
        // now we need to load the data from the neigbouring blocks
        //first checking is there anything to look to 
@@ -278,8 +278,8 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint16_t localBlockMetaData[20
 
 
 //inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
-//    , unsigned int worQueueStep[1], uint16_t localBlockMetaData[]
-//    , uint32_t mainShmem[], uint16_t i, MetaDataGPU metaData
+//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[]
+//    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
 //) {
 
 
@@ -289,15 +289,15 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint16_t localBlockMetaData[20
 //*/
 //template <typename TXPPI>
 //inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block& cta//some needed CUDA objects
-//    , unsigned int worQueueStep[1], uint16_t localBlockMetaData[]
-//    , uint32_t mainShmem[], uint16_t i, MetaDataGPU metaData, uint16_t* metaDataArr
+//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[]
+//    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData, uint32_t* metaDataArr
 //) {
 //
 //    if (i + 1 <= worQueueStep[0]) {
 //        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
 //            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
 //                * metaData.metaDataSectionLength]])
-//            , cuda::aligned_size_t<4>(sizeof(uint16_t) * 20), pipeline);
+//            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
 //    }
 //
 //
@@ -316,12 +316,12 @@ finilizing operations for last block
 
 
 inline __device__  void afterBlockClean(thread_block cta
-    , unsigned int worQueueStep[1], uint16_t localBlockMetaDataOld[6]
-    , uint32_t mainShmem[], uint16_t i, MetaDataGPU metaData
+    , unsigned int worQueueStep[1], uint32_t localBlockMetaDataOld[6]
+    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
     , thread_block_tile<32> tile
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
-    , uint16_t* metaDataArr, uint16_t oldLinIndM[1], uint32_t oldIsGold[1]
+    , uint32_t* metaDataArr, uint32_t oldLinIndM[1], uint32_t oldIsGold[1]
     , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass) {
 
 

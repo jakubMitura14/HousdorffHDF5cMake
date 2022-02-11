@@ -89,7 +89,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
     //work queue !!
     //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-    //    for (uint16_t ii = blockIdx.x; ii < 7; ii += gridDim.x) {
+    //    for (uint32_t ii = blockIdx.x; ii < 7; ii += gridDim.x) {
     //        if (workQueue[ii] > 0) {
     //            if (workQueue[ii] > (isGoldOffset-1)) {
     //                printf("in gold workqueue elment %d  \n", (workQueue[ii] - UINT16_MAX));
@@ -108,19 +108,19 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
     char* tensorslice;
 
 
-    for (uint16_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
+    for (uint32_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
         //we get from linear index  the coordinates of the metadata block of intrest
         uint8_t xMeta = linIdexMeta % metaData.metaXLength;
         uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
         uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
 
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-            uint16_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
+            uint32_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-                uint16_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
+                uint32_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
                 for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
 
-                    uint16_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
+                    uint32_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
                     uint8_t ww = 0;//absolute position
                     //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength)*ww];//
                     uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
@@ -280,7 +280,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
 
 
-    //for (uint16_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+    //for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
   
 
     // /*   if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
@@ -313,7 +313,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs, uint32_t * mainArr, MetaDataGPU metaData
     //    , unsigned int* minMaxes, uint32_t * workQueue
-    //    , uint32_t * resultListPointerMeta, uint16_t * resultListPointerLocal, uint16_t * resultListPointerIterNumb, uint32_t * origArrs, uint16_t * metaDataArr) {
+    //    , uint32_t * resultListPointerMeta, uint32_t * resultListPointerLocal, uint32_t * resultListPointerIterNumb, uint32_t * origArrs, uint32_t * metaDataArr) {
 
 
 
@@ -364,11 +364,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     __shared__ unsigned int worQueueStep[1];
 
     __shared__ uint32_t isGold[1];
-    __shared__ uint16_t currLinIndM[1];
+    __shared__ uint32_t currLinIndM[1];
 
 
     __shared__ uint32_t oldIsGold[1];
-    __shared__ uint16_t oldLinIndM[1];
+    __shared__ uint32_t oldLinIndM[1];
 
     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
     0 : global FP count;
@@ -403,7 +403,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
  18 : posterior
     */
 
-    __shared__ uint16_t localBlockMetaData[20];
+    __shared__ uint32_t localBlockMetaData[20];
 
     /*
  //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX
@@ -417,7 +417,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     
     */
 
-    __shared__ uint16_t localBlockMetaDataOld[6];
+    __shared__ uint32_t localBlockMetaDataOld[6];
 
     /////used mainly in meta passes
 
@@ -566,13 +566,13 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
         //pointers ...
     uint32_t* resultListPointerMeta;
-    uint16_t* resultListPointerLocal;
+    uint32_t* resultListPointerLocal;
     uint32_t* resultListPointerIterNumb;
     
     uint32_t* origArrsPointer;
     uint32_t* mainArrAPointer;
     uint32_t* mainArrBPointer;
-    uint16_t* metaDataArrPointer;
+    uint32_t* metaDataArrPointer;
 
     uint32_t* workQueuePointer;
     unsigned int* minMaxes;
@@ -608,7 +608,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     checkCuda(cudaDeviceSynchronize(), "a2");
 
         boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs,  metaData, origArrsPointer, metaDataArrPointer);
-        //uint32_t* origArrs, uint16_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
+        //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
 
     checkCuda(cudaDeviceSynchronize(), "a3");  
     
@@ -811,13 +811,13 @@ __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     char* tensorslice;
     bool isBlockFull = true;// usefull to establish do we have block completely filled and no more dilatations possible
     unsigned int old = 0;
-    uint16_t i = 0;
+    uint32_t i = 0;
     uint8_t j = 0;
     uint8_t bigloop = 0;
     uint8_t bitPos = 0;
     // some references using as aliases
     unsigned int& oldRef = old;
-    uint16_t& linIdexMeta = i;
+    uint32_t& linIdexMeta = i;
     uint8_t& xMeta = j;
     uint8_t& yMeta = bigloop;
     uint8_t& zMeta = bitPos;
@@ -858,7 +858,7 @@ __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     __shared__ unsigned int worQueueStep[1];
 
     // we will load here multiple entries from workqueue
-    __shared__ uint16_t localWorkQueue[localWorkQueLength][4];
+    __shared__ uint32_t localWorkQueue[localWorkQueLength][4];
     //initializations and loading
     auto active = coalesced_threads();
     if (isToBeExecutedOnActive(active, 0)) { iterationNumb[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[13]; };

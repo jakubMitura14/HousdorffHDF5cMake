@@ -67,7 +67,7 @@ const H5std_string DATASET_NAME("onlyLungs");
 //    //printf("  * %d *  ", threadIdx.x);
 //    //   printf("  ***  ");
 //
-//    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+//    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
 //        global_out[linIdexMeta] =  multiplier[0];
 //
 //        if (threadIdx.x == 0) {
@@ -90,7 +90,7 @@ const H5std_string DATASET_NAME("onlyLungs");
 //};
 //
 //__device__ void computeB(uint32_t* global_out, uint32_t const* shared_in) {
-//    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+//    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
 //
 //        //   printf("  ***  ");
 //        global_out[linIdexMeta] = shared_in[linIdexMeta]*2;
@@ -99,7 +99,7 @@ const H5std_string DATASET_NAME("onlyLungs");
 //};
 //
 //__device__ void computeC(uint32_t* global_out, uint32_t const* shared_in) {
-//    for (uint16_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
+//    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
 //
 //        //   printf("  ***  ");
 //        global_out[linIdexMeta] = shared_in[linIdexMeta] + 3;

@@ -44,8 +44,8 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC> mainFunA
 setting the linear index of metadata blocks that are in given direction if there is no such (out of range) we will save it as UINT32_MAX
 */
 template <typename TCC>
-__device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint16_t toAdd
-    , uint16_t linIdexMeta , MetaDataGPU metaData, uint32_t localBlockMetaData[20]) {
+__device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
+    , uint32_t linIdexMeta , MetaDataGPU metaData, uint32_t localBlockMetaData[20]) {
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
@@ -67,7 +67,7 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 #pragma once
 template <typename TYU>
 __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
-    , MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
+    , MetaDataGPU metaData, uint32_t* origArrs, uint32_t* metaDataArr) {
 
     ////////////some initializations
     bool goldBool = false;
@@ -76,8 +76,8 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
   
     thread_block cta = this_thread_block();
     thread_block_tile<32> tile = tiled_partition<32>(cta);
-    uint16_t sumFp = 0;
-    uint16_t sumFn = 0;
+    uint32_t sumFp = 0;
+    uint32_t sumFn = 0;
    
     auto pipeline = cuda::make_pipeline();
 
@@ -119,7 +119,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
 
 
     //main metadata iteration
-    for (uint16_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
+    for (uint32_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
         //we get from linear index  the coordinates of the metadata block of intrest
         uint8_t xMeta = linIdexMeta % metaData.metaXLength;
         uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
@@ -133,9 +133,9 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
         //iterating over data block
         sync(cta);
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-            uint16_t x = (xMeta+ metaData.minX)* fbArgs.dbXLength + xLoc;//absolute position
+            uint32_t x = (xMeta+ metaData.minX)* fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-                uint16_t  y = (yMeta+ metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
+                uint32_t  y = (yMeta+ metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
                 if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
 
                     // resetting 
@@ -144,7 +144,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
         
 
                     for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
-                        uint16_t z = (zMeta+ metaData.minZ)* fbArgs.dbZLength + zLoc;//absolute position
+                        uint32_t z = (zMeta+ metaData.minZ)* fbArgs.dbZLength + zLoc;//absolute position
                         if (z < fbArgs.goldArr.Nx) {
                             char* tensorslice;
 
@@ -190,9 +190,9 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
         isNotEmpty = __syncthreads_or(isNotEmpty);
         //exporting to global memory
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-            uint16_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
+            uint32_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-                uint16_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
+                uint32_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
                 if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
                     origArrs[linIdexMeta * metaData.mainArrSectionLength + yLoc * 32 + xLoc] = sharedForGold[yLoc * 32 + xLoc];
                     origArrs[linIdexMeta * metaData.mainArrSectionLength + yLoc * 32 + xLoc + metaData.mainArrXLength] = sharedForSegm[yLoc * 32 + xLoc];
@@ -237,8 +237,8 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
 
 
         /////adding the block and total number of the Fp's and Fn's 
-        sumFp = reduce(tile, sumFp, plus<uint16_t>());
-        sumFn = reduce(tile, sumFn, plus<uint16_t>());
+        sumFp = reduce(tile, sumFp, plus<uint32_t>());
+        sumFn = reduce(tile, sumFn, plus<uint32_t>());
         //reusing shared memory and adding accumulated values from tiles
         if (tile.thread_rank() == 0) {
             sharedForGold[tile.meta_group_rank()] = sumFp;
@@ -322,7 +322,7 @@ metaDataArr[linIdexMeta * metaData.metaDataSectionLength+ threadIdx.x]= localBlo
         
         // copy metadata to global memory
 
-        //cuda::memcpy_async(cta, &metaDataArr[linIdexMeta * metaData.metaDataSectionLength], (&localBlockMetaData[0]), (sizeof(uint16_t) * 20), barrier);
+        //cuda::memcpy_async(cta, &metaDataArr[linIdexMeta * metaData.metaDataSectionLength], (&localBlockMetaData[0]), (sizeof(uint32_t) * 20), barrier);
        // barrier.arrive_and_wait(); // Waits for all copies to complete
 
     }
@@ -355,7 +355,7 @@ collecting all needed functions for GPU execution to prepare data from calculati
 #pragma once
 template <typename TYO>
 __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
-    , MetaDataGPU metaData, uint32_t* origArrs, uint16_t* metaDataArr) {
+    , MetaDataGPU metaData, uint32_t* origArrs, uint32_t* metaDataArr) {
     metaDataIter(fbArgs,  metaData, origArrs, metaDataArr);
 }
 

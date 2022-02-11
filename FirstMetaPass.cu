@@ -27,13 +27,13 @@ offsetMetadataArr- arrays from metadata holding data about result list offsets i
 __device__ inline void addToQueue( uint32_t linIdexMeta, uint8_t isGold
     , unsigned int fpFnLocCounter[1], uint32_t localWorkQueue[1600], uint32_t localOffsetQueue[1600], unsigned int localWorkQueueCounter[1]
     , uint8_t countIndexNumb, uint8_t isActiveIndexNumb, uint8_t offsetIndexNumb
-    , uint16_t* metaDataArr, MetaDataGPU metaData, unsigned int* minMaxes,uint32_t* workQueue) {
+    , uint32_t* metaDataArr, MetaDataGPU metaData, unsigned int* minMaxes,uint32_t* workQueue) {
 
     unsigned int count = metaDataArr[linIdexMeta * metaData.metaDataSectionLength + countIndexNumb];
         //given fp is non zero we need to  add this to local queue
         if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + isActiveIndexNumb]==1) {
 
-            printf("adding to local in first meta pass linIdexMeta %d isGold %d isActiveIndexNumb %d \n  ", linIdexMeta, isGold, isActiveIndexNumb);
+           // printf("adding to local in first meta pass linIdexMeta %d isGold %d isActiveIndexNumb %d \n  ", linIdexMeta, isGold, isActiveIndexNumb);
 
             count = atomicAdd_block(&fpFnLocCounter[0], count);
             unsigned int  old = atomicAdd_block(&localWorkQueueCounter[0], 1);
@@ -58,7 +58,7 @@ __device__ inline void addToQueue( uint32_t linIdexMeta, uint8_t isGold
 template <typename PYO>
 __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     , MetaDataGPU metaData, unsigned int* minMaxes, uint32_t* workQueue
-    , uint32_t* origArrs, uint16_t* metaDataArr) {
+    , uint32_t* origArrs, uint32_t* metaDataArr) {
 
     //////initializations
     thread_block cta = this_thread_block();
@@ -94,7 +94,7 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * gridDim.x) {
          
        // if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-            printf("in first meta pass linIdexMeta %d blockIdx.x %d blockDim.x %d metaData.totalMetaLength %d threadIdx.x %d \n  ", linIdexMeta, blockIdx.x, blockDim.x, metaData.totalMetaLength, threadIdx.x );
+          //  printf("in first meta pass linIdexMeta %d blockIdx.x %d blockDim.x %d metaData.totalMetaLength %d threadIdx.x %d \n  ", linIdexMeta, blockIdx.x, blockDim.x, metaData.totalMetaLength, threadIdx.x );
         //}
         
         //goldpass
@@ -133,18 +133,18 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
 
     
     //setting offsets
-    for (uint16_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
         workQueue[globalWorkQueueCounter[0] +i]=localWorkQueue[i]; 
         //FP pass
         if (localWorkQueue[i]>= isGoldOffset) {
             metaDataArr[(localWorkQueue[i] - isGoldOffset) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
-            printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i] - isGoldOffset);
+            //printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i] - isGoldOffset);
 
         }
         //FN pass
         else {
             metaDataArr[(localWorkQueue[i]) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
-            printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i]);
+            //printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i]);
 
         
         };

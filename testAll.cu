@@ -89,7 +89,7 @@ extern "C" inline void testMainPasswes() {
 	int workQueueWidth = 4;
 	int resultListWidth = 5;
 	//allocating to semiarbitrrary size 
-	auto workQueuePointer = alloc_tensorToZeros<uint16_t>(workQueueAndRLLength, workQueueWidth, 1);
+	auto workQueuePointer = alloc_tensorToZeros<uint32_t>(workQueueAndRLLength, workQueueWidth, 1);
 
 
 	forDebugArr = alloc_tensorToZeros<int>(dXLength, dYLength, dZLength);
@@ -275,11 +275,11 @@ minZ 2  [6]
 //	 int isGold = forFullBoolPrepArgs.metaData.resultList.arrP[0][3][ji];
 //	 int iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[0][4][ji];
 //
-//	 //uint16_t x = forFullBoolPrepArgs.metaData.resultList.arrP[ji][0][0];
-//	 //uint16_t y = forFullBoolPrepArgs.metaData.resultList.arrP[ji][1][0];
-//	 //uint16_t z = forFullBoolPrepArgs.metaData.resultList.arrP[ji][2][0];
-//	 //uint16_t isGold = forFullBoolPrepArgs.metaData.resultList.arrP[ji][3][0];
-//	 //uint16_t iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[ji][4][0];
+//	 //uint32_t x = forFullBoolPrepArgs.metaData.resultList.arrP[ji][0][0];
+//	 //uint32_t y = forFullBoolPrepArgs.metaData.resultList.arrP[ji][1][0];
+//	 //uint32_t z = forFullBoolPrepArgs.metaData.resultList.arrP[ji][2][0];
+//	 //uint32_t isGold = forFullBoolPrepArgs.metaData.resultList.arrP[ji][3][0];
+//	 //uint32_t iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[ji][4][0];
 //
 //
 //   	 if (iternumb!=9) {
