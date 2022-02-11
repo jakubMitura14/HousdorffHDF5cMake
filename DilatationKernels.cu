@@ -315,15 +315,15 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                         , 1
                         , begSecRegShmem);
                     //posterior
-                    //dilatateHelperForTransverse((threadIdx.y == 0), 5
-                    //    , (0), (-1), mainShmem, isAnythingInPadding
-                    //    , 0, threadIdx.x // we add offset depending on y dimension
-                    //    , 18, begSMallRegShmemB, localBlockMetaData);
-                    ////anterior
-                    //dilatateHelperForTransverse((threadIdx.y == (fbArgs.dbYLength - 1)), 4
-                    //    , (0), (1), mainShmem, isAnythingInPadding
-                    //    , 0, threadIdx.x
-                    //    , 17, begSMallRegShmemA, localBlockMetaData);
+                    dilatateHelperForTransverse((threadIdx.y == 0), 5
+                        , (0), (-1), mainShmem, isAnythingInPadding
+                        , 0, threadIdx.x // we add offset depending on y dimension
+                        , 18, begSMallRegShmemB, localBlockMetaData);
+                    //anterior
+                    dilatateHelperForTransverse((threadIdx.y == (fbArgs.dbYLength - 1)), 4
+                        , (0), (1), mainShmem, isAnythingInPadding
+                        , 0, threadIdx.x
+                        , 17, begSMallRegShmemA, localBlockMetaData);
                 
                    // now all of the data is processed we need to save it into global memory
                    // TODO try to use mempcy async here

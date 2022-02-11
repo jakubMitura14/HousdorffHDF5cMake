@@ -149,8 +149,9 @@ extern "C" inline void testMainPasswes() {
 	//setArrCPU(arrSegmObj, 33, 3, 110, 2);//
 	//setArrCPU(arrGoldObj, 31, 0, 0, 2);//
 
-	setArrCPU(arrGoldObj, 35, 0, 0, 2);//
-	setArrCPU(arrGoldObj, 31, 0, 0, 2);//
+	setArrCPU(arrGoldObj, 2, 2,2, 2);//
+	//setArrCPU(arrGoldObj, 35, 0, 0, 2);//
+	//setArrCPU(arrGoldObj, 31, 0, 0, 2);//
 
 
 
