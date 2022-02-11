@@ -99,14 +99,15 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
 
     //allocating needed memory
     // main array
-    unsigned int mainArrXLength = cpuArgs.dbXLength * cpuArgs.dbYLength;
+    unsigned int mainArrXLength = gpuArgs.dbXLength * gpuArgs.dbYLength;
     unsigned int mainArrSectionLength = (mainArrXLength * 2);
     metaData.mainArrXLength = mainArrXLength;
     metaData.mainArrSectionLength = mainArrSectionLength;
     
     size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
-    std::cout <<"totalMetaLength  ";
+    std::cout <<"totalMetaLength   and  gpuArgs.dbYLength ";
     std::cout << totalMetaLength;
+    std::cout << gpuArgs.dbYLength;
     std::cout << "\n";
 
 

@@ -149,68 +149,6 @@ inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t res
 ///////////////////////////////// new functions
 
 
-/*
-calculate index in main shmem where array that is source for this dilatation round is present
-*/
-#pragma once
-inline __device__ uint32_t getIndexForSourceShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    ,  uint32_t i, bool isGold){
-    return  metaData.mainArrXLength * 
-    ((1 -isGold)// here calculating offset depending on what iteration and is gold;
-        + (mainShmem[startOfLocalWorkQ + i] - (isGoldOffset * (isGold))) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
-
-}
-#pragma once
-inline __device__ uint32_t getFullIndexForSourceShmemTotal(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint32_t i, bool isGold) {
-    return  (( (mainShmem[startOfLocalWorkQ + i] - isGoldOffset * isGold) >0)* (-32)) // we check weather there is anything to the left - not on left border if so we load left 32 entries
-        + getIndexForSourceShmem(metaData, mainShmem,  i, isGold);
-}
-
-
-
-
-/*
-getting index where we should put first load - so data about this block and if apply block to the left and right
-*/
-#pragma once
-inline __device__ uint32_t getIndexOfShmemToFirstLoad(uint32_t mainShmem[lengthOfMainShmem], uint32_t i, bool isGold) {
-    return  (((mainShmem[startOfLocalWorkQ + i] - isGoldOffset
-        * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset)) > 0)* (-32)) + begSourceShmem;
-}
-
-/*
-calculating where to put the data from res shmem - so data after dilatation back to global memory
-*/
-#pragma once
-inline __device__ uint32_t getLengthOfShmemToFirstLoad(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , uint32_t i, bool isGold) {
-    return    (metaData.mainArrXLength + 32 * (((mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (isGold)) > 0)
-        + ((mainShmem[startOfLocalWorkQ + i] - isGoldOffset * (isGold)) < (metaData.totalMetaLength - 1))));// offset depending on linear index of this block
-}
-
-
-
-
-/*
-calculate index in main shmem where array that is source for this dilatation round is present in the neighboutring block ...
-*/
-#pragma once
-inline __device__ uint32_t getIndexForNeighbourForShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , int iterationNumb[1], uint32_t isGold[1], uint32_t currLinIndM[1], uint32_t localBlockMetaData[19],  size_t inMetaIndex) {
-       return  metaData.mainArrXLength * 
-    ((1 - (isGold[1]) )// here calculating offset depending on what iteration and is gold;
-        + (localBlockMetaData[inMetaIndex]) * metaData.mainArrSectionLength )  ;// offset depending on linear index of metadata block of intrest
-}
-
-/*
-calculating where to put the data from res shmem - so data after dilatation back to global memory
-*/
-inline __device__ uint32_t getIndexForSaveResShmem(MetaDataGPU metaData, uint32_t mainShmem[lengthOfMainShmem]
-    , int iterationNumb[1], uint32_t isGold[1], uint32_t currLinIndM[1], uint32_t localBlockMetaData[19]) {
-    return  metaData.mainArrXLength * (isGold[1])// here calculating offset depending on what iteration and is gold;
-        + (currLinIndM[0] * metaData.mainArrSectionLength);// offset depending on linear index of this block
-}
 
 
 
@@ -263,21 +201,26 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
 uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20]
 ,uint8_t metaDataCoordIndex
-, uint32_t numberbitOfIntrestInBlock // represent a uint32 number that has a bit of intrest in this block set and all others 0 
-, uint32_t numberWithCorrBitSetInNeigh// represent a uint32 number that has a bit of intrest in neighbouring block set and all others 0 
+, uint8_t sourceBit 
+, uint8_t targetBit
 , uint32_t targetShmemOffset
 ) {
        // now we need to load the data from the neigbouring blocks
        //first checking is there anything to look to 
        if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
-           //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-           if (mainShmem[threadIdx.x + threadIdx.y * 32] & numberbitOfIntrestInBlock) {
+           if (isBitAt(mainShmem[begSourceShmem+ threadIdx.x + threadIdx.y * 32], targetBit)) {
                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
                               isAnythingInPadding[0] = true;
            };
-           mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
-               mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
-               | (mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] & numberWithCorrBitSetInNeigh);
+           // if in bit of intrest of neighbour block is set
+
+     mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
+
+
+
+           //mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+           //    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+           //    | (mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] & numberWithCorrBitSetInNeigh);
 
        }   
 

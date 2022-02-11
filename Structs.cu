@@ -4,9 +4,9 @@
 #pragma once
 
 //constants describing the meaning of main shared memory spaces
-constexpr uint32_t localWorkQueLength = 340;
+constexpr uint32_t localWorkQueLength = 300;
 constexpr uint32_t startOfLocalWorkQ = 4160;
-constexpr uint32_t lengthOfMainShmem = 4500;
+constexpr uint32_t lengthOfMainShmem = 4460;
 constexpr uint32_t begResShmem = 1088;
 constexpr uint32_t begfirstRegShmem = 2112;
 constexpr uint32_t begSecRegShmem = 3136;

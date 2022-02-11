@@ -21,6 +21,7 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC> mainFunA
     , array3dWithDimsGPU goldArr
     , array3dWithDimsGPU segmArr
     ,unsigned int*& minMaxes
+    ,int warpsNumbForMainPass,int blockForMainPass
 ) {
 
     ForBoolKernelArgs<TCC> res;
@@ -30,9 +31,9 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC> mainFunA
     res.segmArr = segmArr;
 
     res.numberToLookFor = mainFunArgs.numberToLookFor;
-    res.dbXLength = mainFunArgs.dbXLength;
-    res.dbYLength = mainFunArgs.dbYLength;
-    res.dbZLength = mainFunArgs.dbZLength;
+    res.dbXLength = 32;
+    res.dbYLength = warpsNumbForMainPass;
+    res.dbZLength = 32;
 
 
 

@@ -152,7 +152,7 @@ extern "C" inline void testMainPasswes() {
 	//setArrCPU(arrGoldObj, 2, 2, 31 , 2);//
 	//setArrCPU(arrGoldObj, 2, 2, 40 , 2);//
 
-	setArrCPU(arrGoldObj, 32, 0, 0, 2);//
+	setArrCPU(arrGoldObj, 0, 0, 32, 2);//
 	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
 
 
