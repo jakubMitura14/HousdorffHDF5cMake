@@ -235,20 +235,20 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
             }
         }
 
-        if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-            auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 1];
-            if (count >0) {
-                printf("in TEST kernel looking fp count  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
-                    , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 3]);
-            }
-        }
-        if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-            auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 2];
-            if (count>0) {
-                printf("in TEST kernel looking fn count   xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
-                    , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 4]);
-            }
-        }
+        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        //    auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 1];
+        //    if (count >0) {
+        //        printf("in TEST kernel looking fp count  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
+        //            , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 3]);
+        //    }
+        //}
+        //if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
+        //    auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 2];
+        //    if (count>0) {
+        //        printf("in TEST kernel looking fn count   xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
+        //            , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 4]);
+        //    }
+        //}
 
 
 
@@ -729,7 +729,8 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     void* kernel_args[] = { &fbArgs };
 
 
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+   // cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), 1, dim3(32, warpsNumbForMainPass), kernel_args);
 
 
 

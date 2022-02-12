@@ -21,7 +21,6 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 
     unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
 
-    printf("fpPlusFn %d  \n", fpPlusFn);
 
     size = sizeof(uint32_t)* (fpPlusFn + 50);
 
