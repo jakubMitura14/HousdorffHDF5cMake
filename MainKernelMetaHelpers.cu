@@ -4,7 +4,9 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 #pragma once
 template <typename ZZR>
 inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
-    uint32_t*& resultListPointerMeta,uint32_t*& resultListPointerLocal,uint32_t*& resultListPointerIterNumb,
+    uint32_t*& resultListPointerMeta
+    ,uint32_t*& resultListPointerLocal
+    ,uint32_t*& resultListPointerIterNumb,
     uint32_t*& origArrsPointer,
     uint32_t*& mainArrAPointer,
     uint32_t*& mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
@@ -19,12 +21,20 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 
     unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
 
-    size = sizeof(uint32_t)* fpPlusFn + 1;
-    cudaMallocAsync(&resultListPointerMeta, size, 0);
+    printf("fpPlusFn %d  \n", fpPlusFn);
 
-    size = sizeof(uint32_t) * fpPlusFn + 1;
+    size = sizeof(uint32_t)* (fpPlusFn + 50);
+
+
+
+    //cudaMalloc(&resultListPointerLocal, size);
+    //cudaMalloc(&resultListPointerIterNumb, size);
+    //cudaMalloc(&resultListPointerMeta, size);
+
     cudaMallocAsync(&resultListPointerLocal, size, 0);
     cudaMallocAsync(&resultListPointerIterNumb, size, 0);
+    cudaMallocAsync(&resultListPointerMeta, size, 0);
+
 
    auto xRange  = metaData.metaXLength ;
    auto yRange =  metaData.MetaYLength ;

@@ -83,6 +83,17 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
 template <typename TKKI>
 inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* workQueue, uint32_t* origArr) {
     thread_block cta = this_thread_block();
@@ -92,7 +103,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
     //    for (uint32_t ii = blockIdx.x; ii < 7; ii += gridDim.x) {
     //        if (workQueue[ii] > 0) {
     //            if (workQueue[ii] > (isGoldOffset-1)) {
-    //                printf("in gold workqueue elment %d  \n", (workQueue[ii] - UINT16_MAX));
+    //                printf("in gold workqueue elment %d  \n", (workQueue[ii] - isGoldOffset));
     //            }
     //            else {
     //                printf("in segm workqueue elment %d  \n", (workQueue[ii]));
@@ -103,6 +114,19 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
     //    }
     //}
+    // 
+        //results  !!
+    if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+        for (uint32_t ii = blockIdx.x; ii < 10; ii += gridDim.x) {
+            if (fbArgs.resultListPointerMeta[ii] > 0) {
+                printf("in TEST kernel  result lin meta %d ii  \n", fbArgs.resultListPointerMeta[ii]);
+
+            }
+
+        }
+    }
+
+
 
     sync(cta);
     char* tensorslice;
@@ -126,6 +150,52 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (xLoc + yLoc * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
                     //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
 
+
+
+
+                    //rrrrresult meta 1 isGold 1 old 0 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655351  localInd 24544
+
+                    //if (linIdexMeta== 1 ) {
+                    //    if (  (fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24544) {
+                    //            printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                    //  ,  x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+
+                    //    }
+                    //
+                    //}
+                    ////    rrrrresult meta 2 isGold 1 old 1 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655352  localInd 23839
+
+                    //if (linIdexMeta == 2) {
+                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 23839) {
+                    //        printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+
+                    //    }
+
+                    //}
+                    ////    rrrrresult meta 4 isGold 1 old 2 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655354  localInd 767
+
+                    //if (linIdexMeta == 4) {
+                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 767) {
+                    //        printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+
+                    //    }
+
+                    //}
+                    ////    rrrrresult meta 0 isGold 0 old 3 localFpConter 0 localFnConter 1 fpOffset 3 fnOffset 1 linIndUpdated 0  localInd 24575
+
+                    //if (linIdexMeta == 0) {
+                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24575) {
+                    //        printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+
+                    //    }
+
+                    //}
+
+
+
                  //if (x==33 && y==1 && z==71) {
                  //    printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
                  //        , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
@@ -136,14 +206,11 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                  
 
                     if (isBitAt(column, zLoc) && column>0) {
-                   // if (x==33 && y==1 && z==71) {
-                   // if (x==75 && y==20 && z==70) {
-                   // if (column>0) {
-                        //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
-                        //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d  fbArgs.dbYLength %d  \n"
+
+
+                        /*printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d    \n"
                                     , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                                , column , linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);
+                                , column , linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);*/
                     }
 
                     ww = 1;
@@ -158,19 +225,35 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     //}
 
                     if (isBitAt(column, zLoc) && column > 0) {
-                        // if (x==33 && y==1 && z==71) {
-                        // if (x==75 && y==20 && z==70) {
-                        // if (column>0) {
-                             //in kernel x 33 y 1 z 71 linearLocal 33 linIdexMeta 0
-                             //    in kernel x 75 y 20 z 70 linearLocal 267 linIdexMeta 3
-                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d  fbArgs.dbYLength %d \n"
+
+                     /*   printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d   \n"
                             , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                            , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);
+                            , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);*/
                     }
 
                 }
             }
         }
+
+        if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
+            auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 1];
+            if (count >0) {
+                printf("in TEST kernel looking fp count  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
+                    , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 3]);
+            }
+        }
+        if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
+            auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 2];
+            if (count>0) {
+                printf("in TEST kernel looking fn count   xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
+                    , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 4]);
+            }
+        }
+
+
+
+
+
         //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
         //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 7];
         //    if (count ==1) {
@@ -342,6 +425,8 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     __shared__ bool isAnythingInPadding[6];
 
     __shared__ bool isBlockFull[1];
+    //marks wheather there can be any result of intest there
+    __shared__ bool isBlockToBeValidated[1];
     //variables needed for all threads
     __shared__ int iterationNumb[1];
     __shared__ unsigned int globalWorkQueueOffset[1];
@@ -419,7 +504,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     
     */
 
-    __shared__ uint32_t localBlockMetaDataOld[6];
+    __shared__ uint32_t localBlockMetaDataOld[20];
 
     /////used mainly in meta passes
 
@@ -460,7 +545,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             localFnConter, blockFpConter,blockFnConter, resultfpOffset,
              resultfnOffset, worQueueStep,isGold, currLinIndM,localMinMaxes
             ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-            , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue);
+            , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated);
 
         
 
@@ -632,6 +717,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     fbArgs.resultListPointerMeta = resultListPointerMeta;
     fbArgs.resultListPointerLocal = resultListPointerLocal;
     fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
+
     fbArgs.origArrsPointer = origArrsPointer;
     fbArgs.mainArrAPointer = mainArrAPointer;
     fbArgs.mainArrBPointer = mainArrBPointer;

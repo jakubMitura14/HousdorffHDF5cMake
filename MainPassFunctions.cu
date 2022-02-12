@@ -173,7 +173,7 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
     if (predicate) {
         // now we need to load the data from the neigbouring blocks
         //first checking is there anything to look to 
-        if (localBlockMetaData[metaDataCoordIndex] < UINT16_MAX) {
+        if (localBlockMetaData[metaDataCoordIndex] < isGoldOffset) {
             //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
             if (mainShmem[threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
@@ -207,7 +207,7 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20
 ) {
        // now we need to load the data from the neigbouring blocks
        //first checking is there anything to look to 
-       if (localBlockMetaData[metaDataCoordIndex]< UINT16_MAX) {
+       if (localBlockMetaData[metaDataCoordIndex]< isGoldOffset) {
            if (isBitAt(mainShmem[begSourceShmem+ threadIdx.x + threadIdx.y * 32], targetBit)) {
                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
                               isAnythingInPadding[0] = true;
@@ -245,7 +245,7 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20
 //
 //    if (i + 1 <= worQueueStep[0]) {
 //        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-//            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i - UINT16_MAX * (mainShmem[startOfLocalWorkQ + i] >= UINT16_MAX))
+//            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i - isGoldOffset * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset))
 //                * metaData.metaDataSectionLength]])
 //            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
 //    }
@@ -266,7 +266,7 @@ finilizing operations for last block
 
 
 inline __device__  void afterBlockClean(thread_block cta
-    , unsigned int worQueueStep[1], uint32_t localBlockMetaDataOld[6]
+    , unsigned int worQueueStep[1], uint32_t localBlockMetaDataOld[20]
     , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
     , thread_block_tile<32> tile
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
@@ -309,8 +309,8 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
         if (i>0) {
-            if (localBlockMetaDataOld[tile.thread_rank()] < UINT16_MAX) {
-                metaDataArr[localBlockMetaDataOld[tile.thread_rank()] * metaData.metaDataSectionLength + 12 - oldIsGold[0]] = isAnythingInPadding[tile.thread_rank()];
+            if (localBlockMetaDataOld[13+tile.thread_rank()] < isGoldOffset) {
+                metaDataArr[localBlockMetaDataOld[13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - oldIsGold[0]] = isAnythingInPadding[tile.thread_rank()];
             }
         }
 

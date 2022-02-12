@@ -53,7 +53,7 @@ __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t 
             localBlockMetaData[inArrIndex] = (linIdexMeta + toAdd);
         }
         else {
-            localBlockMetaData[inArrIndex] = UINT16_MAX;
+            localBlockMetaData[inArrIndex] = isGoldOffset;
         }
     };
 }
@@ -164,9 +164,13 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
                             if (goldBool)  anyInGold[0] = true;
                             if (segmBool)  anyInSegm[0] = true;
                            
-                            if (goldBool) {
-                                printf("in kernel x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
-                            }
+                            //if (goldBool) {
+                            //    printf("in kernel  gold x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
+                            //}
+
+                            //if (segmBool) {
+                            //    printf("in kernel  segm  x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
+                            //}
 
 
                         }
@@ -249,7 +253,6 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
         sync(cta);//waiting so shared memory will be loaded evrywhere
         //on single thread we do last sum reduction
         auto active = coalesced_threads();
-        //gold
 
         //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
         //    printf("xMeta %d yMeta %d zMeta %d \n", xMeta, yMeta, zMeta);
@@ -270,7 +273,6 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
 
            // getTensorRow<unsigned int>(tensorslice, metaData.fpCount, metaData.fpCount.Ny, yMeta, zMeta)[xMeta] = sharedForGold[1][0];
         }
-        //segm
        // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
         if ((threadIdx.x == 0) && (threadIdx.y == 1) && isNotEmpty) {
 
@@ -282,6 +284,7 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
             fpSFnS[1] += sharedForSegm[33];// will be needed later for global set
             //setting metadata
             localBlockMetaData[2] = sharedForSegm[33];
+
 
            // getTensorRow<unsigned int>(tensorslice, metaData.fnCount, metaData.fnCount.Ny, yMeta, zMeta)[xMeta] = sharedForSegm[1][0];
 

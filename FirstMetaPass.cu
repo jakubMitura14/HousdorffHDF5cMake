@@ -98,12 +98,12 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
         //}
         
         //goldpass
-        addToQueue( linIdexMeta, 0
+        addToQueue( linIdexMeta, 1
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 1, 9, 6
             , metaDataArr, metaData, minMaxes, workQueue);
           //segmPass  
-        addToQueue( linIdexMeta, 1
+        addToQueue( linIdexMeta, 0
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 2, 7, 5
             , metaDataArr, metaData, minMaxes, workQueue);
@@ -115,7 +115,7 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
         }
     sync(cta);
     if ((threadIdx.x == 0) ) {
-        globalOffsetForBlock[0] = atomicAdd(&(minMaxes[12]), (fpFnLocCounter[0]))- fpFnLocCounter[0];
+        globalOffsetForBlock[0] = atomicAdd(&(minMaxes[12]), (fpFnLocCounter[0]));
 
        /* if (fpFnLocCounter[0]>0) {
             printf("\n in meta first pass global offset %d  locCounter %d \n  ", globalOffsetForBlock[0], fpFnLocCounter[0]);
@@ -137,15 +137,22 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
         workQueue[globalWorkQueueCounter[0] +i]=localWorkQueue[i]; 
         //FP pass
         if (localWorkQueue[i]>= isGoldOffset) {
-            metaDataArr[(localWorkQueue[i] - isGoldOffset) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
-            printf("adding lin meta in first meta pass %d abs %d \n ", localWorkQueue[i] - isGoldOffset, localWorkQueue[i]);
+            metaDataArr[(localWorkQueue[i] - isGoldOffset) * metaData.metaDataSectionLength + 5] = localOffsetQueue[i] + globalOffsetForBlock[0];
+            //printf("fp offset lin meta %d total offset  %d  global part %d local part %d \n "
+            //    , localWorkQueue[i] - isGoldOffset
+            //    , localOffsetQueue[i] + globalOffsetForBlock[0] 
+            //, globalOffsetForBlock[0]
+            //, localOffsetQueue[i]);
 
         }
         //FN pass
         else {
             metaDataArr[(localWorkQueue[i]) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
-           printf("adding lin meta in first meta pass %d \n ", localWorkQueue[i]);
-
+            //printf("fn offset lin meta %d total offset  %d  global part %d local part %d \n "
+            //    , localWorkQueue[i] 
+            //    , localOffsetQueue[i] + globalOffsetForBlock[0]
+            //    , globalOffsetForBlock[0]
+            //    , localOffsetQueue[i]);
         
         };
 
