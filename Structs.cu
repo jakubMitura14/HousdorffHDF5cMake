@@ -6,13 +6,23 @@
 //constants describing the meaning of main shared memory spaces
 constexpr uint32_t localWorkQueLength = 300;
 constexpr uint32_t startOfLocalWorkQ = 4160;
-constexpr uint32_t lengthOfMainShmem = 4460;
+constexpr uint32_t lengthOfMainShmem = 4600;//4460;
 constexpr uint32_t begResShmem = 1088;
 constexpr uint32_t begfirstRegShmem = 2112;
 constexpr uint32_t begSecRegShmem = 3136;
 constexpr uint32_t begSMallRegShmemA = 0;
 constexpr uint32_t begSMallRegShmemB = 1056;
 constexpr uint32_t begSourceShmem = 32;
+
+//as the pipeline is so asynchronous we need some additional storage for saving data related to the operations
+//will define how big is the  amount of space in order to be able to use fast version of modulo operator it should be power of 2 ... 
+constexpr uint32_t modForPipelineVars = 16;
+
+constexpr uint32_t fpLocCountBeg = 4460;
+
+
+
+
 // other
 //added to linear index meta in order to  mark weather block is of type gold or not 
 constexpr uint32_t  isGoldOffset = (UINT16_MAX * 10);

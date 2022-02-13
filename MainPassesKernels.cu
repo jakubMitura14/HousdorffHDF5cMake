@@ -155,44 +155,44 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
                     //rrrrresult meta 1 isGold 1 old 0 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655351  localInd 24544
 
-                    //if (linIdexMeta== 1 ) {
-                    //    if (  (fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24544) {
-                    //            printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //  ,  x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+                    if (linIdexMeta== 1 ) {
+                        if (  (fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24544) {
+                                printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                      ,  x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
 
-                    //    }
-                    //
-                    //}
-                    ////    rrrrresult meta 2 isGold 1 old 1 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655352  localInd 23839
+                        }
+                    
+                    }
+                    //    rrrrresult meta 2 isGold 1 old 1 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655352  localInd 23839
 
-                    //if (linIdexMeta == 2) {
-                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 23839) {
-                    //        printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+                    if (linIdexMeta == 2) {
+                        if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 23839) {
+                            printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                                , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
 
-                    //    }
+                        }
 
-                    //}
-                    ////    rrrrresult meta 4 isGold 1 old 2 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655354  localInd 767
+                    }
+                    //    rrrrresult meta 4 isGold 1 old 2 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655354  localInd 767
 
-                    //if (linIdexMeta == 4) {
-                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 767) {
-                    //        printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+                    if (linIdexMeta == 4) {
+                        if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 767) {
+                            printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                                , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
 
-                    //    }
+                        }
 
-                    //}
-                    ////    rrrrresult meta 0 isGold 0 old 3 localFpConter 0 localFnConter 1 fpOffset 3 fnOffset 1 linIndUpdated 0  localInd 24575
+                    }
+                    //    rrrrresult meta 0 isGold 0 old 3 localFpConter 0 localFnConter 1 fpOffset 3 fnOffset 1 linIndUpdated 0  localInd 24575
 
-                    //if (linIdexMeta == 0) {
-                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24575) {
-                    //        printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
+                    if (linIdexMeta == 0) {
+                        if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24575) {
+                            printf("in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
+                                , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
 
-                    //    }
+                        }
 
-                    //}
+                    }
 
 
 
@@ -202,10 +202,10 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                  //        , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
                  //}
 
-                 
-                 
 
-                    if (isBitAt(column, zLoc) && column>0) {
+
+
+                    if (isBitAt(column, zLoc) && column > 0) {
 
 
                         /*printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d    \n"
@@ -214,7 +214,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
                     }
 
                     ww = 1;
-                   // uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
+                    // uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
                     column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (xLoc + yLoc * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
 
 
@@ -226,9 +226,9 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
                     if (isBitAt(column, zLoc) && column > 0) {
 
-                     /*   printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d   \n"
-                            , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                            , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);*/
+                        /*   printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d   \n"
+                               , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
+                               , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);*/
                     }
 
                 }
@@ -237,14 +237,14 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
         //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
         //    auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 1];
-        //    if (count >0) {
+        //    if (count > 0) {
         //        printf("in TEST kernel looking fp count  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
         //            , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 3]);
         //    }
         //}
         //if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
         //    auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 2];
-        //    if (count>0) {
+        //    if (count > 0) {
         //        printf("in TEST kernel looking fn count   xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
         //            , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 4]);
         //    }
@@ -364,7 +364,7 @@ inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* 
 
 
     //for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-  
+
 
     // /*   if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
 
@@ -494,14 +494,14 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     /*
  //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX
- 
+
  0 : top
  1 : bottom
  2 : left
  3 : right
  4 : anterior
  5 : posterior
-    
+
     */
 
     __shared__ uint32_t localBlockMetaDataOld[20];
@@ -534,57 +534,57 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-    
 
-        mainDilatation(false, fbArgs, fbArgs.mainArrAPointer,fbArgs.mainArrBPointer , fbArgs.metaData   , fbArgs.minMaxes   
-            , fbArgs.workQueuePointer 
-            , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
-            ,cta, tile, grid, mainShmem
-            , isAnythingInPadding, isBlockFull, iterationNumb,globalWorkQueueOffset,
-            globalWorkQueueCounter, localWorkQueueCounter,localTotalLenthOfWorkQueue,localFpConter,
-            localFnConter, blockFpConter,blockFnConter, resultfpOffset,
-             resultfnOffset, worQueueStep,isGold, currLinIndM,localMinMaxes
-            ,localBlockMetaData,fpFnLocCounter , isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-            , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated);
 
-        
+    mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
+        , fbArgs.workQueuePointer
+        , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
+        , cta, tile, grid, mainShmem
+        , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset,
+        globalWorkQueueCounter, localWorkQueueCounter, localTotalLenthOfWorkQueue, localFpConter,
+        localFnConter, blockFpConter, blockFnConter, resultfpOffset,
+        resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
+        , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
+        , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated);
 
 
 
-       // grid.sync();
 
+
+    // grid.sync();
+
+     //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
+    /////////////// loading work queue for padding dilatations
+    metadataPass(fbArgs, true, 11, 7, 8,
+        12, 9, 10
+        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+        , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
+    //////////// padding dilatations
+
+
+
+
+
+
+//     grid.sync();
+     ////////////////////////main metadata pass
         //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
-       /////////////// loading work queue for padding dilatations
-      metadataPass(fbArgs,true,  11,7,8,
-                12,9,10
-              , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-              , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-              , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-              , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
-       //////////// padding dilatations
 
+     //metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
+     //         && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
+     //         (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
+     //             && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
+     //         , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+     //         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+     //         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+     //         , mainArr, metaData, minMaxes, workQueue,metaDataArr);
+     // 
 
+//  }// end while
 
-
-
-
-   //     grid.sync();
-        ////////////////////////main metadata pass
-           //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
-
-        //metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
-        //         && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
-        //         (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
-        //             && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
-        //         , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-        //         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-        //         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-        //         , mainArr, metaData, minMaxes, workQueue,metaDataArr);
-        // 
-
-  //  }// end while
-
-    //setting global iteration number to local one 
+  //setting global iteration number to local one 
 
 }
 
@@ -604,14 +604,14 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     int blockSize; // The launch configurator returned block size
     int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
     int gridSize; // The actual grid size needed, based on input size
-    
+
     // for min maxes kernel 
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
         (void*)getMinMaxes<int>,
         0);
-    int warpsNumbForMinMax = blockSize/32;
+    int warpsNumbForMinMax = blockSize / 32;
     int blockSizeForMinMax = minGridSize;
 
     // for min maxes kernel 
@@ -628,7 +628,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
         &blockSize,
         (void*)boolPrepareKernel<int>,
         0);
-    int theadsForFirstMetaPass = blockSize ;
+    int theadsForFirstMetaPass = blockSize;
     int blockForFirstMetaPass = minGridSize;
     //for main pass kernel
     cudaOccupancyMaxPotentialBlockSize(
@@ -652,11 +652,11 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
 
     array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-        //pointers ...
+    //pointers ...
     uint32_t* resultListPointerMeta;
     uint32_t* resultListPointerLocal;
     uint32_t* resultListPointerIterNumb;
-    
+
     uint32_t* origArrsPointer;
     uint32_t* mainArrAPointer;
     uint32_t* mainArrBPointer;
@@ -666,11 +666,11 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     unsigned int* minMaxes;
     size_t size = sizeof(unsigned int) * 20;
     cudaMalloc(&minMaxes, size);
-    
+
 
     checkCuda(cudaDeviceSynchronize(), "a0");
     ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, minMaxes, warpsNumbForMainPass, blockForMainPass);
-    MetaDataGPU metaData= fbArgs.metaData;
+    MetaDataGPU metaData = fbArgs.metaData;
     fbArgs.metaData.minMaxes = minMaxes;
 
 
@@ -684,28 +684,28 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     checkCuda(cudaDeviceSynchronize(), "a1");
 
 
-        getMinMaxes << <blockSizeForMinMax, dim3(32,warpsNumbForMinMax) >> > (fbArgs, minMaxes);
-       
-        checkCuda(cudaDeviceSynchronize(), "a1");
+    getMinMaxes << <blockSizeForMinMax, dim3(32, warpsNumbForMinMax) >> > (fbArgs, minMaxes);
+
+    checkCuda(cudaDeviceSynchronize(), "a1");
 
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs,  workQueuePointer,minMaxes, metaData, origArrsPointer, metaDataArrPointer);
+    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, workQueuePointer, minMaxes, metaData, origArrsPointer, metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a2");
 
-        boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs,  metaData, origArrsPointer, metaDataArrPointer);
-        //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
+    boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, metaData, origArrsPointer, metaDataArrPointer);
+    //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
 
-    checkCuda(cudaDeviceSynchronize(), "a3");  
-    
+    checkCuda(cudaDeviceSynchronize(), "a3");
 
-        allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb,origArrsPointer,mainArrAPointer,mainArrBPointer  ,metaData, goldArr, segmArr);
+
+    allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData, goldArr, segmArr);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
 
-        firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs,  metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
+    firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a5");
     //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
@@ -722,84 +722,24 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     fbArgs.mainArrAPointer = mainArrAPointer;
     fbArgs.mainArrBPointer = mainArrBPointer;
 
-    
+
     fbArgs.metaDataArrPointer = metaDataArrPointer;
     fbArgs.workQueuePointer = workQueuePointer;
     fbArgs.minMaxes = minMaxes;
     void* kernel_args[] = { &fbArgs };
 
 
-   // cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), 1, dim3(32, warpsNumbForMainPass), kernel_args);
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
 
 
 
-        checkCuda(cudaDeviceSynchronize(), "a6");
+    checkCuda(cudaDeviceSynchronize(), "a6");
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
 
 
 
-
-
-
-
-
-
-
-
-  // // for (int i = 0; i < 205; i++) {
-  //  while(runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb)){
-  //     // runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);
-
-  //    /*  checkCuda(cudaDeviceSynchronize(), "bb");
-  //      printf("mainDilatation %d  \n", cpuIterNumb);*/
-
-  //      //cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-  //      mainDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
-
-  //    /*  syncErr = cudaGetLastError();
-  //      asyncErr = cudaDeviceSynchronize();
-  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-
-
-  //      //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-  //      getWorkQueeueFromIsToBeActivated << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
-
-
-  //     /* checkCuda(cudaDeviceSynchronize(), "bb");
-  //      printf("getWorkQueeueFromIsToBeActivated %d  \n", cpuIterNumb);
-  //      syncErr = cudaGetLastError();
-  //      asyncErr = cudaDeviceSynchronize();
-  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-
-  //      paddingDilatation << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
-
-  //      //cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-  //      checkCuda(cudaDeviceSynchronize(), "bb");
-
-
-  //      /*checkCuda(cudaDeviceSynchronize(), "bb");
-  //      printf("paddingDilatation %d  \n", cpuIterNumb);
-  //      syncErr = cudaGetLastError();
-  //      asyncErr = cudaDeviceSynchronize();
-  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-
-  //      //cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-  //      getWorkQueeueFromActive_mainPass << <deviceProp.multiProcessorCount, fFArgs.threadsMainPass >> > (fbArgs);
-
-
-  ///*      checkCuda(cudaDeviceSynchronize(), "bb");
-  //      printf("getWorkQueeueFromActive_mainPass %d  \n", cpuIterNumb);
-  //      syncErr = cudaGetLastError();
-  //      asyncErr = cudaDeviceSynchronize();
-  //      if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-  //      if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));*/
-  // }
   //  checkCuda(cudaDeviceSynchronize(), "cc");
 
 
@@ -807,12 +747,12 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-   testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrBPointer, metaData, workQueuePointer, origArrsPointer);
+    testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrBPointer, metaData, workQueuePointer, origArrsPointer);
 
-  //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
+    //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
 
-    ////sync
+      ////sync
     checkCuda(cudaDeviceSynchronize(), "cc");
 
 
@@ -832,7 +772,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
 
-   // printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
+    // printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
 
 
     checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
@@ -843,30 +783,30 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     //cudaFreeAsync(segmArr.arrPStr.ptr, 0);
 
 
-    cudaFreeAsync(resultListPointerMeta,0);
-    cudaFreeAsync(resultListPointerLocal,0);
-    cudaFreeAsync(resultListPointerIterNumb,0);
+    cudaFreeAsync(resultListPointerMeta, 0);
+    cudaFreeAsync(resultListPointerLocal, 0);
+    cudaFreeAsync(resultListPointerIterNumb, 0);
     cudaFreeAsync(workQueuePointer, 0);
     cudaFreeAsync(origArrsPointer, 0);
     cudaFreeAsync(metaDataArrPointer, 0);
 
     checkCuda(cudaDeviceSynchronize(), "last ");
 
- /*   cudaFree(reducedGold.arrPStr.ptr);
-    cudaFree(reducedSegm.arrPStr.ptr);
-    cudaFree(reducedGoldPrev.arrPStr.ptr);
-    cudaFree(reducedSegmPrev.arrPStr.ptr);*/
+    /*   cudaFree(reducedGold.arrPStr.ptr);
+       cudaFree(reducedSegm.arrPStr.ptr);
+       cudaFree(reducedGoldPrev.arrPStr.ptr);
+       cudaFree(reducedSegmPrev.arrPStr.ptr);*/
 
-//    cudaFreeAsync(resultListPointer, 0);
+       //    cudaFreeAsync(resultListPointer, 0);
 
-//    freeMetaDataGPU(fbArgs.metaData);
+       //    freeMetaDataGPU(fbArgs.metaData);
 
 
-    /*
- * Catch errors for both the kernel launch above and any
- * errors that occur during the asynchronous `doubleElements`
- * kernel execution.
- */
+           /*
+        * Catch errors for both the kernel launch above and any
+        * errors that occur during the asynchronous `doubleElements`
+        * kernel execution.
+        */
 
     syncErr = cudaGetLastError();
     asyncErr = cudaDeviceSynchronize();
@@ -880,541 +820,4 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-template <typename TKKI>
-__global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
-    thread_block cta = this_thread_block();
-    thread_block_tile<32> tile = tiled_partition<32>(cta);
-
-    char* tensorslice;
-    bool isBlockFull = true;// usefull to establish do we have block completely filled and no more dilatations possible
-    unsigned int old = 0;
-    uint32_t i = 0;
-    uint8_t j = 0;
-    uint8_t bigloop = 0;
-    uint8_t bitPos = 0;
-    // some references using as aliases
-    unsigned int& oldRef = old;
-    uint32_t& linIdexMeta = i;
-    uint8_t& xMeta = j;
-    uint8_t& yMeta = bigloop;
-    uint8_t& zMeta = bitPos;
-    bool& isToBeActivated = isBlockFull;
-
-
-    // main shared memory spaces
-    __shared__ uint32_t sourceShared[32][32];
-    __shared__ uint32_t resShared[32][32];
-    // holding data about paddings
-
-
-    // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
-    __shared__ bool isAnythingInPadding[6];
-    //variables needed for all threads
-    __shared__ unsigned int iterationNumb[1];
-    __shared__ unsigned int globalWorkQueueOffset[1];
-    __shared__ unsigned int globalWorkQueueCounter[1];
-    __shared__ unsigned int localWorkQueueCounter[1];
-    __shared__ bool isBlockToBeValidated[1];
-    // keeping data wheather gold or segmentation pass should continue - on the basis of global counters
-    __shared__ bool isGoldPassToContinue[1];
-    __shared__ bool isSegmPassToContinue[1];
-
-
-    __shared__ unsigned int localTotalLenthOfWorkQueue[1];
-    //counters for per block number of results added in this iteration
-    __shared__ unsigned int localFpConter[1];
-    __shared__ unsigned int localFnConter[1];
-
-    __shared__ unsigned int blockFpConter[1];
-    __shared__ unsigned int blockFnConter[1];
-
-    //result list offset - needed to know where to write a result in a result list
-    __shared__ unsigned int resultfpOffset[1];
-    __shared__ unsigned int resultfnOffset[1];
-
-    __shared__ unsigned int worQueueStep[1];
-
-    // we will load here multiple entries from workqueue
-    __shared__ uint32_t localWorkQueue[localWorkQueLength][4];
-    //initializations and loading
-    auto active = coalesced_threads();
-    if (isToBeExecutedOnActive(active, 0)) { iterationNumb[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[13]; };
-    //here we caclulate the offset for given block depending on length of the workqueue and number of the  available blocks in a grid
-    // - this will give us number of work queue items per block - we will calculate offset on the basis of the block number
-
-    if (isToBeExecutedOnActive(active, 3)) {
-        localWorkQueueCounter[0] = 0;
-    };
-    if (isToBeExecutedOnActive(active, 4)) {
-        isGoldPassToContinue[0] = true;
-    };
-    if (isToBeExecutedOnActive(active, 5)) {
-        isSegmPassToContinue[0] = true;
-    };
-
-    if (isToBeExecutedOnActive(active, 6)) {
-        localFpConter[0] = 0;
-    };
-    if (isToBeExecutedOnActive(active, 7)) {
-        localFnConter[0] = 0;
-    };
-
-
-
-
-    if (isToBeExecutedOnActive(active, 1)) {
-        localTotalLenthOfWorkQueue[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9];
-        globalWorkQueueOffset[0] = floor((float)(localTotalLenthOfWorkQueue[0] / gridDim.x)) + 1;
-        worQueueStep[0] = min(localWorkQueLength, globalWorkQueueOffset[0]);
-    };
-    sync(cta);
-    // TODO - use pipelines as described at 201 in https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf
-    /// load work QueueData into shared memory
-
-    //TODO change looping so it will access contigous memory
-    for (bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
-        // grid stride loop - sadly most of threads will be idle
-        ///////////// loading to work queue
-        loadFromGlobalToLocalWorkQueue(fbArgs, tensorslice, localWorkQueue, bigloop, globalWorkQueueOffset, localTotalLenthOfWorkQueue, worQueueStep,j);
-
-        sync(cta);// now local work queue is populated
-
-            //now all of the threads in the block needs to have the same i value so we will increment by 1
-        for (i = 0; i < worQueueStep[0]; i += 1) {
-            if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-
-                // now we have metadata coordinates we need to start go over associated data block - in order to make it as efficient as possible data block size is set to be the same as datablock size
-                // so we do not need iteration loop
-
-                loadAndDilatateAndSave(fbArgs, tensorslice, localWorkQueue, bigloop, sourceShared, resShared, isAnythingInPadding, iterationNumb, isBlockFull, cta, i,
-                    isBlockToBeValidated, localTotalLenthOfWorkQueue, localFpConter, localFnConter, resultfpOffset, resultfnOffset, worQueueStep);
-
-                /////////////////////// validation if it is to be validated, also we checked for bing full before dilatations - if it was full at the begining - no point in validation
-                validateAndUpMetaCounter(fbArgs, tensorslice, localWorkQueue, bigloop, sourceShared, resShared, isAnythingInPadding, iterationNumb, isBlockFull, cta, i,
-                    isBlockToBeValidated, localTotalLenthOfWorkQueue, localFpConter, localFnConter, resultfpOffset, resultfnOffset, worQueueStep, bitPos, oldRef, blockFpConter, blockFnConter);
-
-                ////on the basis of isAnythingInPadding we will mark  the neighbouring block as to be activated if there is and if such neighbouring block exists
-                auto activeC = coalesced_threads();
-
-                if (localWorkQueue[i][3] == 1) {//gold
-                    setNextBlocksActivity(tensorslice, localWorkQueue, i, fbArgs.metaData.isToBeActivatedGold, isAnythingInPadding, activeC);
-                };
-                if (localWorkQueue[i][3] == 0) {//segm
-                    setNextBlocksActivity(tensorslice, localWorkQueue, i, fbArgs.metaData.isToBeActivatedSegm, isAnythingInPadding, activeC);
-                };
-                // marking blocks as full
-
-                if (localWorkQueue[i][3] == 1) {//gold
-                    markIsBlockFull(tensorslice, localWorkQueue, i, isBlockFull, fbArgs.metaData.isFullGold, activeC);
-                };
-                if (localWorkQueue[i][3] == 0) {//segm
-                    markIsBlockFull(tensorslice, localWorkQueue, i, isBlockFull, fbArgs.metaData.isFullSegm, activeC);
-                };
-                sync(cta);// all results that should be saved to result list are saved
-
-                //we need to clear isAnythingInPadding to 0
-                clearisAnythingInPadding(isAnythingInPadding);
-            }
-        }
-    }
-    sync(cta);
-    //     updating global counters
-    updateGlobalCountersAndClear(fbArgs, tensorslice, blockFpConter, blockFnConter, localWorkQueueCounter, localFpConter, localFnConter);
-
-
-    grid.sync();
-    auto activeE = coalesced_threads();
-    if (isToBeExecutedOnActive(activeE, 0)) {
-        getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9] = 0;
-    };
-
-    grid.sync();
-    // checking global count and counters
-    checkIsToBeDilatated(fbArgs, tensorslice, isGoldPassToContinue, isSegmPassToContinue);
-
-    sync(cta);
-
-
-
-
-    auto activeO = coalesced_threads();
-    //if (isToBeExecutedOnActive(activeO, 0)) {
-    //    printf("\n ****************************** \n");
-    //};
-
-    ///////// now we need to look through blocks that we just  activated
-    for (linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-        //we get from linear index  the coordinates of the metadata block of intrest
-        xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-        zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
-        yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
-        //gold pass
-
-        isToBeActivated = isGoldPassToContinue[0] && (getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedGold, fbArgs.metaData.isToBeActivatedGold.Ny, yMeta, zMeta)[xMeta]
-            && !getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveGold, fbArgs.metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta]
-            && !getTensorRow<bool>(tensorslice, fbArgs.metaData.isFullGold, fbArgs.metaData.isFullGold.Ny, yMeta, zMeta)[xMeta]);
-
-        addToQueueOtherPasses(fbArgs,oldRef, tensorslice, xMeta, yMeta, zMeta ,1  ,  localWorkQueue, localWorkQueueCounter , sourceShared, resShared, isToBeActivated);
-        if (isToBeActivated) {
-            getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedGold, fbArgs.metaData.isToBeActivatedGold.Ny, yMeta, zMeta)[xMeta] = false;
-        }
-        //segmPass
-        isToBeActivated = isSegmPassToContinue[0] && (getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedSegm, fbArgs.metaData.isToBeActivatedSegm.Ny, yMeta, zMeta)[xMeta]
-            && !getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm, fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta]
-            && !getTensorRow<bool>(tensorslice, fbArgs.metaData.isFullSegm, fbArgs.metaData.isFullSegm.Ny, yMeta, zMeta)[xMeta]  );
-
-            addToQueueOtherPasses(fbArgs, oldRef, tensorslice, xMeta, yMeta, zMeta, 0, localWorkQueue, localWorkQueueCounter, sourceShared, resShared, isToBeActivated);
-        if (isToBeActivated) {
-            getTensorRow<bool>(tensorslice, fbArgs.metaData.isToBeActivatedSegm, fbArgs.metaData.isToBeActivatedSegm.Ny, yMeta, zMeta)[xMeta] = false;
-
-            //printf("\n found to be actvated xMeta %d yMeta %d zMeta %d isGold  %d isSegmPassToContinue[0] %d  isActive %d isFull %d \n ", xMeta, yMeta, zMeta, 0, isSegmPassToContinue[0], getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm
-            //    , fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta], getTensorRow<bool>(tensorslice, fbArgs.metaData.isFullSegm, fbArgs.metaData.isFullSegm.Ny, yMeta, zMeta)[xMeta]);
-        }
-    }
-
-    sync(cta);
-    auto activeF = coalesced_threads();
-
-     if(isToBeExecutedOnActive(activeF, 0)) {
-        globalWorkQueueCounter[0] = atomicAdd(&(getTensorRow<int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9]), (localWorkQueueCounter[0]));
-    }
-
-     sync(cta);
-     // pushing work queue to global memory
-    fromShmemToGlobalWorkQueue(fbArgs, oldRef, i, sourceShared, resShared, localWorkQueue, globalWorkQueueCounter, tensorslice, localWorkQueueCounter);
-    grid.sync();
-
-
-
-    sync(cta);
-    clearShmemBeforeDilatation(fbArgs, tensorslice, blockFpConter, blockFnConter, localWorkQueueCounter, localFpConter, localFnConter);
-    if (isToBeExecutedOnActive(active, 1)) {
-        localTotalLenthOfWorkQueue[0] = getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9];
-        globalWorkQueueOffset[0] = floor((float)(localTotalLenthOfWorkQueue[0] / gridDim.x)) + 1;
-        worQueueStep[0] = min(localWorkQueLength, globalWorkQueueOffset[0]);
-    };
-
-   sync(cta);
-
-    ////// now we do the dilatations and validations of blocks that were just activated
-
-    //TODO change looping so it will access contigous memory
-    for (bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
-        // grid stride loop - sadly most of threads will be idle
-        ///////////// loading to work queue
-        loadFromGlobalToLocalWorkQueue(fbArgs, tensorslice, localWorkQueue, bigloop, globalWorkQueueOffset, localTotalLenthOfWorkQueue, worQueueStep,j);
-
-        sync(cta);// now local work queue is populated
-
-            //now all of the threads in the block needs to have the same i value so we will increment by 1
-        for (i = 0; i < worQueueStep[0]; i += 1) {
-            if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-
-
-
-                //if (isToBeExecutedOnActive(activeJF, 0)) {
-                //    printf("\n local work queue xMeta %d  yMeta %d  zMeta %d  isGold %d  i %d workQueLength %d workQueueStep %d globalWorkQueueOffset %d bigloop %d blockIdx.x %d"
-                //        , localWorkQueue[i][0], localWorkQueue[i][1], localWorkQueue[i][2], localWorkQueue[i][3], i
-                //        , localTotalLenthOfWorkQueue[0], worQueueStep[0], globalWorkQueueOffset[0], bigloop, blockIdx.x);
-                //}
-
-
-                // now we have metadata coordinates we need to start go over associated data block - in order to make it as efficient as possible data block size is set to be the same as datablock size
-                // so we do not need iteration loop
-
-               // loadAndDilatateAndSave(fbArgs, tensorslice, localWorkQueue, bigloop, sourceShared, resShared, isAnythingInPadding, iterationNumb, isBlockFull, cta, i,
-                 //   isBlockToBeValidated, localTotalLenthOfWorkQueue, localFpConter, localFnConter, resultfpOffset, resultfnOffset, worQueueStep);
-
-                /////////////////////// validation if it is to be validated, also we checked for bing full before dilatations - if it was full at the begining - no point in validation
-              //  validateAndUpMetaCounter(fbArgs, tensorslice, localWorkQueue, bigloop, sourceShared, resShared, isAnythingInPadding, iterationNumb, isBlockFull, cta, i,
-              //      isBlockToBeValidated, localTotalLenthOfWorkQueue, localFpConter, localFnConter, resultfpOffset, resultfnOffset, worQueueStep, bitPos, oldRef, blockFpConter, blockFnConter);
-
-
-    //first we load data to source shmem
-                loadDataToShmem(fbArgs, tensorslice, sourceShared, getSourceReduced(fbArgs, localWorkQueue, i, iterationNumb), localWorkQueue, i);
-
-
-
-
-
-            }
-        }
-    }
-    //sync(cta);
-    ////we need to clear isAnythingInPadding to 0
-    //clearisAnythingInPadding(isAnythingInPadding);
-    ////     updating global counters
-    //updateGlobalCountersAndClear(fbArgs, tensorslice, blockFpConter, blockFnConter, localWorkQueueCounter, localFpConter, localFnConter);
-
-    //grid.sync();
-    //// checking global count and counters
-    //checkIsToBeDilatated(fbArgs, tensorslice, isGoldPassToContinue, isSegmPassToContinue);
-
-    //sync(cta);
-
-
-
-
-
-
-
-    ///////// now we need to look through all  blocks - for next dilatation pass ...
-    for (linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-        //we get from linear index  the coordinates of the metadata block of intrest
-        xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-        zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
-        yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
-        //gold pass
-
-        isToBeActivated = isGoldPassToContinue[0] && (getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveGold, fbArgs.metaData.isActiveGold.Ny, yMeta, zMeta)[xMeta]
-            && !getTensorRow<bool>(tensorslice, fbArgs.metaData.isFullGold, fbArgs.metaData.isFullGold.Ny, yMeta, zMeta)[xMeta]);
-
-        addToQueueOtherPasses(fbArgs, oldRef, tensorslice, xMeta, yMeta, zMeta, 1, localWorkQueue, localWorkQueueCounter, sourceShared, resShared, isToBeActivated);
-
-        //segmPass
-        isToBeActivated = isSegmPassToContinue[0] && (getTensorRow<bool>(tensorslice, fbArgs.metaData.isActiveSegm, fbArgs.metaData.isActiveSegm.Ny, yMeta, zMeta)[xMeta]
-            && !getTensorRow<bool>(tensorslice, fbArgs.metaData.isFullSegm, fbArgs.metaData.isFullSegm.Ny, yMeta, zMeta)[xMeta]);
-
-        addToQueueOtherPasses(fbArgs, oldRef, tensorslice, xMeta, yMeta, zMeta, 0, localWorkQueue, localWorkQueueCounter, sourceShared, resShared, isToBeActivated);
-
-    }
-
-    sync(cta);
-    auto activeG = coalesced_threads();
-
-    if (isToBeExecutedOnActive(activeG, 0)) {
-        globalWorkQueueCounter[0] = atomicAdd(&(getTensorRow<int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[9]), (localWorkQueueCounter[0]));
-    }
-
-    sync(cta);
-    // pushing work queue to global memory
-    fromShmemToGlobalWorkQueue(fbArgs, oldRef, i, sourceShared, resShared, localWorkQueue, globalWorkQueueCounter, tensorslice, localWorkQueueCounter);
-
-
-
-
-    // TODO - use pipelines as described at 201 in https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf
-
-
-
-}
-
-
-*/
-
-
-// runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
-
-
-
-//#pragma once
-//extern "C" inline bool mainKernelsTestRun(ForFullBoolPrepArgs<int> fFArgs, forTestPointStruct allPointsA[]
-//    , forTestMetaDataStruct allMetas[], int pointsNumber, int metasNumber) {
-//
-//
-//    cudaError_t syncErr;
-//    cudaError_t asyncErr;
-//
-//    unsigned int cpuIterNumb = -1;
-//    int device = 0;
-//    cudaDeviceProp deviceProp;
-//    cudaGetDeviceProperties(&deviceProp, device);
-//
-//
-//    for debugging
-//    array3dWithDimsGPU forDebug = allocate3dInGPU(fFArgs.forDebugArr);
-//    main arrays allocations
-//    array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
-//
-//    array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-//    //reduced arrays
-//    array3dWithDimsGPU reducedGold = allocate3dInGPU(fFArgs.reducedGold);
-//    array3dWithDimsGPU reducedSegm = allocate3dInGPU(fFArgs.reducedSegm);
-//
-//    array3dWithDimsGPU reducedGoldRef = allocate3dInGPU(fFArgs.reducedGoldRef);
-//    array3dWithDimsGPU reducedSegmRef = allocate3dInGPU(fFArgs.reducedSegmRef);
-//
-//
-//    array3dWithDimsGPU reducedGoldPrev = allocate3dInGPU(fFArgs.reducedGoldPrev);
-//    array3dWithDimsGPU reducedSegmPrev = allocate3dInGPU(fFArgs.reducedSegmPrev);
-//
-//
-//
-//
-//
-//
-//    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, reducedGold, reducedSegm, reducedGoldRef, reducedSegmRef, reducedGoldPrev, reducedSegmPrev);
-//    void* kernel_args[] = { &fbArgs };
-//
-//    //preparation kernel
-//    cudaLaunchCooperativeKernel((void*)(boolPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threads, kernel_args);
-//    //sync
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//
-//     bool test
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//    forBoolKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//
-//       //here threads one dimensionsonal !!
-//       //TODO() reallocate memory - make reduced arrs and metadata smaller - allocate work queue, padding store, result list ...
-//
-//    cudaLaunchCooperativeKernel((void*)(firstMetaPrepareKernel<int>), deviceProp.multiProcessorCount, fFArgs.threadsFirstMetaDataPass, kernel_args);
-//
-//    checkCuda(cudaDeviceSynchronize(), "aa");
-//
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//
-//    firstMetaPassKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
-//
-//
-//
-//    runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
-//
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//
-//
-//
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//
-//    deviceTohost
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//
-//
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//
-//    mainPassKernelTestUnitTests(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber
-//        , fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength, fFArgs.metaData.MetaZLength, goldArr.Ny, goldArr.Nx);
-//
-//
-//
-//    runAfterOneLoop(fbArgs, fFArgs, cpuIterNumb);// cpu part
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(mainDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromIsToBeActivated<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(paddingDilatation<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//    cudaLaunchCooperativeKernel((void*)(getWorkQueeueFromActive_mainPass<int>), deviceProp.multiProcessorCount, fFArgs.threadsMainPass, kernel_args);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//
-//
-//
-//    deviceTohost
-//    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-//    copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-//    copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//
-//
-//    copyDeviceToHost3d(reducedGold, fFArgs.reducedGold);
-//    copyDeviceToHost3d(reducedSegm, fFArgs.reducedSegm);
-//    copyDeviceToHost3d(reducedGoldRef, fFArgs.reducedGoldRef);
-//    copyDeviceToHost3d(reducedSegmRef, fFArgs.reducedSegmRef);
-//    copyDeviceToHost3d(reducedGoldPrev, fFArgs.reducedGoldPrev);
-//    copyDeviceToHost3d(reducedSegmPrev, fFArgs.reducedSegmPrev);
-//
-//    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-//    checkCuda(cudaDeviceSynchronize(), "bb");
-//
-//    checkAfterSecondDil(fFArgs, allPointsA, allMetas, pointsNumber, metasNumber, fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength);
-//
-//
-//
-//    
-//
-//
-//
-//    sync
-//
-//
-//    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-//    cudaGetLastError();
-//
-//    cudaFree(forDebug.arrPStr.ptr);
-//    cudaFree(goldArr.arrPStr.ptr);
-//    cudaFree(segmArr.arrPStr.ptr);
-//    cudaFree(reducedGold.arrPStr.ptr);
-//    cudaFree(reducedSegm.arrPStr.ptr);
-//    cudaFree(reducedGoldPrev.arrPStr.ptr);
-//    cudaFree(reducedSegmPrev.arrPStr.ptr);
-//
-//
-//    freeMetaDataGPU(fbArgs.metaData);
-//
-//
-//       /*
-//    * Catch errors for both the kernel launch above and any
-//    * errors that occur during the asynchronous `doubleElements`
-//    * kernel execution.
-//    */
-//
-//       syncErr = cudaGetLastError();
-//       asyncErr = cudaDeviceSynchronize();
-//
-//       /*
-//        * Print errors should they exist.
-//        */
-//
-//       if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
-//       if (asyncErr != cudaSuccess) printf("Error in asyncErr: %s\n", cudaGetErrorString(asyncErr));
-//
-//
-//
-//    return true;
-//}
-//
 

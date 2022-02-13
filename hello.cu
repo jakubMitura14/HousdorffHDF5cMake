@@ -62,142 +62,113 @@ const H5std_string DATASET_NAME("onlyLungs");
 //const int    RANK_OUT = 3;
 
 
-//
-//__device__ void computeA(uint32_t* global_out, uint32_t const* shared_in, uint32_t multiplier[1]) {
-//    //printf("  * %d *  ", threadIdx.x);
-//    //   printf("  ***  ");
-//
-//    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-//        global_out[linIdexMeta] =  multiplier[0];
-//
-//        if (threadIdx.x == 0) {
-//
-//            for (int i = 0; i < 500; i++) {
-//                printf("  ***  ");
-//                printf("  ***  ");
-//                printf("  ***  ");
-//                global_out[linIdexMeta] = i * 44 - 66;
-//                global_out[linIdexMeta] =  multiplier[0];
-//
-//
-//            }
-//            multiplier[0] = multiplier[0] * 2;
-//
-//        }
-//    }
-//     
-//
-//};
-//
-//__device__ void computeB(uint32_t* global_out, uint32_t const* shared_in) {
-//    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-//
-//        //   printf("  ***  ");
-//        global_out[linIdexMeta] = shared_in[linIdexMeta]*2;
-//    }
-//
-//};
-//
-//__device__ void computeC(uint32_t* global_out, uint32_t const* shared_in) {
-//    for (uint32_t linIdexMeta = blockIdx.x * blockDim.x + threadIdx.x; linIdexMeta < 32; linIdexMeta += blockDim.x * gridDim.x) {
-//
-//        //   printf("  ***  ");
-//        global_out[linIdexMeta] = shared_in[linIdexMeta] + 3;
-//    }
-//
-//};
-//
-//
-//__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA, uint32_t* global_inB, uint32_t* global_inC) {
-//    auto grid = cooperative_groups::this_grid();
-//    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
-//    thread_block_tile<32> tile = tiled_partition<32>(block);
-//    thread_block_tile<1> miniTile = tiled_partition<1>(block);
-//
-//    __shared__ cuda::barrier<cuda::thread_scope_block> barrier;
-//    init(&barrier, 1);
-//
-//
-//
-//    constexpr size_t stages_count = 2; // Pipeline with two stages
-//
-//
-//    __shared__ uint32_t shmem[100];
-//    __shared__ uint32_t multiplier[1];
-//    multiplier[0] = 2;
-//    sync(block);
-//    // holding data about paddings 
-//
-//
-//    // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
-//    __shared__ bool isAnythingInPadding[6];
-//
-//    __shared__ unsigned int localBlockMetaData[19];
-//
-//
-//    cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
-//
-//    size_t shared_offset[stages_count] = { 0, block.size() }; // Offsets to each
-//
-//    // Initialize first pipeline stage by submitting a `memcpy_async` to fetch a whole batch for the block 
-//
-//
-//   // cuda::memcpy_async(block, &shmem[0], &global_in[0], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
-//    //pipeline.producer_commit();
-//
-//    // get first data into pipeline so from global in to first half in shmem
-//    pipeline.producer_acquire();
-//    //printf("mini tile group rank %d \n", miniTile.meta_group_rank());
-//    //if (miniTile.meta_group_rank()==0){
-//    //    cuda::memcpy_async(miniTile, &shmem[miniTile.meta_group_rank()], &global_inA[miniTile.meta_group_rank()], cuda::aligned_size_t<4>(sizeof(uint32_t) * 1), pipeline);
-//    //}
-//    if (miniTile.meta_group_rank()%5==0 && miniTile.meta_group_rank()<30) {
-//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() ], &global_inA[miniTile.meta_group_rank() ], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
-//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank()+1 ], &global_inA[miniTile.meta_group_rank()+1 ], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
-//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() +2], &global_inA[miniTile.meta_group_rank() +2], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
-//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() +3], &global_inA[miniTile.meta_group_rank() +3], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
-//        cuda::memcpy_async(miniTile ,&shmem[miniTile.meta_group_rank() +4], &global_inA[miniTile.meta_group_rank() +4], cuda::aligned_size_t<4>(sizeof(uint32_t) ), pipeline);
-//
-//        //for (int i; i < 31; i++) {
-//        //    cuda::memcpy_async(&shmem[miniTile.meta_group_rank()+i], &global_inA[miniTile.meta_group_rank()+i], cuda::aligned_size_t<4>(sizeof(uint32_t) *2), barrier);
-//
-//        //    //cuda::memcpy_async(miniTile, &shmem[i], &global_inA[i], cuda::aligned_size_t<4>(sizeof(uint32_t) * 1), pipeline);
-//        //}
-//    }
-//  //  cuda::memcpy_async(block, &shmem[0], &global_inA[0], cuda::aligned_size_t<4>(sizeof(uint32_t) * 32), pipeline);
-//    pipeline.producer_commit();
-//  //  pipeline_producer_commit(pipeline, barrier);
-////    pipeline_producer_commit(pipeline);
-//    //barrier.arrive_and_wait();
-//    //pipeline.consumer_release();
-//
-//    
-//    // loadIntoShmem(pipeline, block, shmem, global_inA,  0, 0, 32);
-//
-//    // Pipelined copy/compute:
-//    for (size_t batch = 1; batch < 3; ++batch) {
-//        //here we load data for compute step that will be in next loop iteration
-//        pipeline.producer_acquire();
-//        cuda::memcpy_async( &shmem[(batch & 1) *32], &global_inA[batch*32], cuda::aligned_size_t <alignof(uint32_t)>(sizeof(uint32_t) * 32), pipeline);
-//        pipeline.producer_commit();
-//
-//        //so here we wait for previous data load - in case it is fist loop we wait for data that was scheduled before loop started
-//        pipeline.consumer_wait();
-//        //barrier.arrive_and_wait();
-//        computeA(&global_out[(batch-1)*32] , &shmem[((batch-1) & 1) * 32], multiplier);
-//        // Collectively release the stage resources
-//        pipeline.consumer_release();
-//    }
-//    // Compute the data fetch by the last iteration
-//
-//    pipeline.consumer_wait();
-//    computeA(&global_out[2 * 32] , &shmem[(2 & 1) * 32], multiplier);
-//    pipeline.consumer_release();
-//
-//    }
-//
-//
 
+
+
+//  pipeline_producer_commit(pipeline, barrier);
+
+
+__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA, uint32_t* globalOutGPUB, float* globalDummyGPU) {
+    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
+    thread_block_tile<32> tile = tiled_partition<32>(block);
+
+    __shared__ uint32_t shmem[200];
+    __shared__ uint32_t currBatch[1];
+    __shared__ float dummmy[1];
+
+    cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
+
+    // for simplicity ignored Initializing first pipeline stage of submitting `memcpy_async` 
+    //pipeline.producer_acquire();
+    //...
+    //pipeline.producer_commit();
+    
+    
+    for (size_t batch = 1; batch < 10; ++batch) {
+        ///////step 1
+        // load
+        pipeline.producer_acquire();
+            if (tile.meta_group_rank() == 0) {
+                cuda::memcpy_async(tile, &shmem[0], &global_inA[batch * 64], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+                pipeline.producer_commit();
+            }
+            if (tile.meta_group_rank() == 1) {
+                cuda::memcpy_async(tile, &shmem[16], &global_inA[batch * 64 +16], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+                pipeline.producer_commit();
+            }
+
+        //compute data loaded in step 2 of previous iteration
+        cuda::pipeline_consumer_wait_prior<0>(pipeline);
+         
+        //this works correctly
+        if (tile.meta_group_rank() == 0) {
+            global_out[batch * 64 + 32 + tile.thread_rank()] = shmem[32 + tile.thread_rank()];
+        }
+
+        if (tile.thread_rank() == batch && tile.meta_group_rank() == 0) {
+            float w = 326;
+            for (int j = 0; j < 5000; j++) {
+                w += w / j;
+            };
+            globalDummyGPU[0] += w;
+            currBatch[0] = batch;
+        };
+
+        pipeline.consumer_release();
+        ///// step 2 
+        //load
+        pipeline.producer_acquire();
+        if (tile.meta_group_rank() == 0) {
+            cuda::memcpy_async(tile, &shmem[32], &global_inA[(batch +1)* 64+32], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+            pipeline.producer_commit();
+        }
+        if (tile.meta_group_rank() == 1) {
+            cuda::memcpy_async(tile, &shmem[32 + 16], &global_inA[(batch +1)* 64 +32+ 16], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+            pipeline.producer_commit();
+        }
+        //compute data loaded in  step 1
+        cuda::pipeline_consumer_wait_prior<0>(pipeline);
+        
+        //this works correctly
+        if (tile.meta_group_rank() == 0) {
+           global_out[batch * 64 + tile.thread_rank()] = shmem[tile.thread_rank()];//correct
+        }
+
+        if (tile.thread_rank() == (batch+1) && tile.meta_group_rank() == 1) {
+            float w = 326;
+            for (int j = 0; j < 5000; j++) {
+                w += w / j;
+            };
+            globalOutGPUB[batch]=currBatch[0];
+            globalDummyGPU[0] += w;
+        };
+
+        pipeline.consumer_release();
+
+    }
+    //  for simplicity ignored Computing the data fetch by the last iteration
+    //cuda::pipeline_consumer_wait_prior<0>(pipeline);
+    ////last computatons .. here omitted
+    //pipeline.consumer_release();
+
+    }
+
+
+/*
+results 
+
+val 68 in 1
+val 2 in 2
+val 196 in 3
+val 4 in 4
+val 324 in 5
+val 6 in 6
+val 8 in 7
+val 9 in 8
+val 580 in 9
+
+
+*/
 
 
 
@@ -207,66 +178,73 @@ int main(void){
 
 
     testMainPasswes();
-
+//
 //    cudaError_t syncErr;
 //    cudaError_t asyncErr;
 ////    creating test data for pipeline concept
 //    uint32_t* globalInGPUA;
-//    uint32_t* globalInGPUB;
-//    uint32_t* globalInGPUC;
-//
-//
+//    int sizeOfArr = 6400;
+//    int sizeOfArrB = 20;
 //    uint32_t* globalOutGPU;
-//    size_t sizeC = (320 * sizeof(uint32_t));
-//    uint32_t* globalInCPUA = (uint32_t*)calloc(320 , sizeof(uint32_t));
-//    uint32_t* globalInCPUB = (uint32_t*)calloc(320 , sizeof(uint32_t));
-//    uint32_t* globalInCPUC = (uint32_t*)calloc(320 , sizeof(uint32_t));
+//    uint32_t* globalOutCPU;
+//    float* globalDummyGPU;
+//    uint32_t* globalOutGPUB;
+//    size_t sizeC = (sizeOfArr * sizeof(uint32_t));
+//    size_t sizeD = (sizeOfArrB * sizeof(uint32_t));
+//    size_t sizeE = (sizeOfArrB * sizeof(float));
+//    uint32_t* globalInCPUA = (uint32_t*)calloc(sizeOfArr, sizeof(uint32_t));
 //
-//    //populating to ones
-//    for (int i = 0; i < 96; i++) {
+//
+//    //populating with data 
+//    for (int i = 0; i < sizeOfArr; i++) {
 //        globalInCPUA[i] = i;
 //    };
 //
-//    //populating to ones
-//    for (int i = 0; i < 96; i++) {
-//        globalInCPUB[i] = 100;
-//    };
 //
-//
-//    //populating to ones
-//    for (int i = 0; i < 96; i++) {
-//        globalInCPUC[i] = 1000;
-//    };
-//
-//    uint32_t* globalOUTCPU = (uint32_t*)calloc(320, sizeof(uint32_t));
+//    uint32_t* globalOUTCPU = (uint32_t*)calloc(sizeOfArr, sizeof(uint32_t));
+//    uint32_t* globalOUTCPB = (uint32_t*)calloc(sizeOfArrB, sizeof(uint32_t));
 //
 //
 //    //cudaMallocAsync(&mainArr, sizeB, 0);
 //    cudaMalloc(&globalInGPUA, sizeC);
 //    cudaMemcpy(globalInGPUA, globalInCPUA, sizeC, cudaMemcpyHostToDevice);
 //
-//    cudaMalloc(&globalInGPUB, sizeC);
-//    cudaMemcpy(globalInGPUB, globalInCPUB, sizeC, cudaMemcpyHostToDevice);
-//
-//    cudaMalloc(&globalInGPUC, sizeC);
-//    cudaMemcpy(globalInGPUC, globalInCPUC, sizeC, cudaMemcpyHostToDevice);
-//
-//
 //    cudaMalloc(&globalOutGPU, sizeC);
 //    cudaMemcpy(globalOutGPU, globalOUTCPU, sizeC, cudaMemcpyHostToDevice);
 //
-//    with_staging << <1,32 >> > (globalOutGPU, globalInGPUA, globalInGPUB, globalInGPUC);
 //
 //
-//    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-//    
+//    float* globalDummyCPU = (float*)calloc(sizeOfArrB, sizeof(float));
+//    cudaMalloc(&globalDummyGPU, sizeE);
+//
+//    cudaMalloc(&globalOutGPUB, sizeD);
+//    cudaMemcpy(globalOutGPUB, globalOUTCPB, sizeD, cudaMemcpyHostToDevice);
+//
+//    with_staging << <1,64 >> > (globalOutGPU, globalInGPUA, globalOutGPUB, globalDummyGPU);
+//
+//    //this works correctly
+//    cudaDeviceSynchronize();    
+//
+//
+//
+//
 //    cudaMemcpy(globalOUTCPU, globalOutGPU, sizeC, cudaMemcpyDeviceToHost);
-//
-//    for (int i = 0; i < 96; i++) {
-//        if (globalOUTCPU[i]!= 2* i) {
+//    for (int i = 130; i < 500; i++) {
+//        if (globalOUTCPU[i]!= i) {
 //            printf("val %d in %d \n", globalOUTCPU[i], i);
 //        }
 //    };
+//
+//    cudaMemcpy(globalOUTCPB, globalOutGPUB, sizeD, cudaMemcpyDeviceToHost);
+//
+//    for (int i = 0; i < 10; i++) {
+//            printf("val %d in %d \n", globalOUTCPB[i], i);
+//      
+//    };
+//    cudaMemcpy(globalDummyCPU, globalDummyGPU, sizeE, cudaMemcpyDeviceToHost);
+//    printf("duppy %f \n", globalDummyCPU[0]);
+//
+//
 //
 //    syncErr = cudaGetLastError();
 //    asyncErr = cudaDeviceSynchronize();
