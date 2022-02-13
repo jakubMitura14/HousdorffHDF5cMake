@@ -3,7 +3,7 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 */
 #pragma once
 template <typename ZZR>
-inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
+inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
     uint32_t*& resultListPointerMeta
     ,uint32_t*& resultListPointerLocal
     ,uint32_t*& resultListPointerIterNumb,
@@ -61,7 +61,7 @@ inline void allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFul
 
      //cudaFree(resultListPointer);
 
-
+    return fpPlusFn;
 };
 
 
@@ -114,10 +114,6 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     metaData.mainArrSectionLength = mainArrSectionLength;
     
     size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
-    std::cout <<"totalMetaLength   and  gpuArgs.dbYLength ";
-    std::cout << totalMetaLength;
-    std::cout << gpuArgs.dbYLength;
-    std::cout << "\n";
 
 
     //cudaMallocAsync(&mainArr, sizeB, 0);
@@ -129,7 +125,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     
     size_t sizeC = (totalMetaLength * sizeof(uint32_t));
    //cudaMallocAsync(&workQueue, size, 0);
-    cudaMallocAsync(&workQueue, size,0);
+    cudaMallocAsync(&workQueue, sizeC,0);
 
    return metaData;
 };

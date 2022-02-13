@@ -30,9 +30,9 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     unsigned int blockFnConter[1], unsigned int resultfpOffset[1],
     unsigned int resultfnOffset[1], unsigned int worQueueStep[1],
     uint32_t isGold[1], uint32_t currLinIndM[1], unsigned int localMinMaxes[5]
-    , uint32_t localBlockMetaData[], unsigned int fpFnLocCounter[1]
+    , uint32_t localBlockMetaData[20], unsigned int fpFnLocCounter[1]
     , bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]
-    , uint32_t* origArrs, uint32_t* metaDataArr, uint32_t oldIsGold[1], uint32_t oldLinIndM[1],
+    , uint32_t* origArrs, uint32_t* metaDataArr, uint32_t oldIsGold[1], uint32_t oldLinIndM[1], uint32_t localBlockMetaDataOld[20],
     bool isGoldForLocQueue[localWorkQueLength], bool isBlockToBeValidated[1]
 ) {
 
@@ -71,10 +71,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         fpFnLocCounter[0] = 0;
     };
 
-    //if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
-    //    // if it will be still of such value it mean that no block was processed
-    //    oldLinIndM[0] = isGoldOffset;
-    //};
+    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
+        // if it will be still of such value it mean that no block was processed
+        oldLinIndM[0] = isGoldOffset;
+    };
 
     if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
         localTotalLenthOfWorkQueue[0] = minMaxes[9];
@@ -124,21 +124,22 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         cuda::memcpy_async(cta, (&localBlockMetaData[0]),
             (&metaDataArr[mainShmem[startOfLocalWorkQ] * metaData.metaDataSectionLength])
             , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-    
+
         pipeline.producer_commit();
         sync(cta);
 
         for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-///#### pipeline step 1) now we load data for next step (to mainly sourceshmem and left-right if apply) and process data loaded in previous step
+                ///#### pipeline step 1) now we load data for next step (to mainly sourceshmem and left-right if apply) and process data loaded in previous step
 
 
                 pipeline.producer_acquire();
 
-
                 cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
                     mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
                     bigShape, pipeline);
+                pipeline.producer_commit();
+
 
                 if (mainShmem[startOfLocalWorkQ + i] < (metaData.totalMetaLength - 1)) {
                     cooperative_groups::memcpy_async(tile, (&mainShmem[begSMallRegShmemB]),
@@ -147,6 +148,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                                 + tile.meta_group_rank() * 32], //we look for indicies 0,32,64... up to metaData.mainArrXLength
                         cuda::aligned_size_t<4>(sizeof(uint32_t))
                                 );
+                    pipeline.producer_commit();
 
                 }
 
@@ -158,9 +160,9 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                                 //we look for indicies 31,63... up to metaData.mainArrXLength
                                 + (tile.meta_group_rank() * 32) + 31]
                         , cuda::aligned_size_t<4>(sizeof(uint32_t)), pipeline);
+                    pipeline.producer_commit();
 
                 }
-                pipeline.producer_commit();
 
 
 
@@ -168,33 +170,37 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 pipeline.consumer_wait();
 
 
-                //afterBlockClean(cta, worQueueStep, localBlockMetaDataOld, mainShmem, i,
-                //    metaData, tile, localFpConter, localFnConter
-                //    , blockFpConter, blockFnConter
-                //    , metaDataArr, oldLinIndM, oldIsGold
-                //    , isAnythingInPadding, isBlockFull, isPaddingPass);
+                afterBlockClean(cta, worQueueStep, localBlockMetaDataOld, mainShmem, i,
+                    metaData, tile, localFpConter, localFnConter
+                    , blockFpConter, blockFnConter
+                    , metaDataArr, oldLinIndM, oldIsGold
+                    , isAnythingInPadding, isBlockFull, isPaddingPass);
+
+
 
 
 
                 pipeline.consumer_release();
 
-////////#### pipeline step 2)  load block from top and process center that is in source shmem; and both smallRegShmems
+                ////////#### pipeline step 2)  load block from top and process center that is in source shmem; and both smallRegShmems
                                //load for next step - so we load block to the top
-                pipeline.producer_acquire();
-
                 if (localBlockMetaData[13] < isGoldOffset) {
+                    pipeline.producer_acquire();
 
                     cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
                         &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[13] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
                         cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
                         , pipeline);
 
+                    pipeline.producer_commit();
                 }
-                pipeline.producer_commit();
 
                 //compute - now we have data in source shmem about this block and left and right padding and we need to process it 
                 pipeline.consumer_wait();
                 // first we perform up and down dilatations inside the block
+            //if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0) {
+            //    printf("source shmem linLocalInd %d  linMeta %d \n",(threadIdx.x + threadIdx.y * 32), mainShmem[startOfLocalWorkQ + ii] );
+            //}
 
                 mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
 
@@ -211,7 +217,22 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     3, (1), (0), mainShmem, isAnythingInPadding
                     , 0, threadIdx.y
                     , 16, begSMallRegShmemB, localBlockMetaData);
-              
+                ///////////saving old
+//additionally we save previous copies of data so refreshing will keep easier
+                if (threadIdx.x < 20 && threadIdx.y == 0) {
+                    localBlockMetaDataOld[tile.thread_rank()] = localBlockMetaData[tile.thread_rank()];
+                }
+                if (threadIdx.x == 0 && threadIdx.y == 1) {
+                    oldIsGold[0] = isGoldForLocQueue[i];
+                }
+                if (threadIdx.x == 1 && threadIdx.y == 1) {
+                    oldLinIndM[0] = mainShmem[startOfLocalWorkQ + i];
+
+                }
+                if (threadIdx.x == 2 && threadIdx.y == 1) {
+                    isBlockToBeValidated[0] = ((localBlockMetaData[2 - isGoldForLocQueue[i]]) > localBlockMetaData[(4 - isGoldForLocQueue[i])]);
+
+                }
 
 
 
@@ -225,6 +246,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     cuda::memcpy_async(tile, &mainShmem[begSMallRegShmemA], &getSourceReduced(fbArgs, iterationNumb)[
                         (localBlockMetaData[17]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
                         thirdRegShape, pipeline);
+                    pipeline.producer_commit();
 
                 }
                 // block to posterior
@@ -233,6 +255,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                         (localBlockMetaData[18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
                             + (blockDim.y - 1) * 32// we need last 32 length entry of the posterior block 
                     ], thirdRegShape, pipeline);
+                    pipeline.producer_commit();
 
                 }
 
@@ -243,9 +266,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                             localBlockMetaData[14] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
                         cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
                                 , pipeline);
+                    pipeline.producer_commit();
 
                 }
-                pipeline.producer_commit();
+
 
 
                 //    compute - now we have data in source shmem about block to the top
@@ -312,16 +336,16 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 pipeline.consumer_release();
 
 
-//////////#### pipeline step 6) if block is to be validated we process the res and reference data and start loading data for begining of the next loop
+                //////////#### pipeline step 6) if block is to be validated we process the res and reference data and start loading data for begining of the next loop
 
 
 
                                                                                     ////load data for next iteration
                 pipeline.producer_acquire();
-                if (localBlockMetaData[20 * (i % 3)+  ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
-                > localBlockMetaData[20 * (i % 3)+((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+                if (localBlockMetaDataOld[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+                > localBlockMetaDataOld[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
                     if (i + 1 <= worQueueStep[0]) {
-                        cuda::memcpy_async(cta, (&localBlockMetaData[20 * ((i +1)% 3)]),
+                        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
                             (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1])
                                 * metaData.metaDataSectionLength])
                             , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
@@ -329,42 +353,21 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 }
                 pipeline.producer_commit();
 
-
-
-
-
                 //process check is there any new result (we have reference in begfirstRegShmem)
                          //now first we need to check for bits that are true now after dilatation but were not in source we will save it in res shmem becouse we will no longer need it
                 pipeline.consumer_wait();
-
-
-
-               if (localBlockMetaData[20 * (i % 3) + (2 - isGoldForLocQueue[i])] //fp for gold and fn count for not gold
-                > localBlockMetaData[20 * (i % 3) + (4 - isGoldForLocQueue[i])]) {// so count is bigger than counter so we should validate
-
-
+                if (isBlockToBeValidated[0]) {// so count is bigger than counter so we should validate
 
                     mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
-                    
 
-                    
-                    
+
+
                     //we now look for bits prasent in both reference arrays and current one
                     mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32]);
 
 
-                    auto col = mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32];
-                    if (col > 0) {
-                        //if (threadIdx.x == 0 && threadIdx.y == 0) {
-                        printf(" get to be val  i %d count %d counter %d  col %d\n"
-                            , i
-                            , localBlockMetaData[20 * (i % 3) + (2 - isGoldForLocQueue[i])]
-                            , localBlockMetaData[20 * (i % 3) + (4 - isGoldForLocQueue[i])]
-                            , col
-                        );
-                    }
                     // now we look through bits and when some is set we call it a result 
-                    #pragma unroll
+#pragma unroll
                     for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
                         //if any bit here is set it means it should be added to result list 
                         if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
@@ -374,32 +377,33 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                             unsigned int old = 0;
                             ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
                             if (isGoldForLocQueue[i]) {
-                                old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[20 * (i % 3)+5];
+                                old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaDataOld[5];
                             }
                             else {
-                                old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[20 * (i % 3)+6];
+                                old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaDataOld[6];
                             };
                             //   add results to global memory    
-                            resultListPointerMeta[old] = uint32_t(mainShmem[begSourceShmem] + isGoldOffset * isGoldForLocQueue[i]);
+                            resultListPointerMeta[old] = uint32_t(oldLinIndM[0] + isGoldOffset * oldIsGold[0]);
                             resultListPointerLocal[old] = uint16_t(fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x);
                             resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
 
-                            printf("rrrrresult meta %d isGold %d old %d localFpConter %d localFnConter %d linIndUpdated %d  localInd %d\n"
-                                , oldLinIndM[0]
+                            printf("rrrrresult meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d\n"
+                                , mainShmem[startOfLocalWorkQ + i]
                                 , isGoldForLocQueue[i]
                                 , old
                                 , localFpConter[0]
                                 , localFnConter[0]
+                                , localBlockMetaDataOld[6]
+                                , localBlockMetaDataOld[7]
                                 , uint32_t(oldLinIndM[0] + isGoldOffset * oldIsGold[0])
                                 , (fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x)
                             );
 
                         }
                     }
+                    pipeline.consumer_release();
 
                 };
-               pipeline.consumer_release();
-
             }
         }
     }
@@ -409,14 +413,13 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
     //updating local counters of last local block (normally it is done at the bagining of the next block)
     //but we need to check weather any block was processed at all
-    
-    //if (oldLinIndM[0] != isGoldOffset) {
-    //    afterBlockClean(cta, worQueueStep, localBlockMetaDataOld, mainShmem, 2,//2 is completely arbitrary important it is bigger than 0
-    //        metaData, tile, localFpConter, localFnConter
-    //        , blockFpConter, blockFnConter
-    //        , metaDataArr, oldLinIndM, oldIsGold
-    //        , isAnythingInPadding, isBlockFull, isPaddingPass);
-    //}
+    if (oldLinIndM[0] != isGoldOffset) {
+        afterBlockClean(cta, worQueueStep, localBlockMetaDataOld, mainShmem, 2,//2 is completely arbitrary important it is bigger than 0
+            metaData, tile, localFpConter, localFnConter
+            , blockFpConter, blockFnConter
+            , metaDataArr, oldLinIndM, oldIsGold
+            , isAnythingInPadding, isBlockFull, isPaddingPass);
+    }
 
     //     updating global counters
     if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {

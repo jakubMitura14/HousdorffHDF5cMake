@@ -153,6 +153,9 @@ extern "C" inline void testMainPasswes() {
 	//setArrCPU(arrGoldObj, 2, 2, 40 , 2);//
 
 	setArrCPU(arrGoldObj, 31, 23, 31, 2);//
+
+
+	setArrCPU(arrGoldObj, 31, 23, 31, 2);//
 	setArrCPU(arrGoldObj, 31, 23, 30, 2);//
 
 	setArrCPU(arrSegmObj, 32, 23, 31, 2);//
@@ -181,7 +184,21 @@ minZ 2  [6]
 
 
 	printf("\n aaa \n");
-	mainKernelsRun(forFullBoolPrepArgs);
+
+	uint32_t* resultListPointerMetaCPU;
+	uint32_t* resultListPointerLocalCPU;
+	uint32_t* resultListPointerIterNumbCPU;
+	uint32_t* metaDataArrPointerCPU;
+	uint32_t* workQueuePointerCPU;
+
+	uint32_t* reducedResCPU;
+	ForBoolKernelArgs<int> fbArgs= mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
+		, resultListPointerLocalCPU, resultListPointerIterNumbCPU
+		, metaDataArrPointerCPU, workQueuePointerCPU
+		);
+
+
+
 
 
 	printf("\n **************************************** \n");

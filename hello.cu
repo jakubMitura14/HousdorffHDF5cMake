@@ -21,6 +21,7 @@
 
 //#include "BoolKernelTests.cu"
 #include "testAll.cu"
+#include "pielineTest.cu"
 #include "CooperativeGroupsUtils.cu"
 using namespace cooperative_groups;
 

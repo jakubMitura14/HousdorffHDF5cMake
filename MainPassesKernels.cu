@@ -90,307 +90,6 @@ inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs
 
 
 
-
-
-
-
-template <typename TKKI>
-inline __global__ void testKernel(ForBoolKernelArgs<TKKI> fbArgs, unsigned int* minMaxes, uint32_t* mainArr, MetaDataGPU metaData, uint32_t* workQueue, uint32_t* origArr) {
-    thread_block cta = this_thread_block();
-
-    //work queue !!
-    //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-    //    for (uint32_t ii = blockIdx.x; ii < 7; ii += gridDim.x) {
-    //        if (workQueue[ii] > 0) {
-    //            if (workQueue[ii] > (isGoldOffset-1)) {
-    //                printf("in gold workqueue elment %d  \n", (workQueue[ii] - isGoldOffset));
-    //            }
-    //            else {
-    //                printf("in segm workqueue elment %d  \n", (workQueue[ii]));
-
-    //            }
-
-    //        }
-
-    //    }
-    //}
-    // 
-        //results  !!
-    if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        for (uint32_t ii = blockIdx.x; ii < 10; ii += gridDim.x) {
-            if (fbArgs.resultListPointerMeta[ii] > 0) {
-                printf("in TEST kernel  result lin meta %d ii  \n", fbArgs.resultListPointerMeta[ii]);
-
-            }
-
-        }
-    }
-
-
-
-    sync(cta);
-    char* tensorslice;
-
-
-    for (uint32_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
-        //we get from linear index  the coordinates of the metadata block of intrest
-        uint8_t xMeta = linIdexMeta % metaData.metaXLength;
-        uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
-        uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
-
-        for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-            uint32_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
-            for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-                uint32_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
-                for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
-
-                    uint32_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
-                    uint8_t ww = 0;
-                    //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength)*ww];//
-                    uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (xLoc + yLoc * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
-                    //uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength)];
-
-
-
-
-                    //rrrrresult meta 1 isGold 1 old 0 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655351  localInd 24544
-
-                    //if (linIdexMeta== 1 ) {
-                    //    if (  (fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24544) {
-                    //            printf("res in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //  ,  x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
-
-                    //    }
-                    //
-                    //}
-                    ////    rrrrresult meta 2 isGold 1 old 1 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655352  localInd 23839
-
-                    //if (linIdexMeta == 2) {
-                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 23839) {
-                    //        printf( "res in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
-
-                    //    }
-
-                    //}
-                    ////    rrrrresult meta 4 isGold 1 old 2 localFpConter 1 localFnConter 0 fpOffset 0 fnOffset 0 linIndUpdated 655354  localInd 767
-
-                    //if (linIdexMeta == 4) {
-                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 767) {
-                    //        printf("res in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
-
-                    //    }
-
-                    //}
-                    ////    rrrrresult meta 0 isGold 0 old 3 localFpConter 0 localFnConter 1 fpOffset 3 fnOffset 1 linIndUpdated 0  localInd 24575
-
-                    //if (linIdexMeta == 0) {
-                    //    if ((fbArgs.dbYLength * 32 * zLoc + yLoc * 32 + xLoc) == 24575) {
-                    //        printf("res in TEST kernel x %d y%d z %d linearLocal %d linIdexMeta  \n"
-                    //            , x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta);
-
-                    //    }
-
-                    //}
-
-
-
-                 //if (x==33 && y==1 && z==71) {
-                 //    printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
-                 //        , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                 //        , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
-                 //}
-
-
-
-
-                    if (isBitAt(column, zLoc) && column > 0) {
-
-
-                        printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d    \n"
-                                    , xMeta, yMeta, zMeta,x,y,z,  (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                                , column , linIdexMeta * metaData.mainArrSectionLength + (xLoc + yLoc * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);
-                    }
-
-                    ww = 1;
-                    // uint32_t column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
-                    column = mainArr[linIdexMeta * metaData.mainArrSectionLength + (xLoc + yLoc * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww];//
-
-
-                    //if (x == 33 && y == 1 && z == 71) {
-                    //    printf("in 33 1 71 TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d column %d looking in %d \n"
-                    //        , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                    //        , column, linIdexMeta * metaData.mainArrSectionLength + (threadIdx.x + threadIdx.y * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww);
-                    //}
-
-                    if (isBitAt(column, zLoc) && column > 0) {
-
-                           printf("in TEST kernel Metax %d yMeta %d zMeta %d x %d y%d z %d linearLocal %d linIdexMeta %d looking in %d   \n"
-                               , xMeta, yMeta, zMeta, x, y, z, (xLoc + yLoc * fbArgs.dbXLength), linIdexMeta
-                               , column, linIdexMeta * metaData.mainArrSectionLength + (xLoc + yLoc * fbArgs.dbXLength) + (metaData.mainArrXLength) * ww, fbArgs.dbYLength);
-                    }
-
-                }
-            }
-        }
-
-        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 1];
-        //    if (count > 0) {
-        //        printf("in TEST kernel looking fp count  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
-        //            , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 3]);
-        //    }
-        //}
-        //if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-        //    auto count = fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 2];
-        //    if (count > 0) {
-        //        printf("in TEST kernel looking fn count   xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d counter %d \n"
-        //            , xMeta, yMeta, zMeta, linIdexMeta, count, fbArgs.metaDataArrPointer[linIdexMeta * metaData.metaDataSectionLength + 4]);
-        //    }
-        //}
-
-
-
-
-
-        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength+ metaData.metaDataOffset + 7];
-        //    if (count ==1) {
-        //        printf("in TEST kernel looking active gold  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
-        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
-        //    }
-        //}
-        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9];
-        //    if (count == 1) {
-        //        printf("in TEST kernel looking active segm  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
-        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
-        //    }
-        //}
-        ///// testing  calculation of surrounding blocks linear indicies
-        // block 1,1,1
-        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    if (xMeta==1 && yMeta==1 && zMeta==1) {
-        //        printf("linear indicies from metadata  top %d bottom %d left %d right %d anterior %d posterior %d  linIdexMeta current %d \n    "
-        //            ,mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 13]
-        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 14]
-
-        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 15]
-        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 16]
-
-        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 17]
-        //            , mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 18]
-        //            , linIdexMeta
-        //        );
-        //    }
-        //    if (xMeta ==  1&& yMeta == 1 && zMeta == 0) {
-        //        printf("linear index top linIdexMeta %d \n    ", linIdexMeta);
-        //    
-        //    }
-        //    if (xMeta ==1 && yMeta == 1 && zMeta == 2) {
-        //        printf("linear index bottom linIdexMeta %d \n    ", linIdexMeta);
-
-        //    }
-        //    if (xMeta == 1&& yMeta == 2 && zMeta == 1) {
-        //        printf("linear index anterior linIdexMeta %d \n    ", linIdexMeta);
-
-        //    }
-        //    if (xMeta == 1&& yMeta == 0 && zMeta == 1) {
-        //        printf("linear index posterior linIdexMeta %d \n    ", linIdexMeta);
-
-        //    }
-
-        //    if (xMeta ==2 && yMeta == 1 && zMeta == 1) {
-        //        printf("linear index right linIdexMeta %d \n    ", linIdexMeta);
-
-        //    }
-        //    if (xMeta == 0&& yMeta == 1 && zMeta == 1) {
-        //        printf("linear index left linIdexMeta %d \n    ", linIdexMeta);
-
-        //    }
-
-        //}
-
-//// checking weather on edges it shows UINT32_MAX
-        //   if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-
-        //    if (xMeta ==  1&& yMeta == 1 && zMeta == 0) {
-        //        printf("linear index top linIdexMeta %d  and max is %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 13], UINT32_MAX);
-        //    
-        //    }
-        //    if (xMeta ==1 && yMeta == 1 && zMeta == 3) {
-        //        printf("linear index bottom linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 14]);
-
-        //    }
-        //    if (xMeta == 1&& yMeta == 5 && zMeta == 1) {
-        //        printf("linear index anterior linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 17]);
-
-        //    }
-        //    if (xMeta == 1&& yMeta == 0 && zMeta == 1) {
-        //        printf("linear index posterior linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 18]);
-
-        //    }
-
-        //    if (xMeta ==2 && yMeta == 1 && zMeta == 1) {
-        //        printf("linear index right linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 16]);
-
-        //    }
-        //    if (xMeta == 0&& yMeta == 1 && zMeta == 1) {
-        //        printf("linear index left linIdexMeta %d \n    ", mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 15]);
-
-        //    }
-
-        //}
-
-        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 5];
-        //    if (count >0) {
-        //        printf("in TEST kernel offset fp  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
-        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
-        //    }
-        //}
-        //if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        //    auto count = mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 6];
-        //    if (count > 0) {
-        //        printf("in TEST kernel offset fn  xMeta %d yMeta %d zMeta %d linIdexMeta %d count %d \n"
-        //            , xMeta, yMeta, zMeta, linIdexMeta, count);
-        //    }
-        //}
-
-    }
-
-
-
-
-    //for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < 80; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-
-
-    // /*   if (fbArgs.metaData.resultList[linIdexMeta * 5 + 4] != 131 && fbArgs.metaData.resultList[linIdexMeta * 5] > 0) {
-
-    //        printf("\n in kernel saving result x %d y %d z %d isGold %d iteration %d spotToUpdate %d \n ",
-    //            fbArgs.metaData.resultList[linIdexMeta * 5]
-    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 1]
-    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 2]
-    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 3]
-    //            , fbArgs.metaData.resultList[linIdexMeta * 5 + 4]
-    //            , linIdexMeta
-
-
-    //        );
-    //    }
-    //    else {
-    //        printf(" *** ");
-    //        atomicAdd(&(getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, 1, 0, 0)[17]), 1);
-
-    //    }*/
-    //}
-}
-
-
-
-
-
 template <typename TKKI>
 inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
@@ -490,7 +189,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
  18 : posterior
     */
 
-    __shared__ uint32_t localBlockMetaData[60];
+    __shared__ uint32_t localBlockMetaData[20];
 
     /*
  //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX
@@ -504,6 +203,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     */
 
+    __shared__ uint32_t localBlockMetaDataOld[20];
 
     /////used mainly in meta passes
 
@@ -544,7 +244,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         localFnConter, blockFpConter, blockFnConter, resultfpOffset,
         resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
         , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-        , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM,  isGoldForLocQueue, isBlockToBeValidated);
+        , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated);
 
 
 
@@ -589,8 +289,23 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
+
+
+
+
+
+
+
+
+
+
 #pragma once
-extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
+ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*& reducedResCPU
+    , uint32_t*& resultListPointerMetaCPU
+    ,uint32_t*& resultListPointerLocalCPU
+    ,uint32_t*& resultListPointerIterNumbCPU
+    ,uint32_t*& metaDataArrPointerCPU
+    ,uint32_t*& workQueuePointerCPU) {
 
     cudaDeviceReset();
     cudaError_t syncErr;
@@ -630,15 +345,19 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     int theadsForFirstMetaPass = blockSize;
     int blockForFirstMetaPass = minGridSize;
     //for main pass kernel
-    cudaOccupancyMaxPotentialBlockSize(
-        &minGridSize,
-        &blockSize,
-        (void*)mainPassKernel<int>,
-        0);
-    int warpsNumbForMainPass = blockSize / 32;
-    int blockForMainPass = minGridSize;
+    //cudaOccupancyMaxPotentialBlockSize(
+    //    &minGridSize,
+    //    &blockSize,
+    //    (void*)mainPassKernel<int>,
+    //    0);
+    //int warpsNumbForMainPass = blockSize / 32;
+    //int blockForMainPass = minGridSize;
+    //    printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
-    printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
+
+    int warpsNumbForMainPass = 10;
+    int blockForMainPass = 5;
+
 
 
 
@@ -700,7 +419,7 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     checkCuda(cudaDeviceSynchronize(), "a3");
 
 
-    allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData, goldArr, segmArr);
+   int fpPlusFn =  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData, goldArr, segmArr);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
 
@@ -708,6 +427,9 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     checkCuda(cudaDeviceSynchronize(), "a5");
     //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
+    
+    
+    
     fbArgs.forDebugArr = forDebug;
     fbArgs.goldArr = goldArr;
     fbArgs.segmArr = segmArr;
@@ -728,26 +450,52 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
     void* kernel_args[] = { &fbArgs };
 
 
-   // cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), 10, dim3(32, warpsNumbForMainPass), kernel_args);
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
 
 
 
     checkCuda(cudaDeviceSynchronize(), "a6");
+
+    //copy to CPU
+    size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
+    reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+    cudaMemcpy(reducedResCPU, mainArrBPointer, sizeCPU, cudaMemcpyDeviceToHost);
+
+    size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
+
+
+  resultListPointerMetaCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+    resultListPointerLocalCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+   resultListPointerIterNumbCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+   cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
+   cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
+   cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
+
+   size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
+   metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
+   cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizeRes, cudaMemcpyDeviceToHost);
+
+   size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
+
+   workQueuePointerCPU = (uint32_t*)calloc(metaData.totalMetaLength, sizeof(uint32_t));
+   cudaMemcpy(workQueuePointerCPU, workQueuePointer, sizeC, cudaMemcpyDeviceToHost);
+
+
+
+
+
+
+
 
 
     //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
 
 
 
-  //  checkCuda(cudaDeviceSynchronize(), "cc");
-
-
-
 
   //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
 
-    testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrBPointer, metaData, workQueuePointer, origArrsPointer);
+    //testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrBPointer, metaData, workQueuePointer, origArrsPointer);
 
     //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
 
@@ -816,8 +564,18 @@ extern "C" inline bool mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs) {
 
     cudaDeviceReset();
 
-    return true;
+    return fbArgs;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
