@@ -17,7 +17,8 @@ using namespace cooperative_groups;
 
 
 
-template <typename TKKI>
+//template <typename TKKI, typename forPipeline >
+template <typename TKKI >
 inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI> fbArgs, uint32_t* mainArrAPointer,
     uint32_t* mainArrBPointer, MetaDataGPU metaData
     , unsigned int* minMaxes, uint32_t* workQueue
@@ -37,9 +38,9 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 ) {
 
 
-
-
     auto pipeline = cuda::make_pipeline();
+
+
     auto bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (metaData.mainArrXLength));
     auto thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
 

@@ -305,7 +305,9 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     ,uint32_t*& resultListPointerLocalCPU
     ,uint32_t*& resultListPointerIterNumbCPU
     ,uint32_t*& metaDataArrPointerCPU
-    ,uint32_t*& workQueuePointerCPU) {
+    ,uint32_t*& workQueuePointerCPU
+    ,uint32_t*& origArrsCPU
+) {
 
     cudaDeviceReset();
     cudaError_t syncErr;
@@ -356,7 +358,7 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
 
 
     int warpsNumbForMainPass = 10;
-    int blockForMainPass = 5;
+    int blockForMainPass = 4;
 
 
 
@@ -460,6 +462,11 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
     reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
     cudaMemcpy(reducedResCPU, mainArrBPointer, sizeCPU, cudaMemcpyDeviceToHost);
+
+
+    origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+    cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
+
 
     size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
 

@@ -1,6 +1,7 @@
 #include "MainPassesKernels.cu"
 //#include "Structs.cu"
 #include "UnitTestUtils.cu"
+#include "testData.cu"
 
 
 
@@ -152,19 +153,38 @@ extern "C" inline void testMainPasswes() {
 	//setArrCPU(arrGoldObj, 2, 2, 31 , 2);//
 	//setArrCPU(arrGoldObj, 2, 2, 40 , 2);//
 
-	setArrCPU(arrGoldObj, 31, 23, 31, 2);//
+	//setArrCPU(arrGoldObj, 0, 0, 0, 2);//included for easy calculations later on 
+	//setArrCPU(arrGoldObj, 31, 23, 31, 2);//
 
 
-	setArrCPU(arrGoldObj, 31, 23, 31, 2);//
-	setArrCPU(arrGoldObj, 31, 23, 30, 2);//
+	//setArrCPU(arrGoldObj, 31, 23, 31, 2);//
+	//setArrCPU(arrGoldObj, 31, 23, 30, 2);//
 
-	setArrCPU(arrSegmObj, 32, 23, 31, 2);//
-	setArrCPU(arrSegmObj, 31, 24, 31, 2);//
-	setArrCPU(arrSegmObj, 31, 23, 32, 2);//
-
-
+	//setArrCPU(arrSegmObj, 32, 23, 31, 2);//
+	//setArrCPU(arrSegmObj, 31, 24, 31, 2);//
+	//setArrCPU(arrSegmObj, 31, 23, 32, 2);//
 
 
+
+	//setArrCPU(arrGoldObj, 31, 13, 31, 2);//
+
+
+
+	//setArrCPU(arrGoldObj, 5, 5, 6, 2);//
+
+	//setArrCPU(arrSegmObj, 5, 5, 5, 2);//
+
+
+
+	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+	setArrCPU(arrGoldObj, 8, 8, 6, 2);//
+
+	setArrCPU(arrSegmObj, 8, 8, 5, 2);//
+
+
+	setArrCPU(arrGoldObj, 38, 38, 36, 2);//
+
+	setArrCPU(arrSegmObj, 38, 38, 35, 2);//
 
 	//setArrCPU(arrSegmObj, 75, 20, 161, 2);//
 
@@ -192,10 +212,22 @@ minZ 2  [6]
 	uint32_t* workQueuePointerCPU;
 
 	uint32_t* reducedResCPU;
+	uint32_t* origArrsCPU;
 	ForBoolKernelArgs<int> fbArgs= mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
 		, resultListPointerLocalCPU, resultListPointerIterNumbCPU
-		, metaDataArrPointerCPU, workQueuePointerCPU
+		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
 		);
+
+	//printFromReduced(fbArgs, reducedResCPU);
+
+
+	for (int i = 0; i < 50;i++) {
+		if (resultListPointerLocalCPU[i]>0) {
+			printf("result lin meta  to print %d \n"
+				, resultListPointerMetaCPU[i]- (isGoldOffset*(resultListPointerMetaCPU[i] >= isGoldOffset)));
+		
+		}
+	}
 
 
 
