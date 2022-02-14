@@ -157,8 +157,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     __shared__ uint32_t currLinIndM[1];
 
 
-    __shared__ uint32_t oldIsGold[1];
-    __shared__ uint32_t oldLinIndM[1];
+    __shared__ bool iasAnyProcessed[1];
 
     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
     0 : global FP count;
@@ -193,7 +192,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
  18 : posterior
     */
 
-    __shared__ uint32_t localBlockMetaData[20];
+    __shared__ uint32_t localBlockMetaData[40];
 
     /*
  //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX
@@ -207,7 +206,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     */
 
-    __shared__ uint32_t localBlockMetaDataOld[20];
 
     /////used mainly in meta passes
 
@@ -247,7 +245,8 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         localFnConter, blockFpConter, blockFnConter, resultfpOffset,
         resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
         , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-        , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated, pipeline, bigShape, thirdRegShape);
+        , fbArgs.metaDataArrPointer, iasAnyProcessed,   isGoldForLocQueue
+        , isBlockToBeValidated, pipeline, bigShape, thirdRegShape);
 
 
 

@@ -266,13 +266,13 @@ finilizing operations for last block
 
 
 inline __device__  void afterBlockClean(thread_block cta
-    , unsigned int worQueueStep[1], uint32_t localBlockMetaDataOld[20]
+    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[20]
     , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
     , thread_block_tile<32> tile
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
-    , uint32_t* metaDataArr, uint32_t oldLinIndM[1], uint32_t oldIsGold[1]
-    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass
+    , uint32_t* metaDataArr
+    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass, bool isGoldForLocQueue[localWorkQueLength]
    ) {
 
 
@@ -280,7 +280,7 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
                     //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
         if (localFpConter[0] > 0) {
-            metaDataArr[oldLinIndM[0] * metaData.metaDataSectionLength + 3] += localFpConter[0];
+            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
             blockFpConter[0] += localFpConter[0];
             localFpConter[0] = 0;
         }
@@ -288,7 +288,7 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
 
         if (localFnConter[0] > 0) {
-            metaDataArr[oldLinIndM[0] * metaData.metaDataSectionLength + 4] += localFnConter[0];
+            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
 
             blockFnConter[0] += localFnConter[0];
             localFnConter[0] = 0;
@@ -299,7 +299,7 @@ inline __device__  void afterBlockClean(thread_block cta
         //executed in case of previous block
         if (isBlockFull[0] && i > 0) {
             //setting data in metadata that block is full
-            metaDataArr[oldLinIndM[0] * metaData.metaDataSectionLength + 10 - (oldIsGold[0] * 2)] = true;
+            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
         }
         //resetting
         isBlockFull[0] = true;
@@ -310,11 +310,10 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
         if (i>0) {
-            if (localBlockMetaDataOld[13+tile.thread_rank()] < isGoldOffset) {
-                metaDataArr[localBlockMetaDataOld[13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - oldIsGold[0]] = isAnythingInPadding[tile.thread_rank()];
+            if (localBlockMetaData[ (i&1)*20+ 13+tile.thread_rank()] < isGoldOffset) {
+                metaDataArr[localBlockMetaData[(i & 1) * 20 + 13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = isAnythingInPadding[tile.thread_rank()];
             }
         }
-
         isAnythingInPadding[0] = false;
     };
 
@@ -336,7 +335,7 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
     unsigned int localWorkQueueCounter[1], unsigned int blockFpConter[1],
     unsigned int blockFnConter[1], unsigned int localFpConter[1],
     unsigned int localFnConter[1], bool isBlockFull[1], unsigned int fpFnLocCounter[1],
-    uint32_t oldLinIndM[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int globalWorkQueueOffset[1]
+    bool oldIsGold[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int globalWorkQueueOffset[1]
     , unsigned int worQueueStep[1], unsigned int* minMaxes, unsigned int localMinMaxes[5])
  {
 
@@ -369,8 +368,11 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
 
     if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
         // if it will be still of such value it mean that no block was processed
-        oldLinIndM[0] = isGoldOffset;
+        oldIsGold[0] = false;
     };
+
+    
+
 
     if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
         localTotalLenthOfWorkQueue[0] = minMaxes[9];
@@ -415,10 +417,11 @@ inline __device__  void loadWorkQueue(uint32_t mainShmem[lengthOfMainShmem], uin
 /*
 loads metadata of given block to meta data 
 */
-inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t localBlockMetaData[20]
+inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t localBlockMetaData[]
     , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_thread>& pipeline
-, uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd) {
-    cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+, uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd, uint32_t i) {
+   
+    cuda::memcpy_async(cta, (&localBlockMetaData[20*(i&1)]),
         (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd])
             * metaData.metaDataSectionLength])
         , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
