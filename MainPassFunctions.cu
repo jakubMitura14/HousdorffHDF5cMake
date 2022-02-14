@@ -388,3 +388,38 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
         cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
     }
 }
+
+
+
+/*
+load work que from global memory
+*/
+inline __device__  void loadWorkQueue(uint32_t mainShmem[lengthOfMainShmem], uint32_t* workQueue
+, bool isGoldForLocQueue[localWorkQueLength], uint32_t bigloop, unsigned int worQueueStep[1]) {
+
+    //to do change into barrier
+
+    //cuda::memcpy_async(cta, (&mainShmem[startOfLocalWorkQ]), (&workQueue[bigloop])
+    //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * worQueueStep[0]), pipeline);
+
+
+    for (uint16_t ii = 0; ii < worQueueStep[0]; ii++) {
+        mainShmem[startOfLocalWorkQ + ii] = workQueue[bigloop + ii];
+        isGoldForLocQueue[ii] = (mainShmem[startOfLocalWorkQ + ii] >= isGoldOffset);
+        mainShmem[startOfLocalWorkQ + ii] = mainShmem[startOfLocalWorkQ + ii] - isGoldOffset * isGoldForLocQueue[ii];
+
+    }
+}
+
+
+/*
+loads metadata of given block to meta data 
+*/
+inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t localBlockMetaData[20]
+    , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_thread>& pipeline
+, uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd) {
+    cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+        (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd])
+            * metaData.metaDataSectionLength])
+        , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+}

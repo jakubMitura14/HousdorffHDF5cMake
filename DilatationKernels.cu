@@ -19,11 +19,11 @@ using namespace cooperative_groups;
 
 //template <typename TKKI, typename forPipeline >
 template <typename TKKI >
-inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI> fbArgs, uint32_t* mainArrAPointer,
-    uint32_t* mainArrBPointer, MetaDataGPU metaData
+inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t* mainArrAPointer,
+    uint32_t* mainArrBPointer, MetaDataGPU& metaData
     , unsigned int* minMaxes, uint32_t* workQueue
     , uint32_t* resultListPointerMeta, uint32_t* resultListPointerLocal, uint32_t* resultListPointerIterNumb,
-    thread_block cta, thread_block_tile<32> tile, grid_group grid, uint32_t mainShmem[lengthOfMainShmem]
+    thread_block& cta, thread_block_tile<32>& tile, grid_group& grid, uint32_t mainShmem[lengthOfMainShmem]
     , bool isAnythingInPadding[6], bool isBlockFull[1], int iterationNumb[1], unsigned int globalWorkQueueOffset[1],
     unsigned int globalWorkQueueCounter[1], unsigned int localWorkQueueCounter[1],
     unsigned int localTotalLenthOfWorkQueue[1], unsigned int localFpConter[1],
@@ -49,32 +49,17 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     for (uint32_t bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
         // grid stride loop - sadly most of threads will be idle 
         /////////// loading to work queue
+        loadWorkQueue(mainShmem, workQueue, isGoldForLocQueue, bigloop, worQueueStep);
 
-        //cuda::memcpy_async(cta, (&mainShmem[startOfLocalWorkQ]), (&workQueue[bigloop])
-        //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * worQueueStep[0]), pipeline);
-
-
-        for (uint16_t ii = 0; ii < worQueueStep[0]; ii++) {
-            mainShmem[startOfLocalWorkQ + ii] = workQueue[bigloop + ii];
-            isGoldForLocQueue[ii] = (mainShmem[startOfLocalWorkQ + ii] >= isGoldOffset);
-            mainShmem[startOfLocalWorkQ + ii] = mainShmem[startOfLocalWorkQ + ii] - isGoldOffset * isGoldForLocQueue[ii];
-
-        }
-
-
-        //to do change into barrier
-
-        //now all of the threads in the block needs to have the same i value so we will increment by 1
-        // we are preloading to the pipeline block metaData
+        //now all of the threads in the block needs to have the same i value so we will increment by 1 we are preloading to the pipeline block metaData
 ////##### pipeline Step 0
 
         pipeline.producer_acquire();
 
-        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-            (&metaDataArr[mainShmem[startOfLocalWorkQ] * metaData.metaDataSectionLength])
-            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData,0);
 
         pipeline.producer_commit();
+
         sync(cta);
 
         for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
@@ -241,10 +226,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 }
                 else {//if we are not validating we immidiately start loading data for next loop
                     if (i + 1 <= worQueueStep[0]) {
-                        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1])
-                                * metaData.metaDataSectionLength])
-                            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+                        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1);
                     }
                 }
                 //    compute - now we have data in source shmem about block to the bottom, left and right
@@ -291,13 +273,11 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
                                                                                     ////load data for next iteration
                 pipeline.producer_acquire();
+
                 if (localBlockMetaDataOld[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
                 > localBlockMetaDataOld[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
                     if (i + 1 <= worQueueStep[0]) {
-                        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1])
-                                * metaData.metaDataSectionLength])
-                            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+                        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1);
                     }
                 }
                 pipeline.producer_commit();
