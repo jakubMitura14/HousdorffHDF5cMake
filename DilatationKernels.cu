@@ -127,9 +127,8 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
 
 
-                ////load data for next iteration
                 sync(cta);
-                
+                ////load data for next iteration
                 if (i + 1 <= worQueueStep[0]) {
                     pipeline.producer_acquire();
                     cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
@@ -139,8 +138,9 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 
                 }
 
-
-                mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
+                if (localBlockMetaData[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+                        > localBlockMetaData[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+                    mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
 
 
 
@@ -159,10 +159,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                             unsigned int old = 0;
                             ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
                             if (isGoldForLocQueue[i]) {
-                                old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[5]+ localBlockMetaData[3];
+                                old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[5] + localBlockMetaData[3];
                             }
                             else {
-                                old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[6]+ localBlockMetaData[4];
+                                old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[6] + localBlockMetaData[4];
                             };
                             //   add results to global memory    
                             resultListPointerMeta[old] = uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i]);
@@ -182,9 +182,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                             //    , (fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x)
                             //);
 
-                    }
+                        }
 
-                };
+                    };
+                }
               sync(cta);
 
                     //loading metadaa for next loop 
