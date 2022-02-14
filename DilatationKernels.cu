@@ -101,12 +101,16 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
 
                 ////now we load data from reference arrays 
-                    pipeline.producer_acquire();
-                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                        &origArrs[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (isGoldForLocQueue[i])], //we look for 
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
 
+                    pipeline.producer_acquire();
+                    //if is to be validated 
+                    if (localBlockMetaData[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+                                > localBlockMetaData[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+                        cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+                            &origArrs[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (isGoldForLocQueue[i])], //we look for 
+                            cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
+                            , pipeline);
+                    }
                     pipeline.producer_commit();
                 
 
@@ -165,29 +169,32 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                                 old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[6] + localBlockMetaData[4];
                             };
                             //   add results to global memory    
-                            resultListPointerMeta[old] = uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i]);
-                            resultListPointerLocal[old] = uint16_t(fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x);
+                            //we add one gere jjust to distinguish it from empty result
+                            resultListPointerMeta[old] = uint32_t(mainShmem[startOfLocalWorkQ + i] +(isGoldOffset * isGoldForLocQueue[i])+1);
+                            resultListPointerLocal[old] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x) );
                             resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
 
-                            //printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d\n"
-                            //    ,i
-                            //    ,mainShmem[startOfLocalWorkQ + i]
-                            //    , isGoldForLocQueue[i]
-                            //    , old
-                            //    , localFpConter[0]
-                            //    , localFnConter[0]
-                            //    , localBlockMetaData[ 5]
-                            //    , localBlockMetaData[6]
-                            //    , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
-                            //    , (fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x)
-                            //);
+                            printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
+                                ,i
+                                ,mainShmem[startOfLocalWorkQ + i]
+                                , isGoldForLocQueue[i]
+                                , old
+                                , localFpConter[0]
+                                , localFnConter[0]
+                                , localBlockMetaData[ 5]
+                                , localBlockMetaData[6]
+                                , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
+                                , uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x))
+                                , threadIdx.x
+                                , threadIdx.y
+                                , bitPos
+                            );
 
                         }
 
                     };
-                }
               sync(cta);
-
+                }
                     //loading metadaa for next loop 
                     if (i + 1 <= worQueueStep[0]) {
                         if (tile.thread_rank() < 20 && tile.meta_group_rank() == 2) {

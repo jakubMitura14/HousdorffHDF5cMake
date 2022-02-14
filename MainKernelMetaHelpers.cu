@@ -51,6 +51,10 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFull
     cudaMallocAsync(&mainArrBPointer, sizeB, 0);
     cudaMemcpyAsync(mainArrBPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice,0);
 
+    //just in order set it to 0
+    uint32_t* resultListPointerMetaCPU = (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+    cudaMemcpyAsync(resultListPointerMeta, resultListPointerMetaCPU, size, cudaMemcpyHostToDevice,0);
+    free(resultListPointerMetaCPU);
     
    // size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
     
