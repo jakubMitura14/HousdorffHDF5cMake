@@ -272,7 +272,8 @@ inline __device__  void afterBlockClean(thread_block cta
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
     , uint32_t* metaDataArr, uint32_t oldLinIndM[1], uint32_t oldIsGold[1]
-    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass) {
+    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass
+   ) {
 
 
 
@@ -325,4 +326,65 @@ inline __device__  void afterBlockClean(thread_block cta
 
 
 
+////////////////// with pipeline ofr barrier
 
+/*
+initial cleaning  and initializations of dilatation kernel
+
+*/
+inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool isPaddingPass, int iterationNumb[1], 
+    unsigned int localWorkQueueCounter[1], unsigned int blockFpConter[1],
+    unsigned int blockFnConter[1], unsigned int localFpConter[1],
+    unsigned int localFnConter[1], bool isBlockFull[1], unsigned int fpFnLocCounter[1],
+    uint32_t oldLinIndM[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int globalWorkQueueOffset[1]
+    , unsigned int worQueueStep[1], unsigned int* minMaxes, unsigned int localMinMaxes[5])
+ {
+
+    if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0 && !isPaddingPass) {
+        iterationNumb[0] += 1;
+    };
+
+    if (tile.thread_rank() == 6 && tile.meta_group_rank() == 0) {
+        localWorkQueueCounter[0] = 0;
+    };
+
+    if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
+        blockFpConter[0] = 0;
+    };
+    if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
+        blockFnConter[0] = 0;
+    };
+    if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
+        localFpConter[0] = 0;
+    };
+    if (tile.thread_rank() == 4 && tile.meta_group_rank() == 0) {
+        localFnConter[0] = 0;
+    };
+    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) {
+        isBlockFull[0] = true;
+    };
+    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
+        fpFnLocCounter[0] = 0;
+    };
+
+    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
+        // if it will be still of such value it mean that no block was processed
+        oldLinIndM[0] = isGoldOffset;
+    };
+
+    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+        localTotalLenthOfWorkQueue[0] = minMaxes[9];
+        globalWorkQueueOffset[0] = floor((float)(localTotalLenthOfWorkQueue[0] / gridDim.x)) + 1;
+        worQueueStep[0] = min(localWorkQueLength, globalWorkQueueOffset[0]);
+    };
+    /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
+0 : global FP count;
+1 : global FN count;
+2 : workQueueCounter
+3 : resultFP globalCounter
+4 : resultFn globalCounter
+*/
+    if (tile.meta_group_rank() == 1) {
+        cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
+    }
+}

@@ -103,6 +103,10 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     thread_block_tile<32> tile = tiled_partition<32>(cta);
     grid_group grid = cooperative_groups::this_grid();
 
+    cuda::pipeline<cuda::thread_scope_thread>  pipeline = cuda::make_pipeline();
+    cuda::aligned_size_t<128Ui64> bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (fbArgs.metaData.mainArrXLength));
+    cuda::aligned_size_t<128Ui64> thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
+
 
     /*
     * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
@@ -234,7 +238,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
 
-
     mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
         , fbArgs.workQueuePointer
         , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -244,7 +247,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         localFnConter, blockFpConter, blockFnConter, resultfpOffset,
         resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
         , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-        , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated);
+        , fbArgs.metaDataArrPointer, oldIsGold, oldLinIndM, localBlockMetaDataOld, isGoldForLocQueue, isBlockToBeValidated, pipeline, bigShape, thirdRegShape);
 
 
 
