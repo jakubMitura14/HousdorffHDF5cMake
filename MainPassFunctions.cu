@@ -310,8 +310,8 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
         if (i>0) {
-            if (localBlockMetaData[ (i&1)*20+ 13+tile.thread_rank()] < isGoldOffset) {
-                metaDataArr[localBlockMetaData[(i & 1) * 20 + 13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = isAnythingInPadding[tile.thread_rank()];
+            if (localBlockMetaData[   13+tile.thread_rank()] < isGoldOffset) {
+                metaDataArr[localBlockMetaData[13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = isAnythingInPadding[tile.thread_rank()];
             }
         }
         isAnythingInPadding[0] = false;
@@ -419,10 +419,10 @@ loads metadata of given block to meta data
 */
 inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t localBlockMetaData[]
     , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_thread>& pipeline
-, uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd, uint32_t i) {
+, uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd, uint32_t ii) {
    
-    cuda::memcpy_async(cta, (&localBlockMetaData[20*(i&1)]),
-        (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd])
+    cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+        (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd+ii])
             * metaData.metaDataSectionLength])
         , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
 }

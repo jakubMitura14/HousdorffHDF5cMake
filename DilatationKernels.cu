@@ -54,13 +54,39 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         //now all of the threads in the block needs to have the same i value so we will increment by 1 we are preloading to the pipeline block metaData
 ////##### pipeline Step 0
 
+
+
+
+
+
+
+
+
+        //if (i + 1 <= worQueueStep[0]) {
+        //    if (tile.thread_rank() < 20 && tile.meta_group_rank() == 0) {
+
+        //        localBlockMetaData[20 * (i & 1) + tile.thread_rank()] =
+        //            metaDataArr[(mainShmem[startOfLocalWorkQ + i + 1])
+        //            * metaData.metaDataSectionLength + tile.thread_rank()];
+        //    };
+        //}
+
+
+
+        sync(cta);
+
         pipeline.producer_acquire();
 
-        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData,0,0);
+        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 0, 0);
 
         pipeline.producer_commit();
 
-        sync(cta);
+        //loading main data
+        pipeline.producer_acquire();
+        cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
+            mainShmem[startOfLocalWorkQ] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[0])],
+            bigShape, pipeline);
+        pipeline.producer_commit();
 
         for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
@@ -72,25 +98,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 ///#### pipeline step 1) now we load data for next step (to mainly sourceshmem and left-right if apply) and process data loaded in previous step
 
 
-                 pipeline.producer_acquire();
-                cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
-                    mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                    bigShape, pipeline);
-                pipeline.producer_commit();
 
-
-
-                // we need to do the cleaning after previous block .. compute first we load data about calculated linear index meta and information is it gold iteration ...
-                pipeline.consumer_wait();
-
-
-                afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i,
-                    metaData, tile, localFpConter, localFnConter
-                    , blockFpConter, blockFnConter
-                    , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue);
-
-
-                pipeline.consumer_release();
 
                 ////now we load data from reference arrays 
                     pipeline.producer_acquire();
@@ -120,18 +128,19 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
 
                 ////load data for next iteration
-                pipeline.producer_acquire();
-
+                sync(cta);
+                
                 if (i + 1 <= worQueueStep[0]) {
-                    loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1,i+1);
+                    pipeline.producer_acquire();
+                    cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
+                        mainShmem[startOfLocalWorkQ + i+1] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i+1])],
+                        bigShape, pipeline);
+                    pipeline.producer_commit();
+                
                 }
 
-                pipeline.producer_commit();
 
-
-
-                pipeline.consumer_wait();
-                    mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
+                mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
 
 
 
@@ -150,34 +159,57 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                             unsigned int old = 0;
                             ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
                             if (isGoldForLocQueue[i]) {
-                                old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5];
+                                old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[5]+ localBlockMetaData[3];
                             }
                             else {
-                                old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6];
+                                old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[6]+ localBlockMetaData[4];
                             };
                             //   add results to global memory    
                             resultListPointerMeta[old] = uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i]);
                             resultListPointerLocal[old] = uint16_t(fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x);
                             resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
 
-                            printf("rrrrresult meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d\n"
-                                , mainShmem[startOfLocalWorkQ + i]
-                                , isGoldForLocQueue[i]
-                                , old
-                                , localFpConter[0]
-                                , localFnConter[0]
-                                , localBlockMetaData[(i & 1) * 20 + 6]
-                                , localBlockMetaData[(i & 1) * 20 + 7]
-                                , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
-                                , (fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x)
-                            );
+                            //printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d\n"
+                            //    ,i
+                            //    ,mainShmem[startOfLocalWorkQ + i]
+                            //    , isGoldForLocQueue[i]
+                            //    , old
+                            //    , localFpConter[0]
+                            //    , localFnConter[0]
+                            //    , localBlockMetaData[ 5]
+                            //    , localBlockMetaData[6]
+                            //    , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
+                            //    , (fbArgs.dbYLength * 32 * bitPos + threadIdx.y * 32 + threadIdx.x)
+                            //);
 
                     }
 
                 };
+              sync(cta);
 
-                pipeline.consumer_release();
+                    //loading metadaa for next loop 
+                    if (i + 1 <= worQueueStep[0]) {
+                        if (tile.thread_rank() < 20 && tile.meta_group_rank() == 2) {
+                            //if (tile.thread_rank() == 0) {
+                            //    printf("loading metdata for %d  in i %d \n"
+                            //    , mainShmem[startOfLocalWorkQ + i + 1]
+                            //     ,i
+                            //    );
+                            //}
+                             localBlockMetaData[tile.thread_rank()] = 
+                                metaDataArr[(mainShmem[startOfLocalWorkQ + i + 1])
+                                    * metaData.metaDataSectionLength + tile.thread_rank()];
+                        };
+                    }
 
+                    //finilizing
+                    afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i,
+                        metaData, tile, localFpConter, localFnConter
+                        , blockFpConter, blockFnConter
+                        , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue);
+
+
+                sync(cta);
 
 
             }

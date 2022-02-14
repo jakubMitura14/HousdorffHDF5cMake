@@ -138,21 +138,21 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
         //FP pass
         if (localWorkQueue[i]>= isGoldOffset) {
             metaDataArr[(localWorkQueue[i] - isGoldOffset) * metaData.metaDataSectionLength + 5] = localOffsetQueue[i] + globalOffsetForBlock[0];
-            printf("fp offset lin meta %d total offset  %d  global part %d local part %d \n "
-                , localWorkQueue[i] - isGoldOffset
-                , localOffsetQueue[i] + globalOffsetForBlock[0] 
-            , globalOffsetForBlock[0]
-            , localOffsetQueue[i]);
+            //printf("fp offset lin meta %d total offset  %d  global part %d local part %d \n "
+            //    , localWorkQueue[i] - isGoldOffset
+            //    , localOffsetQueue[i] + globalOffsetForBlock[0] 
+            //, globalOffsetForBlock[0]
+            //, localOffsetQueue[i]);
 
         }
         //FN pass
         else {
             metaDataArr[(localWorkQueue[i]) * metaData.metaDataSectionLength + 6] = localOffsetQueue[i] + globalOffsetForBlock[0];
-            printf("fn offset lin meta %d total offset  %d  global part %d local part %d \n "
-                , localWorkQueue[i] 
-                , localOffsetQueue[i] + globalOffsetForBlock[0]
-                , globalOffsetForBlock[0]
-                , localOffsetQueue[i]);
+            //printf("fn offset lin meta %d total offset  %d  global part %d local part %d \n "
+            //    , localWorkQueue[i] 
+            //    , localOffsetQueue[i] + globalOffsetForBlock[0]
+            //    , globalOffsetForBlock[0]
+            //    , localOffsetQueue[i]);
         
         };
 
