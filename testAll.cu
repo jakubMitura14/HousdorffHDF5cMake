@@ -179,16 +179,24 @@ extern "C" inline void testMainPasswes() {
 	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
 	setArrCPU(arrGoldObj, 8, 8, 6, 2);//
 
-	setArrCPU(arrSegmObj, 8, 8, 5, 2);//
+	//setArrCPU(arrSegmObj, 8, 8, 5, 2);//
+	
+	
+	
+	
+	setArrCPU(arrGoldObj, 32, 20, 32, 2);//
+	setArrCPU(arrSegmObj, 31, 20, 32, 2);//
+	setArrCPU(arrSegmObj, 32, 19, 32, 2);//
+	setArrCPU(arrSegmObj, 32, 20, 31, 2);//
 
-	setArrCPU(arrSegmObj, 38, 38, 35, 2);//
-	setArrCPU(arrGoldObj, 38, 38, 36, 2);//
-	setArrCPU(arrSegmObj, 38, 38, 37, 2);//
+	//setArrCPU(arrSegmObj, 38, 38, 35, 2);//
+	//setArrCPU(arrGoldObj, 38, 38, 36, 2);//
+	//setArrCPU(arrSegmObj, 38, 38, 37, 2);//
 
 
-	setArrCPU(arrGoldObj, 68, 38, 64, 2);//
+	//setArrCPU(arrGoldObj, 68, 38, 64, 2);//
 
-	setArrCPU(arrSegmObj, 68, 38, 65, 2);//
+	//setArrCPU(arrSegmObj, 68, 38, 65, 2);//
 
 
 	//setArrCPU(arrSegmObj, 75, 20, 161, 2);//
@@ -223,10 +231,10 @@ minZ 2  [6]
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
 		);
 
-	//printFromReduced(fbArgs, reducedResCPU);
+	printFromReduced(fbArgs, reducedResCPU);
 
 
-	for (int i = 0; i < 50;i++) {
+	for (int i = 0; i < 5;i++) {
 		if (resultListPointerLocalCPU[i]>0 || resultListPointerMetaCPU[i]>0) {
 			uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] >= isGoldOffset))-1;
 			uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
@@ -243,7 +251,7 @@ minZ 2  [6]
 			uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
 			uint32_t z = zMeta * 32 + zLoc;
 
-			printf("linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d   \n"
+			printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d   \n"
 				,linIdexMeta
 				,x,y,z
 				,xMeta,yMeta, zMeta
@@ -253,19 +261,7 @@ minZ 2  [6]
 
 			);
 
-			//printf("result lin meta to print x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d  fbArgs.metaData.metaXLength %d \n"
-			//	, linIdexMeta
-			//	,x
-			//	,y
-			//	,z
-			//	, xMeta
-			//	, yMeta
-			//	,zMeta
-			//	,xLoc
-			//	,yLoc
-			//	,zLoc
-			//	, fbArgs.metaData.metaXLength
-			//);
+
 		
 		}
 	}
