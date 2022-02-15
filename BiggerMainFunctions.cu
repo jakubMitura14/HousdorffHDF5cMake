@@ -270,21 +270,60 @@ inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_bl
 }
 
 
+
+
+
+//////////// last load 
+
+/*
+load reference if needed or data for next iteration if there is such
+*/
 template <typename TXPI>
-inline __device__  void processPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+inline __device__  void lastLoad(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
     , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding, uint32_t*& origArrs, unsigned int*& worQueueStep) {
+
+    pipeline.producer_acquire();
+      
+    //if block should be validated we load data for validation
+    if (localBlockMetaData[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+                   > localBlockMetaData[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+        cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+            &origArrs[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (isGoldForLocQueue[i])], //we look for 
+            cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
+            , pipeline);
+      
+    }
+    else {//if we are not validating we immidiately start loading data for next loop
+        if (i + 1 <= worQueueStep[0]) {
+          //  loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
+        }
+    }
+
+
+    pipeline.producer_commit();
+}
+
+template <typename TXPI>
+inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding, bool*& isBlockFull) {
 
     pipeline.consumer_wait();
+    //dilatate posterior 
     dilatateHelperForTransverse((threadIdx.y == 0), 5
         , (0), (-1), mainShmem, isAnythingInPadding
         , 0, threadIdx.x // we add offset depending on y dimension
         , 18, begSecRegShmem, localBlockMetaData);
+    //now all data should be properly dilatated we save it to global memory
+    getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+        + threadIdx.x + threadIdx.y * 32]
+        = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+    //marking weather block is already full and no more dilatations are possible 
+    if (mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] != UINT32_MAX) {
+        isBlockFull[0] = false;
+    }
     pipeline.consumer_release();
 }
-
-
-
-
-

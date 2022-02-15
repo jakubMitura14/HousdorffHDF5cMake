@@ -113,7 +113,14 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 ///////// step 6 load posterior process anterior 
                 loadPosterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
                 processAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+///////// step 7 
+                //load reference if needed or data for next iteration if there is such 
+                //process posterior, save data from res shmem to global memory also we mark weather block is full
+                lastLoad(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, origArrs, worQueueStep);
+                processPosteriorAndSaveResShmem(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull);
 
+
+//////////
 
 
 
@@ -129,15 +136,15 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 pipeline.consumer_wait();
 
 
-                dilatateHelperForTransverse((threadIdx.y == 0), 5
-                    , (0), (-1), mainShmem, isAnythingInPadding
-                    , 0, threadIdx.x // we add offset depending on y dimension
-                    , 18, begSecRegShmem, localBlockMetaData);
+                //dilatateHelperForTransverse((threadIdx.y == 0), 5
+                //    , (0), (-1), mainShmem, isAnythingInPadding
+                //    , 0, threadIdx.x // we add offset depending on y dimension
+                //    , 18, begSecRegShmem, localBlockMetaData);
 
-                 //TODO remove
-                 getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
-                     + threadIdx.x + threadIdx.y * 32]
-                     = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+                // //TODO remove
+                // getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+                //     + threadIdx.x + threadIdx.y * 32]
+                //     = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
 
                 pipeline.consumer_release();
 //////////
