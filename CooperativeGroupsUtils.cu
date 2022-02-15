@@ -38,7 +38,7 @@ globalStart : where in global memory we start load
 length : how many uint32_t we want to copy from global to shmem
 */
 //#pragma once
-//inline __device__ void  loadIntoShmem(cuda::pipeline<cuda::thread_scope_thread> pipeline, thread_block block,
+//inline __device__ void  loadIntoShmem(cuda::pipeline<cuda::thread_scope_block> pipeline, thread_block block,
 //                                        uint32_t* mainShmem, uint32_t* globalIn 
 //                                   ,int shmemStart, int globalStart, int length ) {
 //    

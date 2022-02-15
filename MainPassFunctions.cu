@@ -268,7 +268,7 @@ finilizing operations for last block
 inline __device__  void afterBlockClean(thread_block cta
     , unsigned int worQueueStep[1], uint32_t localBlockMetaData[20]
     , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
-    , thread_block_tile<32> tile
+    , thread_block_tile<32>& tile
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
     , uint32_t* metaDataArr
@@ -418,7 +418,7 @@ inline __device__  void loadWorkQueue(uint32_t mainShmem[lengthOfMainShmem], uin
 loads metadata of given block to meta data 
 */
 inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t localBlockMetaData[]
-    , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_thread>& pipeline
+    , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
 , uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd, uint32_t ii) {
    
     cuda::memcpy_async(cta, (&localBlockMetaData[0]),

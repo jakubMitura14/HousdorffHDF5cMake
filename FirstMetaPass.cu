@@ -98,12 +98,12 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
         //}
         
         //goldpass
-        addToQueue( linIdexMeta, 1
+        addToQueue( linIdexMeta, 0
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 1, 9, 6
             , metaDataArr, metaData, minMaxes, workQueue);
           //segmPass  
-        addToQueue( linIdexMeta, 0
+        addToQueue( linIdexMeta, 1
             , fpFnLocCounter, localWorkQueue, localOffsetQueue, localWorkQueueCounter
             , 2, 7, 5
             , metaDataArr, metaData, minMaxes, workQueue);
@@ -135,6 +135,11 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     //setting offsets
     for (uint32_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
         workQueue[globalWorkQueueCounter[0] +i]=localWorkQueue[i]; 
+
+        printf("FFIrst meta pass lin meta to Work Q %d is gold %d \n "
+    , localWorkQueue[i] - isGoldOffset*(localWorkQueue[i] >= isGoldOffset)
+        , (localWorkQueue[i] >= isGoldOffset));
+
         //FP pass
         if (localWorkQueue[i]>= isGoldOffset) {
             metaDataArr[(localWorkQueue[i] - isGoldOffset) * metaData.metaDataSectionLength + 5] = localOffsetQueue[i] + globalOffsetForBlock[0];

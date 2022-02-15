@@ -127,81 +127,53 @@ extern "C" inline void testMainPasswes() {
 	auto arrGoldObj = forFullBoolPrepArgs.goldArr;
 	auto arrSegmObj = forFullBoolPrepArgs.segmArr;
 
-	// 2 planes with distance 7 relative to each other
-	//for (int x = 33; x < 71; x++) {
-	//	for (int y = 1; y < 40; y++) {
 
-	//		setArrCPU(arrGoldObj, x, y,70 ,2);
 
-	//		setArrCPU(arrSegmObj,x, y,100 , 2);
 
-	//	}
+	//setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+	//setArrCPU(arrGoldObj, 8, 8, 6, 2);//
+
+	////setArrCPU(arrSegmObj, 8, 8, 5, 2);//
 	//
-	//}
+	//
+	//
+	//
+	//setArrCPU(arrGoldObj, 32, 20, 32, 2);//
+	//setArrCPU(arrSegmObj, 31, 20, 32, 2);//
+	//setArrCPU(arrSegmObj, 32, 19, 32, 2);//
+	//setArrCPU(arrSegmObj, 32, 20, 31, 2);//
 
-	//setArrCPU(arrGoldObj, 33, 1, 71, 2);
-	////setArrCPU(arrGoldObj, 33, 1, 99, 2);
-	//setArrCPU(arrGoldObj, 75, 20, 70, 2);//
-	//setArrCPU(arrGoldObj, 100, 70, 70, 2);//
-	//setArrCPU(arrGoldObj, 99, 70, 70, 2);//
-
-
-
-	//setArrCPU(arrSegmObj, 33, 3, 110, 2);//
-	//setArrCPU(arrGoldObj, 31, 0, 0, 2);//
-
-	//setArrCPU(arrGoldObj, 2, 2, 31 , 2);//
-	//setArrCPU(arrGoldObj, 2, 2, 40 , 2);//
-
-	//setArrCPU(arrGoldObj, 0, 0, 0, 2);//included for easy calculations later on 
-	//setArrCPU(arrGoldObj, 31, 23, 31, 2);//
+	////setArrCPU(arrSegmObj, 38, 38, 35, 2);//
+	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
+	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
 
 
-	//setArrCPU(arrGoldObj, 31, 23, 31, 2);//
-	//setArrCPU(arrGoldObj, 31, 23, 30, 2);//
-
-	//setArrCPU(arrSegmObj, 32, 23, 31, 2);//
-	//setArrCPU(arrSegmObj, 31, 24, 31, 2);//
-	//setArrCPU(arrSegmObj, 31, 23, 32, 2);//
-
-
-
-	//setArrCPU(arrGoldObj, 31, 13, 31, 2);//
-
-
-
-	//setArrCPU(arrGoldObj, 5, 5, 6, 2);//
-
-	//setArrCPU(arrSegmObj, 5, 5, 5, 2);//
 
 
 
 	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+//	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+
 	setArrCPU(arrGoldObj, 8, 8, 6, 2);//
 
-	//setArrCPU(arrSegmObj, 8, 8, 5, 2);//
-	
-	
-	
-	
-	setArrCPU(arrGoldObj, 32, 20, 32, 2);//
-	setArrCPU(arrSegmObj, 31, 20, 32, 2);//
-	setArrCPU(arrSegmObj, 32, 19, 32, 2);//
-	setArrCPU(arrSegmObj, 32, 20, 31, 2);//
+	//setArrCPU(arrGoldObj, 38, 8, 2, 2);//
 
-	//setArrCPU(arrSegmObj, 38, 38, 35, 2);//
+	setArrCPU(arrGoldObj, 35, 38, 38, 2);//
+
+	//setArrCPU(arrSegmObj, 16, 16, 16, 2);//
 	//setArrCPU(arrGoldObj, 38, 38, 36, 2);//
-	//setArrCPU(arrSegmObj, 38, 38, 37, 2);//
+
+	//setArrCPU(arrSegmObj, 8, 8, 5, 2);//
 
 
-	//setArrCPU(arrGoldObj, 68, 38, 64, 2);//
-
-	//setArrCPU(arrSegmObj, 68, 38, 65, 2);//
 
 
-	//setArrCPU(arrSegmObj, 75, 20, 161, 2);//
+	//setArrCPU(arrGoldObj, 32, 20, 32, 2);//
+	//setArrCPU(arrSegmObj, 31, 20, 32, 2);//
+	//setArrCPU(arrSegmObj, 32, 19, 32, 2);//
+	//setArrCPU(arrSegmObj, 32, 20, 31, 2);//
 
-	//setArrCPU(arrSegmObj, 75, 21, 161, 2);//
+
 
 
 

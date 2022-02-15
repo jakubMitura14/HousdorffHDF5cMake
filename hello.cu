@@ -67,92 +67,92 @@ const H5std_string DATASET_NAME("onlyLungs");
 
 
 //  pipeline_producer_commit(pipeline, barrier);
-
-
-__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA, uint32_t* globalOutGPUB, float* globalDummyGPU) {
-    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
-    thread_block_tile<32> tile = tiled_partition<32>(block);
-
-    __shared__ uint32_t shmem[200];
-    __shared__ uint32_t currBatch[1];
-    __shared__ float dummmy[1];
-
-    cuda::pipeline<cuda::thread_scope_thread> pipeline = cuda::make_pipeline();
-
-    // for simplicity ignored Initializing first pipeline stage of submitting `memcpy_async` 
-    //pipeline.producer_acquire();
-    //...
-    //pipeline.producer_commit();
-    
-    
-    for (size_t batch = 1; batch < 10; ++batch) {
-        ///////step 1
-        // load
-        pipeline.producer_acquire();
-            if (tile.meta_group_rank() == 0) {
-                cuda::memcpy_async(tile, &shmem[0], &global_inA[batch * 64], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
-                pipeline.producer_commit();
-            }
-            if (tile.meta_group_rank() == 1) {
-                cuda::memcpy_async(tile, &shmem[16], &global_inA[batch * 64 +16], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
-                pipeline.producer_commit();
-            }
-
-        //compute data loaded in step 2 of previous iteration
-        cuda::pipeline_consumer_wait_prior<0>(pipeline);
-         
-        //this works correctly
-        if (tile.meta_group_rank() == 0) {
-            global_out[batch * 64 + 32 + tile.thread_rank()] = shmem[32 + tile.thread_rank()];
-        }
-
-        if (tile.thread_rank() == batch && tile.meta_group_rank() == 0) {
-            float w = 326;
-            for (int j = 0; j < 5000; j++) {
-                w += w / j;
-            };
-            globalDummyGPU[0] += w;
-            currBatch[0] = batch;
-        };
-
-        pipeline.consumer_release();
-        ///// step 2 
-        //load
-        pipeline.producer_acquire();
-        if (tile.meta_group_rank() == 0) {
-            cuda::memcpy_async(tile, &shmem[32], &global_inA[(batch +1)* 64+32], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
-            pipeline.producer_commit();
-        }
-        if (tile.meta_group_rank() == 1) {
-            cuda::memcpy_async(tile, &shmem[32 + 16], &global_inA[(batch +1)* 64 +32+ 16], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
-            pipeline.producer_commit();
-        }
-        //compute data loaded in  step 1
-        cuda::pipeline_consumer_wait_prior<0>(pipeline);
-        
-        //this works correctly
-        if (tile.meta_group_rank() == 0) {
-           global_out[batch * 64 + tile.thread_rank()] = shmem[tile.thread_rank()];//correct
-        }
-
-        if (tile.thread_rank() == (batch+1) && tile.meta_group_rank() == 1) {
-            float w = 326;
-            for (int j = 0; j < 5000; j++) {
-                w += w / j;
-            };
-            globalOutGPUB[batch]=currBatch[0];
-            globalDummyGPU[0] += w;
-        };
-
-        pipeline.consumer_release();
-
-    }
-    //  for simplicity ignored Computing the data fetch by the last iteration
-    //cuda::pipeline_consumer_wait_prior<0>(pipeline);
-    ////last computatons .. here omitted
-    //pipeline.consumer_release();
-
-    }
+//
+//
+//__global__ void with_staging(uint32_t* global_out, uint32_t* global_inA, uint32_t* globalOutGPUB, float* globalDummyGPU) {
+//    cooperative_groups::thread_block block = cooperative_groups::this_thread_block();
+//    thread_block_tile<32> tile = tiled_partition<32>(block);
+//
+//    __shared__ uint32_t shmem[200];
+//    __shared__ uint32_t currBatch[1];
+//    __shared__ float dummmy[1];
+//
+//    cuda::pipeline<cuda::thread_scope_block> pipeline = cuda::make_pipeline();
+//
+//    // for simplicity ignored Initializing first pipeline stage of submitting `memcpy_async` 
+//    //pipeline.producer_acquire();
+//    //...
+//    //pipeline.producer_commit();
+//    
+//    
+//    for (size_t batch = 1; batch < 10; ++batch) {
+//        ///////step 1
+//        // load
+//        pipeline.producer_acquire();
+//            if (tile.meta_group_rank() == 0) {
+//                cuda::memcpy_async(tile, &shmem[0], &global_inA[batch * 64], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+//                pipeline.producer_commit();
+//            }
+//            if (tile.meta_group_rank() == 1) {
+//                cuda::memcpy_async(tile, &shmem[16], &global_inA[batch * 64 +16], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+//                pipeline.producer_commit();
+//            }
+//
+//        //compute data loaded in step 2 of previous iteration
+//        cuda::pipeline_consumer_wait_prior<0>(pipeline);
+//         
+//        //this works correctly
+//        if (tile.meta_group_rank() == 0) {
+//            global_out[batch * 64 + 32 + tile.thread_rank()] = shmem[32 + tile.thread_rank()];
+//        }
+//
+//        if (tile.thread_rank() == batch && tile.meta_group_rank() == 0) {
+//            float w = 326;
+//            for (int j = 0; j < 5000; j++) {
+//                w += w / j;
+//            };
+//            globalDummyGPU[0] += w;
+//            currBatch[0] = batch;
+//        };
+//
+//        pipeline.consumer_release();
+//        ///// step 2 
+//        //load
+//        pipeline.producer_acquire();
+//        if (tile.meta_group_rank() == 0) {
+//            cuda::memcpy_async(tile, &shmem[32], &global_inA[(batch +1)* 64+32], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+//            pipeline.producer_commit();
+//        }
+//        if (tile.meta_group_rank() == 1) {
+//            cuda::memcpy_async(tile, &shmem[32 + 16], &global_inA[(batch +1)* 64 +32+ 16], cuda::aligned_size_t<64>(sizeof(uint32_t) * 16), pipeline);
+//            pipeline.producer_commit();
+//        }
+//        //compute data loaded in  step 1
+//        cuda::pipeline_consumer_wait_prior<0>(pipeline);
+//        
+//        //this works correctly
+//        if (tile.meta_group_rank() == 0) {
+//           global_out[batch * 64 + tile.thread_rank()] = shmem[tile.thread_rank()];//correct
+//        }
+//
+//        if (tile.thread_rank() == (batch+1) && tile.meta_group_rank() == 1) {
+//            float w = 326;
+//            for (int j = 0; j < 5000; j++) {
+//                w += w / j;
+//            };
+//            globalOutGPUB[batch]=currBatch[0];
+//            globalDummyGPU[0] += w;
+//        };
+//
+//        pipeline.consumer_release();
+//
+//    }
+//    //  for simplicity ignored Computing the data fetch by the last iteration
+//    //cuda::pipeline_consumer_wait_prior<0>(pipeline);
+//    ////last computatons .. here omitted
+//    //pipeline.consumer_release();
+//
+//    }
 
 
 /*

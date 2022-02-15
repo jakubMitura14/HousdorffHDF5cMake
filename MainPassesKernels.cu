@@ -99,11 +99,13 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
-    thread_block cta = this_thread_block();
+    thread_block cta = cooperative_groups::this_thread_block();
+
     thread_block_tile<32> tile = tiled_partition<32>(cta);
     grid_group grid = cooperative_groups::this_grid();
 
-    cuda::pipeline<cuda::thread_scope_thread>  pipeline = cuda::make_pipeline();
+
+
     cuda::aligned_size_t<128Ui64> bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (fbArgs.metaData.mainArrXLength));
     cuda::aligned_size_t<128Ui64> thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
 
@@ -119,6 +121,22 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     4128-4500 (372 length) : place for local work queue in dilatation kernels
     */
     __shared__ uint32_t mainShmem[lengthOfMainShmem];
+
+
+
+    constexpr size_t stages_count = 2; // Pipeline stages number
+
+    // Allocate shared storage for a two-stage cuda::pipeline:
+    __shared__ cuda::pipeline_shared_state<
+        cuda::thread_scope::thread_scope_block,
+        stages_count
+    > shared_state;
+
+    //cuda::pipeline<cuda::thread_scope_thread>  pipeline = cuda::make_pipeline(cta, &shared_state);
+    cuda::pipeline<cuda::thread_scope_block>  pipeline = cuda::make_pipeline(cta, &shared_state);
+
+
+
     //usefull for iterating through local work queue
     __shared__ bool isGoldForLocQueue[localWorkQueLength];
     // holding data about paddings 
