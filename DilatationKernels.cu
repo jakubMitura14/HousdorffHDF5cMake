@@ -106,9 +106,14 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 processBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 ///////// step 4 load left process right  
                 loadLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-                //process bototm
                 processRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-///////// step 5 
+///////// step 5 load anterior process left 
+                loadAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                processLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+///////// step 6 load posterior process anterior 
+                loadPosterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                processAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+
 
 
 
@@ -124,11 +129,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 pipeline.consumer_wait();
 
 
-
-                dilatateHelperForTransverse((threadIdx.x == 0),
-                    2, (-1), (0), mainShmem, isAnythingInPadding
-                    , threadIdx.y, 31
-                    , 15, begSecRegShmem, localBlockMetaData);
+                dilatateHelperForTransverse((threadIdx.y == 0), 5
+                    , (0), (-1), mainShmem, isAnythingInPadding
+                    , 0, threadIdx.x // we add offset depending on y dimension
+                    , 18, begSecRegShmem, localBlockMetaData);
 
                  //TODO remove
                  getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])

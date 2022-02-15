@@ -218,7 +218,71 @@ inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
     pipeline.consumer_release();
 }
 
+///////////// anterior
+template <typename TXPI>
+inline __device__  void loadAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
 
+    pipeline.producer_acquire();
+    if (localBlockMetaData[17] < isGoldOffset && tile.meta_group_rank() == 0) {
+
+        cuda::memcpy_async(tile, &mainShmem[begfirstRegShmem], &getSourceReduced(fbArgs, iterationNumb)[
+            (localBlockMetaData[17]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+            cuda::aligned_size_t<128>(sizeof(uint32_t) * (32)), pipeline);
+
+    }
+    pipeline.producer_commit();
+}
+
+
+template <typename TXPI>
+inline __device__  void processAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+
+    pipeline.consumer_wait();
+    dilatateHelperForTransverse((threadIdx.y == (fbArgs.dbYLength - 1)), 4
+        , (0), (1), mainShmem, isAnythingInPadding
+        , 0, threadIdx.x
+        , 17, begfirstRegShmem, localBlockMetaData);
+    pipeline.consumer_release();
+}
+
+///////////// posterior
+template <typename TXPI>
+inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+
+    pipeline.producer_acquire();
+    if (localBlockMetaData[18] < isGoldOffset && tile.meta_group_rank() == 0) {
+
+        cuda::memcpy_async(tile, &mainShmem[begSecRegShmem], &getSourceReduced(fbArgs, iterationNumb)[
+            (localBlockMetaData[18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+            cuda::aligned_size_t<128>(sizeof(uint32_t) * (32)), pipeline);
+
+    }
+    pipeline.producer_commit();
+}
+
+
+template <typename TXPI>
+inline __device__  void processPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+
+    pipeline.consumer_wait();
+    dilatateHelperForTransverse((threadIdx.y == 0), 5
+        , (0), (-1), mainShmem, isAnythingInPadding
+        , 0, threadIdx.x // we add offset depending on y dimension
+        , 18, begSecRegShmem, localBlockMetaData);
+    pipeline.consumer_release();
+}
 
 
 
