@@ -104,14 +104,15 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 loadRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
                 //process bototm
                 processBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+///////// step 4 load left process right  
+                loadLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                //process bototm
+                processRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+///////// step 5 
 
 
 
 
-
-
-
-///////// 
                 //loading for next
                 pipeline.producer_acquire();
 
@@ -124,10 +125,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
 
 
-                dilatateHelperForTransverse((threadIdx.x == (fbArgs.dbXLength - 1)),
-                    3, (1), (0), mainShmem, isAnythingInPadding
-                    , threadIdx.y, 0
-                    , 16, begfirstRegShmem, localBlockMetaData);
+                dilatateHelperForTransverse((threadIdx.x == 0),
+                    2, (-1), (0), mainShmem, isAnythingInPadding
+                    , threadIdx.y, 31
+                    , 15, begSecRegShmem, localBlockMetaData);
 
                  //TODO remove
                  getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])

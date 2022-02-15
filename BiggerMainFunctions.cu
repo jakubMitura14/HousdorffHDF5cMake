@@ -173,14 +173,53 @@ inline __device__  void processRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_blo
 
     dilatateHelperForTransverse((threadIdx.x == (fbArgs.dbXLength - 1)),
         3, (1), (0), mainShmem, isAnythingInPadding
-        , threadIdx.y,0
-        , 16, begSMallRegShmemB, localBlockMetaData);
+        , threadIdx.y, 0
+        , 16, begfirstRegShmem, localBlockMetaData);
 
     pipeline.consumer_release();
-
-
-
 }
+
+
+
+///////////// left
+template <typename TXPI>
+inline __device__  void loadLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+
+
+
+    pipeline.producer_acquire();
+    if (localBlockMetaData[15] < isGoldOffset) {
+        cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[15] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+            cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
+            , pipeline);
+    }
+    pipeline.producer_commit();
+}
+
+
+template <typename TXPI>
+inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+
+
+    pipeline.consumer_wait();
+
+    dilatateHelperForTransverse((threadIdx.x == 0),
+        2, (-1), (0), mainShmem, isAnythingInPadding
+        , threadIdx.y, 31
+        , 15, begSecRegShmem, localBlockMetaData);
+
+    pipeline.consumer_release();
+}
+
+
+
 
 
 
