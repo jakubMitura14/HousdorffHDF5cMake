@@ -80,51 +80,31 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                     printf("linMeta beg %d is gold %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i]);
                 };
 
-////////////////
+//////////////// step 0  load main data and final processing of previous block
                //loading main data for first dilatation
-                pipeline.producer_acquire();
-                cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
-                    mainShmem[startOfLocalWorkQ+i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                    cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength), pipeline);
-                pipeline.producer_commit();
+                loadMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);
                 
                 
                 pipeline.consumer_wait();
                // mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
 
-                ////TODO remove
-                //getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
-                //    + threadIdx.x + threadIdx.y * 32]
-                //    = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
 
                 pipeline.consumer_release();
+///////// step 1 load top and process main data 
+               //load top 
+                loadTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);
+                //process main
+                processMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);                
+///////// step 2 load bottom and process top 
+                loadBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 
-/////////
-               //load top            
-                pipeline.producer_acquire();
-                if (localBlockMetaData[13] < isGoldOffset) {
-                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[13] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
+                processTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 
-
-                pipeline.consumer_wait();
-
-                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
-
-                pipeline.consumer_release();
-
-
-
-
-
-
-
-
-
+                
+                
+                
+                
 ////////////
                 //loading for next
                 pipeline.producer_acquire();
@@ -136,9 +116,11 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
                 pipeline.consumer_wait();
 
-                dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, localBlockMetaData, 13
-                    , 31                    , 0
-                    , begfirstRegShmem);
+                //bottom
+                dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, localBlockMetaData, 14
+                    , 0// represent a uint32 number that has a bit of intrest in this block set and all others 0 here last bit is set
+                    , 31
+                    , begSecRegShmem);
 
                  //TODO remove
                  getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
