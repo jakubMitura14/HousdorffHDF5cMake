@@ -24,7 +24,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     , unsigned int* minMaxes, uint32_t* workQueue
     , uint32_t* resultListPointerMeta, uint32_t* resultListPointerLocal, uint32_t* resultListPointerIterNumb,
     thread_block& cta, thread_block_tile<32>& tile, grid_group& grid, uint32_t mainShmem[lengthOfMainShmem]
-    , bool isAnythingInPadding[6], bool isBlockFull[1], int iterationNumb[1], unsigned int globalWorkQueueOffset[1],
+    , bool isAnythingInPadding[6], bool isBlockFull[], int iterationNumb[1], unsigned int globalWorkQueueOffset[1],
     unsigned int globalWorkQueueCounter[1], unsigned int localWorkQueueCounter[1],
     unsigned int localTotalLenthOfWorkQueue[1], unsigned int localFpConter[1],
     unsigned int localFnConter[1], unsigned int blockFpConter[1],
@@ -129,16 +129,15 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 lastLoad(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, origArrs, worQueueStep);
                 processPosteriorAndSaveResShmem(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull);
 
-
-//////////
-
-
-
-
-                //loading for next
+ ////////// step 8 basically in order to complete here anyting the count need to be bigger than counter
+                //loading for next block if block is not to be validated it was already done earlier
                 pipeline.producer_acquire();
-
-
+                if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+                  > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+                    if (i + 1 <= worQueueStep[0]) {
+                        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
+                    }
+                }
                 pipeline.producer_commit();
                 
 
@@ -159,21 +158,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 pipeline.consumer_release();
 //////////
 
-                                //loading for next
-                pipeline.producer_acquire();
-
-                loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
-
-                pipeline.producer_commit();
-
-
-
-                pipeline.consumer_wait();
-
-               
-                pipeline.consumer_release();
-
-
+      
 
 
 

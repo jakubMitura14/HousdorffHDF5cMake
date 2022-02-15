@@ -334,7 +334,7 @@ initial cleaning  and initializations of dilatation kernel
 inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool isPaddingPass, int iterationNumb[1], 
     unsigned int localWorkQueueCounter[1], unsigned int blockFpConter[1],
     unsigned int blockFnConter[1], unsigned int localFpConter[1],
-    unsigned int localFnConter[1], bool isBlockFull[1], unsigned int fpFnLocCounter[1],
+    unsigned int localFnConter[1], bool*& isBlockFull, unsigned int fpFnLocCounter[1],
     bool oldIsGold[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int globalWorkQueueOffset[1]
     , unsigned int worQueueStep[1], unsigned int* minMaxes, unsigned int localMinMaxes[5])
  {

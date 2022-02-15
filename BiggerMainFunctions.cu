@@ -295,7 +295,7 @@ inline __device__  void lastLoad(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
     }
     else {//if we are not validating we immidiately start loading data for next loop
         if (i + 1 <= worQueueStep[0]) {
-          //  loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
+            loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
         }
     }
 
@@ -321,7 +321,7 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
         = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
     //marking weather block is already full and no more dilatations are possible 
     if (mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] != UINT32_MAX) {
-        isBlockFull[0] = false;
+        isBlockFull[(i&1)] = false;
     }
     pipeline.consumer_release();
 }

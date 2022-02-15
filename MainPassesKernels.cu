@@ -145,7 +145,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
     __shared__ bool isAnythingInPadding[6];
 
-    __shared__ bool isBlockFull[1];
+    __shared__ bool isBlockFull[2];
     //marks wheather there can be any result of intest there
     __shared__ bool isBlockToBeValidated[1];
     //variables needed for all threads
