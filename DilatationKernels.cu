@@ -76,9 +76,9 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
         for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {                      
-                    printf("linMeta beg %d is gold %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i]);
-                };
+                //if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {                      
+                //    printf("linMeta beg %d is gold %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i]);
+                //};
 
 //////////////// step 0  load main data and final processing of previous block
                //loading main data for first dilatation
@@ -98,14 +98,20 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 processMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);                
 ///////// step 2 load bottom and process top 
                 loadBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                //process top
+                processTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);                     
+///////// step 3 load right  process bottom  
+                loadRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                //process bototm
+                processBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 
-                processTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 
-                
-                
-                
-                
-////////////
+
+
+
+
+
+///////// 
                 //loading for next
                 pipeline.producer_acquire();
 
@@ -116,11 +122,12 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
                 pipeline.consumer_wait();
 
-                //bottom
-                dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, localBlockMetaData, 14
-                    , 0// represent a uint32 number that has a bit of intrest in this block set and all others 0 here last bit is set
-                    , 31
-                    , begSecRegShmem);
+
+
+                dilatateHelperForTransverse((threadIdx.x == (fbArgs.dbXLength - 1)),
+                    3, (1), (0), mainShmem, isAnythingInPadding
+                    , threadIdx.y, 0
+                    , 16, begfirstRegShmem, localBlockMetaData);
 
                  //TODO remove
                  getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
