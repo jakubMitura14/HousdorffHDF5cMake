@@ -210,7 +210,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
  18 : posterior
     */
 
-    __shared__ uint32_t localBlockMetaData[20];
+    __shared__ uint32_t localBlockMetaData[40];
 
     /*
  //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX

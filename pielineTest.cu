@@ -30,7 +30,7 @@
 ////    unsigned int blockFnConter[1], unsigned int resultfpOffset[1],
 ////    unsigned int resultfnOffset[1], unsigned int worQueueStep[1],
 ////    uint32_t isGold[1], uint32_t currLinIndM[1], unsigned int localMinMaxes[5]
-////    , uint32_t localBlockMetaData[20], unsigned int fpFnLocCounter[1]
+////    , uint32_t localBlockMetaData[(i & 1) * 20+20], unsigned int fpFnLocCounter[1]
 ////    , bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]
 ////    , uint32_t* origArrs, uint32_t* metaDataArr, uint32_t oldIsGold[1], uint32_t oldLinIndM[1], uint32_t localBlockMetaDataOld[20],
 ////    bool isGoldForLocQueue[localWorkQueLength], bool isBlockToBeValidated[1]
@@ -121,7 +121,7 @@
 ////
 ////        pipeline.producer_acquire();
 ////
-////        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+////        cuda::memcpy_async(cta, (&localBlockMetaData[(i & 1) * 20+0]),
 ////            (&metaDataArr[mainShmem[startOfLocalWorkQ] * metaData.metaDataSectionLength])
 ////            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
 ////
@@ -184,10 +184,10 @@
 ////                               //load for next step - so we load block to the top
 ////                pipeline.producer_acquire();
 ////
-////                if (localBlockMetaData[13] < isGoldOffset) {
+////                if (localBlockMetaData[(i & 1) * 20+13] < isGoldOffset) {
 ////
 ////                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-////                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[13] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+////                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20+13] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
 ////                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
 ////                        , pipeline);
 ////
@@ -219,7 +219,7 @@
 ////                ///////////saving old
 ////                //additionally we save previous copies of data so refreshing will keep easier
 ////                if (threadIdx.x < 20 && threadIdx.y == 0) {
-////                    localBlockMetaDataOld[tile.thread_rank()] = localBlockMetaData[tile.thread_rank()];
+////                    localBlockMetaDataOld[tile.thread_rank()] = localBlockMetaData[(i & 1) * 20+tile.thread_rank()];
 ////                }
 ////                if (threadIdx.x == 0 && threadIdx.y == 1) {
 ////                    oldIsGold[0] = isGoldForLocQueue[i];
@@ -229,7 +229,7 @@
 ////
 ////                }
 ////                if (threadIdx.x == 2 && threadIdx.y == 1) {
-////                    isBlockToBeValidated[0] = ((localBlockMetaData[2 - isGoldForLocQueue[i]]) > localBlockMetaData[(4 - isGoldForLocQueue[i])]);
+////                    isBlockToBeValidated[0] = ((localBlockMetaData[(i & 1) * 20+2 - isGoldForLocQueue[i]]) > localBlockMetaData[(i & 1) * 20+(4 - isGoldForLocQueue[i])]);
 ////
 ////                }
 ////
@@ -240,27 +240,27 @@
 ////                                      //load anterior and posterior and bottom
 ////                pipeline.producer_acquire();
 ////                //block to anterior 
-////                if (localBlockMetaData[17] < isGoldOffset && tile.meta_group_rank() == 0) {
+////                if (localBlockMetaData[(i & 1) * 20+17] < isGoldOffset && tile.meta_group_rank() == 0) {
 ////
 ////                    cuda::memcpy_async(tile, &mainShmem[begSMallRegShmemA], &getSourceReduced(fbArgs, iterationNumb)[
-////                        (localBlockMetaData[17]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+////                        (localBlockMetaData[(i & 1) * 20+17]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
 ////                        thirdRegShape, pipeline);
 ////
 ////                }
 ////                // block to posterior
-////                if (localBlockMetaData[18] < isGoldOffset && tile.meta_group_rank() == 1) {
+////                if (localBlockMetaData[(i & 1) * 20+18] < isGoldOffset && tile.meta_group_rank() == 1) {
 ////                    cuda::memcpy_async(tile, &mainShmem[begSMallRegShmemB], &getSourceReduced(fbArgs, iterationNumb)[
-////                        (localBlockMetaData[18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+////                        (localBlockMetaData[(i & 1) * 20+18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
 ////                            + (blockDim.y - 1) * 32// we need last 32 length entry of the posterior block 
 ////                    ], thirdRegShape, pipeline);
 ////
 ////                }
 ////
 ////                //bottom  block
-////                if (localBlockMetaData[14] < isGoldOffset) {
+////                if (localBlockMetaData[(i & 1) * 20+14] < isGoldOffset) {
 ////                    cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
 ////                        &getSourceReduced(fbArgs, iterationNumb)[
-////                            localBlockMetaData[14] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+////                            localBlockMetaData[(i & 1) * 20+14] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
 ////                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
 ////                                , pipeline);
 ////
@@ -288,7 +288,7 @@
 ////                }
 ////                else {//if we are not validating we immidiately start loading data for next loop
 ////                    if (i + 1 <= worQueueStep[0]) {
-////                        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+////                        cuda::memcpy_async(cta, (&localBlockMetaData[(i & 1) * 20+0]),
 ////                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1])
 ////                                * metaData.metaDataSectionLength])
 ////                            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
@@ -341,7 +341,7 @@
 ////                if (localBlockMetaDataOld[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
 ////                > localBlockMetaDataOld[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
 ////                    if (i + 1 <= worQueueStep[0]) {
-////                        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+////                        cuda::memcpy_async(cta, (&localBlockMetaData[(i & 1) * 20+0]),
 ////                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1])
 ////                                * metaData.metaDataSectionLength])
 ////                            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);

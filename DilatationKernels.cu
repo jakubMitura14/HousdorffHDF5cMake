@@ -31,7 +31,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     unsigned int blockFnConter[1], unsigned int resultfpOffset[1],
     unsigned int resultfnOffset[1], unsigned int worQueueStep[1],
     uint32_t isGold[1], uint32_t currLinIndM[1], unsigned int localMinMaxes[5]
-    , uint32_t localBlockMetaData[], unsigned int fpFnLocCounter[1]
+    , uint32_t localBlockMetaData[40], unsigned int fpFnLocCounter[1]
     , bool isGoldPassToContinue[1], bool isSegmPassToContinue[1]
     , uint32_t* origArrs, uint32_t* metaDataArr, bool iasAnyProcessed[1],
     bool isGoldForLocQueue[localWorkQueLength], bool isBlockToBeValidated[1]
@@ -57,16 +57,26 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
 
 
         sync(cta);
-
+        //loading metadata
         pipeline.producer_acquire();
 
-        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 0, 0);
+        cuda::memcpy_async(cta, (&localBlockMetaData[20]),
+            (&metaDataArr[(mainShmem[startOfLocalWorkQ ])
+                * metaData.metaDataSectionLength])
+            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+
+        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+            (&metaDataArr[(mainShmem[startOfLocalWorkQ])
+                * metaData.metaDataSectionLength])
+            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+
+        //loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 0, 0);
 
         pipeline.producer_commit();
 
 
         //if (tile.thread_rank() < 20 && tile.meta_group_rank() == 2) {
-        //    localBlockMetaData[tile.thread_rank()] =
+        //    localBlockMetaData[(i & 1) * 20+tile.thread_rank()] =
         //        metaDataArr[(mainShmem[startOfLocalWorkQ ])
         //        * metaData.metaDataSectionLength + tile.thread_rank()];
         //};
@@ -189,8 +199,8 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
               //  //}
 
 
-              //  if (localBlockMetaData[((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
-              //          > localBlockMetaData[((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+              //  if (localBlockMetaData[(i & 1) * 20+((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+              //          > localBlockMetaData[(i & 1) * 20+((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
               //      mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
 
 
@@ -210,10 +220,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
               //              unsigned int old = 0;
               //              ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
               //              if (isGoldForLocQueue[i]) {
-              //                  old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[6] + localBlockMetaData[4];
+              //                  old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20+6] + localBlockMetaData[(i & 1) * 20+4];
               //              }
               //              else {
-              //                  old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[5] + localBlockMetaData[3];
+              //                  old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20+5] + localBlockMetaData[(i & 1) * 20+3];
               //              };
               //              //   add results to global memory    
               //              //we add one gere jjust to distinguish it from empty result
@@ -228,8 +238,8 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
               //                  , old
               //                  , localFpConter[0]
               //                  , localFnConter[0]
-              //                  , localBlockMetaData[ 5]
-              //                  , localBlockMetaData[6]
+              //                  , localBlockMetaData[(i & 1) * 20+ 5]
+              //                  , localBlockMetaData[(i & 1) * 20+6]
               //                  , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
               //                  , uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x))
               //                  , threadIdx.x
@@ -245,7 +255,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
               //      //loading metadaa for next loop 
               //      if (i + 1 <= worQueueStep[0]) {
               //          if (tile.thread_rank() < 20 && tile.meta_group_rank() == 2) {
-              //                  localBlockMetaData[tile.thread_rank()] = 
+              //                  localBlockMetaData[(i & 1) * 20+tile.thread_rank()] = 
               //                  metaDataArr[(mainShmem[startOfLocalWorkQ + i + 1])
               //                      * metaData.metaDataSectionLength + tile.thread_rank()];
               //          };

@@ -168,12 +168,12 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
     uint8_t paddingPos,    int8_t  normalXChange, int8_t normalYchange
 , uint32_t mainShmem[], bool isAnythingInPadding[6]
 ,uint8_t forBorderYcoord, uint8_t forBorderXcoord
-,uint8_t metaDataCoordIndex, uint32_t targetShmemOffset , uint32_t localBlockMetaData[20]) {
+,uint8_t metaDataCoordIndex, uint32_t targetShmemOffset , uint32_t*& localBlockMetaData, uint32_t& i ) {
     // so we first check for corner cases 
     if (predicate) {
         // now we need to load the data from the neigbouring blocks
         //first checking is there anything to look to 
-        if (localBlockMetaData[metaDataCoordIndex] < isGoldOffset) {
+        if (localBlockMetaData[(i & 1) * 20+metaDataCoordIndex] < isGoldOffset) {
             //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
             if (mainShmem[threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
@@ -199,15 +199,15 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 #pragma once
 inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20]
+uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t*& localBlockMetaData
 ,uint8_t metaDataCoordIndex
 , uint8_t sourceBit 
 , uint8_t targetBit
-, uint32_t targetShmemOffset
+, uint32_t targetShmemOffset, uint32_t& i
 ) {
        // now we need to load the data from the neigbouring blocks
        //first checking is there anything to look to 
-       if (localBlockMetaData[metaDataCoordIndex]< isGoldOffset) {
+       if (localBlockMetaData[(i & 1) * 20+metaDataCoordIndex]< isGoldOffset) {
            if (isBitAt(mainShmem[begSourceShmem+ threadIdx.x + threadIdx.y * 32], targetBit)) {
                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
                               isAnythingInPadding[0] = true;
@@ -228,7 +228,7 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20
 
 
 //inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
-//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[]
+//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[(i & 1) * 20+]
 //    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
 //) {
 
@@ -239,12 +239,12 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t localBlockMetaData[20
 //*/
 //template <typename TXPPI>
 //inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block& cta//some needed CUDA objects
-//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[]
+//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[(i & 1) * 20+]
 //    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData, uint32_t* metaDataArr
 //) {
 //
 //    if (i + 1 <= worQueueStep[0]) {
-//        cuda::memcpy_async(cta, (&localBlockMetaData[0]),
+//        cuda::memcpy_async(cta, (&localBlockMetaData[(i & 1) * 20+0]),
 //            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i - isGoldOffset * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset))
 //                * metaData.metaDataSectionLength]])
 //            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
@@ -266,7 +266,7 @@ finilizing operations for last block
 
 
 inline __device__  void afterBlockClean(thread_block cta
-    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[20]
+    , unsigned int worQueueStep[1], uint32_t*& localBlockMetaData
     , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
     , thread_block_tile<32>& tile
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
@@ -310,8 +310,8 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
         if (i>0) {
-            if (localBlockMetaData[   13+tile.thread_rank()] < isGoldOffset) {
-                metaDataArr[localBlockMetaData[13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = isAnythingInPadding[tile.thread_rank()];
+            if (localBlockMetaData[(i & 1) * 20+   13+tile.thread_rank()] < isGoldOffset) {
+                metaDataArr[localBlockMetaData[(i & 1) * 20+13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = isAnythingInPadding[tile.thread_rank()];
             }
         }
         isAnythingInPadding[0] = false;
@@ -417,12 +417,19 @@ inline __device__  void loadWorkQueue(uint32_t mainShmem[lengthOfMainShmem], uin
 /*
 loads metadata of given block to meta data 
 */
-inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t localBlockMetaData[]
+inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t*& localBlockMetaData
     , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
 , uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd, uint32_t ii) {
    
-    cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-        (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd+ii])
+    //cuda::memcpy_async(cta, (&localBlockMetaData[(ii&1)*20]),
+    //    (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd+ii])
+    //        * metaData.metaDataSectionLength])
+    //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+
+    cuda::memcpy_async(cta, (&localBlockMetaData[((ii+1) & 1) * 20]),
+        (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd + ii])
             * metaData.metaDataSectionLength])
         , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+
+
 }
