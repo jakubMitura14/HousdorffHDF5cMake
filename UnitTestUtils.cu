@@ -172,18 +172,106 @@ additionally we will collect the fp counts and fncounts and in the end of the fu
 of the block in metadata are correct
 */
 #pragma once
-void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPointStruct* pointsList, int& pointsNumberRef) {
+void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPointStruct* pointsList, int& pointsNumberRef
+,uint32_t*& resultListPointerMetaCPU, uint32_t*& resultListPointerLocalCPU, uint32_t*& resultListPointerIterNumb
+, int numberOfResults, uint32_t* metaDataArrPointerCPU) {
+		
+	    int* fpCounts =  (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
+	    int* fnCounts =  (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
+
+
+
+
 	
-	for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
-		//we get from linear index  the coordinates of the metadata block of intrest
-		uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-		uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
-		uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
+		for(int iRes=0;iRes< numberOfResults; iRes++){
+		if(resultListPointerMetaCPU[i]>0){
+			uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] > isGoldOffset))-1;
+			uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
+			uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength))));
+			uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength)));
+			
+			uint32_t linLocal = resultListPointerLocalCPU[i];
+			uint32_t xLoc = linLocal % fbArgs.dbXLength;
+			uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * fbArgs.dbYLength))));
+			uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * fbArgs.dbYLength) + xLoc)) / 32)));
+
+
+			uint32_t x = xMeta * 32 + xLoc;
+			uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
+			uint32_t z = zMeta * 32 + zLoc;
+			
+			
+			uint32_t iterNumb = resultListPointerIterNumb[iRes];
+   // bool shouldBeInResAfterOneDil;
+    //bool shouldBeInResAfterTwoDil;
+			if((resultListPointerMetaCPU[i] > isGoldOffset)){
+				fpCounts[linIdexMeta]+=1;
+			}
+			else{
+				fnCounts[linIdexMeta]+=1;
+			}
+			
+				for(int i =0; i<pointsNumberRef;i++ ){
+						forTestPointStruct point= points[i];
+						if( (point.shouldBeInResAfterOneDil && iterNumb==0)  
+							||(point.shouldBeInResAfterTwoDil &&  iterNumb==1)      ){
+							point.isFoundInResult=true;
+						}
+					}
+			
+		
+		}
+		}
+	for(int i =0; i<pointsNumberRef;i++ ){
+		forTestPointStruct point= points[i];
+		if( (point.shouldBeInResAfterOneDil || point.shouldBeInResAfterTwoDil  )  && !point.isFoundInResult  ){
+			printf("fff point %d %d %d not found in result \n", point.x, point.y, point.z);
+
+		}else{
+			printf("ttt  point %d %d %d found in result \n", point.x, point.y, point.z);
+		
+		}
+		
+		}	
+//checking weather counters in metadata match the count that should be present 		
+for(int linIdexMeta=0;linIdexMeta< fbArgs.metaData.totalMetaLength; linIdexMeta++){
+if(fpCounts[linIdexMeta]>0){
+	if(metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 3] = fpCounts[linIdexMeta] ){
+		printf(" correct fp count %d in linMeta %d  "
+		,fpCounts[linIdexMeta]
+		.linIdexMeta
+		);
+
+	}else{
+		printf("fff incorrect fp count %d is in meta %d in linMeta %d  "
+		,fpCounts[linIdexMeta]
+		,metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 3]
+		.linIdexMeta
+		);
 	}
+}
+if(fnCounts[linIdexMeta]>0){
+	if(metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 4] = fnCounts[linIdexMeta] ){
+		printf(" correct fn count %d in linMeta %d  "
+		,fnCounts[linIdexMeta]
+		.linIdexMeta
+		);
+
+	}else{
+		printf("fff incorrect fn count %d is in meta %d in linMeta %d  "
+		,fnCounts[linIdexMeta]
+		,metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 4]
+		.linIdexMeta
+		);
+	}
+}
+
 
 
 }
+		
 
+}
 
 
 
