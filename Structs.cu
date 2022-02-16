@@ -270,7 +270,17 @@ extern "C"  struct forTestPointStruct {
 
     bool shouldBeInResAfterOneDil;
     bool shouldBeInResAfterTwoDil;
-
+    bool isFoundAndDilatated= false;
+    bool isFoundInResult= false;
+    
+        bool isFoundDilTop= false;
+        bool isFoundDilBottom= false;
+    
+        bool isFoundDilAnterior= false;
+        bool isFoundDilPosterior= false;
+    
+        bool isFoundDilLeft= false;
+        bool isFoundDilRight= false;
 
 };
 
