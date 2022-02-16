@@ -325,3 +325,69 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
     }
     pipeline.consumer_release();
 }
+
+
+//////////// validation
+
+template <typename TXPI>
+inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
+    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+    , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
+    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding, bool*& isBlockFull
+, unsigned int*& localFpConter, unsigned int*& localFnConter
+, uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb
+
+) {
+
+    if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+    > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+        mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
+
+
+
+        //we now look for bits prasent in both reference arrays and current one
+        mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32]);
+
+        // now we look through bits and when some is set we call it a result 
+        #pragma unroll
+        for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
+            //if any bit here is set it means it should be added to result list 
+            if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
+                //first we add to the resList
+                //TODO consider first passing it into shared memory and then async mempcy ...
+                //we use offset plus number of results already added (we got earlier count from global memory now we just atomically add locally)
+                unsigned int old = 0;
+                ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
+                if (isGoldForLocQueue[i]) {
+                    old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 4];
+                }
+                else {
+                    old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 3];
+                };
+                //   add results to global memory    
+                //we add one gere jjust to distinguish it from empty result
+                resultListPointerMeta[old] = uint32_t(mainShmem[startOfLocalWorkQ + i] + (isGoldOffset * isGoldForLocQueue[i]) + 1);
+                resultListPointerLocal[old] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
+                resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
+
+                /*   printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
+                       ,i
+                       ,mainShmem[startOfLocalWorkQ + i]
+                       , isGoldForLocQueue[i]
+                       , old
+                       , localFpConter[0]
+                       , localFnConter[0]
+                       , localBlockMetaData[(i & 1) * 20+ 5]
+                       , localBlockMetaData[(i & 1) * 20+6]
+                       , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
+                       , uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x))
+                       , threadIdx.x
+                       , threadIdx.y
+                       , bitPos
+                   );*/
+
+            }
+
+        };
+    }
+}

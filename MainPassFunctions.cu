@@ -272,7 +272,7 @@ inline __device__  void afterBlockClean(thread_block cta
     , unsigned int localFpConter[1], unsigned int localFnConter[1]
     , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
     , uint32_t* metaDataArr
-    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass, bool isGoldForLocQueue[localWorkQueLength]
+    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass, bool isGoldForLocQueue[localWorkQueLength], uint32_t lastI[1]
    ) {
 
 
@@ -305,7 +305,12 @@ inline __device__  void afterBlockClean(thread_block cta
         isBlockFull[0] = true;
     };
 
+    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
+        lastI[0] = UINT32_MAX;
+    };
+
+    
     //we do it only for non padding pass
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block

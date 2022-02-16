@@ -146,8 +146,10 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     __shared__ bool isAnythingInPadding[6];
 
     __shared__ bool isBlockFull[2];
-    //marks wheather there can be any result of intest there
-    __shared__ bool isBlockToBeValidated[1];
+
+    __shared__ uint32_t lastI[1];
+
+
     //variables needed for all threads
     __shared__ int iterationNumb[1];
     __shared__ unsigned int globalWorkQueueOffset[1];
@@ -264,8 +266,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
         , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
         , fbArgs.metaDataArrPointer, iasAnyProcessed,   isGoldForLocQueue
-        , isBlockToBeValidated, pipeline, bigShape, thirdRegShape);
-
+        , lastI, pipeline, bigShape, thirdRegShape);
 
 
 
