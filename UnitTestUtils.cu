@@ -45,6 +45,45 @@ void printFromReduced(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU) {
 
 
 
+
+#pragma once
+void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArrPointerCPU,MetaDataGPU metaData) {
+//testing dilatations
+	
+	for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
+		//we get from linear index  the coordinates of the metadata block of intrest
+		uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
+		uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
+		uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
+// 7 :isActiveGold
+// 8 :isFullGold
+// 9 :isActiveSegm
+// 10 :isFullSegm
+// 11 :isToBeActivatedGold
+// 12 :isToBeActivatedSegm
+		
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] ==1 ){
+		printf("is active gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+	}
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8] ==1 ){
+		printf("is full gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+	}
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] ==1 ){
+		printf("is active segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+	}
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10] ==1 ){
+		printf("is full segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+	}
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11] ==1 ){
+		printf("is to be activated gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+	}	
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] ==1 ){
+		printf("is to be activated segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+	}
+	
+	}}
+
+
 #pragma once
 void testDilatations (ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPointStruct* pointsList, int& pointsNumberRef) {
 //testing dilatations
@@ -174,7 +213,7 @@ of the block in metadata are correct
 #pragma once
 void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPointStruct* pointsList, int& pointsNumberRef
 ,uint32_t*& resultListPointerMetaCPU, uint32_t*& resultListPointerLocalCPU, uint32_t*& resultListPointerIterNumb
-, int numberOfResults, uint32_t* metaDataArrPointerCPU) {
+, int numberOfResults, uint32_t* metaDataArrPointerCPU, MetaDataGPU metaData) {
 		
 	    int* fpCounts =  (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
 	    int* fnCounts =  (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
