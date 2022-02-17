@@ -359,10 +359,10 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                 unsigned int old = 0;
                 ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
                 if (isGoldForLocQueue[i]) {
-                    old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 4];
+                    old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 3];
                 }
                 else {
-                    old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 3];
+                    old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4];
                 };
                 //   add results to global memory    
                 //we add one gere jjust to distinguish it from empty result
@@ -370,7 +370,7 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                 resultListPointerLocal[old] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
                 resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
 
-                /*   printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
+                   printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
                        ,i
                        ,mainShmem[startOfLocalWorkQ + i]
                        , isGoldForLocQueue[i]
@@ -384,7 +384,7 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                        , threadIdx.x
                        , threadIdx.y
                        , bitPos
-                   );*/
+                   );
 
             }
 

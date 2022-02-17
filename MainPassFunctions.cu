@@ -83,59 +83,6 @@ inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
 
 
 
-#pragma once
-inline __device__ void setNextBlockAsIsToBeActivated(coalesced_group active, char* tensorslice,
-    int paddingNumb, uint32_t localWorkQueue[localWorkQueLength][4], uint32_t i, 
-    int xMetaChange, int yMetaChange, int zMetaChange
-    ,array3dWithDimsGPU targetArr,bool isAnythingInPadding[6], bool isInRagePred
-) {
-    //if (isToBeExecutedOnActive(active, paddingNumb)) {
-    //    printf("\n setting neighbour of %d %d %d to active- %d %d %d padding numb %d  isAnyInPadding %d\n"
-    //        , localWorkQueue[i][0], localWorkQueue[i][1], localWorkQueue[i][2]
-    //        , localWorkQueue[i][0] + xMetaChange, localWorkQueue[i][1] + yMetaChange, localWorkQueue[i][2] + zMetaChange
-    //        , paddingNumb , isAnythingInPadding[paddingNumb]
-    //    );
-    //}
-
-    if (isAnythingInPadding[paddingNumb] && isToBeExecutedOnActive(active, paddingNumb) && isInRagePred) {
-
-
-      //  printf(" \n saving to be actvated  xMeta %d yMeta %d zMeta %d isGold %d \n ", localWorkQueue[i][0] + xMetaChange, localWorkQueue[i][1] + yMetaChange, localWorkQueue[i][2] + zMetaChange, localWorkQueue[i][3]);
-
-
-        getTensorRow<bool>(tensorslice, targetArr, targetArr.Ny, localWorkQueue[i][1] + yMetaChange, localWorkQueue[i][2] + zMetaChange)[localWorkQueue[i][0] + xMetaChange] = true;
-    };
-
-}
-
-
-#pragma once
-inline __device__ void setNextBlocksActivity( char* tensorslice,
-    uint32_t localWorkQueue[localWorkQueLength][4], uint32_t i, array3dWithDimsGPU targetArr
-    , bool isAnythingInPadding[6], coalesced_group active) {
-    //0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior, 
-    //top
-    setNextBlockAsIsToBeActivated(active, tensorslice, 0, localWorkQueue, i, 0, 0, -1, targetArr, isAnythingInPadding
-    , localWorkQueue[i][2]>0);
-    //bottom
-    setNextBlockAsIsToBeActivated(active, tensorslice, 1, localWorkQueue, i, 0, 0, 1, targetArr, isAnythingInPadding
-    , localWorkQueue[i][2]<(targetArr.Nz-1));
-    //left
-    setNextBlockAsIsToBeActivated(active, tensorslice, 2, localWorkQueue, i, -1, 0, 0, targetArr, isAnythingInPadding
-    , localWorkQueue[i][0]>0);
-    //right
-    setNextBlockAsIsToBeActivated(active, tensorslice, 3, localWorkQueue, i, 1, 0, 0, targetArr, isAnythingInPadding
-        , localWorkQueue[i][0] < (targetArr.Nx - 1));
-    //anterior
-    setNextBlockAsIsToBeActivated(active, tensorslice, 4, localWorkQueue, i, 0, 1, 0, targetArr, isAnythingInPadding
-        , localWorkQueue[i][1] < (targetArr.Ny - 1));
-    //posterior
-    setNextBlockAsIsToBeActivated(active, tensorslice, 5, localWorkQueue, i, 0, -1, 0, targetArr, isAnythingInPadding
-    , localWorkQueue[i][1] > 0);
-
-
-
-}
 
 /*
 given source and target uint32 it will check the bit of intrest  of source and set the target to bit of target intrest
@@ -175,7 +122,7 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
         //first checking is there anything to look to 
         if (localBlockMetaData[(i & 1) * 20+metaDataCoordIndex] < isGoldOffset) {
             //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-            if (mainShmem[threadIdx.x + threadIdx.y * 32] > 0) {
+            if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
             };
             mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
@@ -210,7 +157,7 @@ uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t*& localBlockMetaData
        if (localBlockMetaData[(i & 1) * 20+metaDataCoordIndex]< isGoldOffset) {
            if (isBitAt(mainShmem[begSourceShmem+ threadIdx.x + threadIdx.y * 32], targetBit)) {
                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-                              isAnythingInPadding[0] = true;
+                              isAnythingInPadding[paddingPos] = true;
            };
            // if in bit of intrest of neighbour block is set
 
@@ -279,7 +226,7 @@ inline __device__  void afterBlockClean(thread_block cta
 
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
                     //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
-        if (localFpConter[0] > 0) {
+        if (localFpConter[0] >= 0) {
             metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
             blockFpConter[0] += localFpConter[0];
             localFpConter[0] = 0;
@@ -287,7 +234,7 @@ inline __device__  void afterBlockClean(thread_block cta
     };
     if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
 
-        if (localFnConter[0] > 0) {
+        if (localFnConter[0] >= 0) {
             metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
 
             blockFnConter[0] += localFnConter[0];
@@ -297,7 +244,7 @@ inline __device__  void afterBlockClean(thread_block cta
     if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
         //executed in case of previous block
-        if (isBlockFull[0] && i > 0) {
+        if (isBlockFull[0] && i >= 0) {
             //setting data in metadata that block is full
             metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
         }
@@ -305,18 +252,28 @@ inline __device__  void afterBlockClean(thread_block cta
         isBlockFull[0] = true;
     };
 
-    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
-        lastI[0] = UINT32_MAX;
-    };
 
     
     //we do it only for non padding pass
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
-        if (i>0) {
+        if (i>=0) {
+
+          /*  if (isAnythingInPadding[tile.thread_rank()]) {
+                printf("info in padding %d linMeta %d \n ", 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]);
+
+            }*/
+
             if (localBlockMetaData[(i & 1) * 20+   13+tile.thread_rank()] < isGoldOffset) {
-                metaDataArr[localBlockMetaData[(i & 1) * 20+13+tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = isAnythingInPadding[tile.thread_rank()];
+                //printf("info in range %d linMeta %d \n ", 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]);
+
+                if (isAnythingInPadding[tile.thread_rank()]) {
+                    metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
+                    //printf("info in padding AND range %d linMeta %d \n ", 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]);
+
+                }
+                
             }
         }
         isAnythingInPadding[0] = false;
@@ -341,7 +298,7 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
     unsigned int blockFnConter[1], unsigned int localFpConter[1],
     unsigned int localFnConter[1], bool*& isBlockFull, unsigned int fpFnLocCounter[1],
     bool oldIsGold[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int globalWorkQueueOffset[1]
-    , unsigned int worQueueStep[1], unsigned int* minMaxes, unsigned int localMinMaxes[5])
+    , unsigned int worQueueStep[1], unsigned int* minMaxes, unsigned int localMinMaxes[5], uint32_t lastI[1])
  {
 
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0 && !isPaddingPass) {
@@ -376,7 +333,10 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
         oldIsGold[0] = false;
     };
 
-    
+    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
+
+        lastI[0] = UINT32_MAX;
+    };
 
 
     if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {

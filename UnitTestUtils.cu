@@ -47,7 +47,7 @@ void printFromReduced(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU) {
 
 
 #pragma once
-void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArrPointerCPU,MetaDataGPU metaData) {
+void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArrPointerCPU,MetaDataGPU metaData, uint32_t* metaDataArr) {
 //testing dilatations
 	
 	for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
@@ -63,25 +63,72 @@ void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArr
 // 12 :isToBeActivatedSegm
 		
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] ==1 ){
-		printf("is active gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+		printf("is active gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8] ==1 ){
-		printf("is full gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+		printf("is full gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] ==1 ){
-		printf("is active segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+		printf("is active segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10] ==1 ){
-		printf("is full segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+		printf("is full segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11] ==1 ){
-		printf("is to be activated gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+		printf("is to be activated gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}	
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] ==1 ){
-		printf("is to be activated segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", point.x, point.y, point.z);
+		printf("is to be activated segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	
 	}}
+
+
+
+void testDilsSinglePoint(forTestPointStruct*& points, int x, int y, int z, int& pointsNumberRef, bool isGold) {
+	for (int i = 0; i < pointsNumberRef; i++) {
+		forTestPointStruct point = points[i];
+		if ((point.isGold && isGold) || (!point.isGold && !isGold)) {
+			//this point
+			if (point.x == (x) && point.y == (y) && point.z == (z)) {
+				point.isFoundAndDilatated = true;
+			}
+			//top
+			if (point.x == (x) && point.y == (y) && point.z - 1 == (z)) {
+				point.isFoundDilTop = true;
+			}
+			//bottom
+			if (point.x == (x) && point.y == (y) && point.z + 1 == (z)) {
+				point.isFoundDilBottom = true;
+			}
+
+
+			//anterior
+			if (point.x == (x) && point.y - 1 == (y) && point.z == (z)) {
+				point.isFoundDilAnterior = true;
+			}
+			//posterior
+			if (point.x == (x) && point.y + 1 == (y) && point.z == (z)) {
+				point.isFoundDilPosterior = true;
+			}
+
+
+			//left
+			if (point.x + 1 == (x) && point.y == (y) && point.z == (z)) {
+				point.isFoundDilLeft = true;
+			}
+			//right
+			if (point.x - 1 == (x) && point.y == (y) && point.z == (z)) {
+				point.isFoundDilRight = true;
+			}
+		}
+	}
+
+
+
+}
+
+
 
 
 #pragma once
@@ -99,7 +146,13 @@ void testDilatations (ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPo
 			if (col > 0) {
 				for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
 					if (isBitAtCPU(col, bitPos)) {
-						testDilsSinglePoint(points, x,y,z,pointsNumberRef,true);
+						int locPosB = locPos - 32 * fbArgs.dbYLength;
+
+						int x = locPosB % 32 + xMeta * fbArgs.dbXLength;
+						int y = int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength);
+						int z = bitPos + zMeta * fbArgs.dbZLength;
+							testDilsSinglePoint(pointsList, x, y, z, pointsNumberRef, true);
+						
 					}
 				}
 			}
@@ -112,7 +165,10 @@ void testDilatations (ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPo
 				for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
 					if (isBitAtCPU(col, bitPos)) {
 						int locPosB = locPos - 32 * fbArgs.dbYLength;
-						testDilsSinglePoint(points, x,y,z,pointsNumberRef,false );
+						int x = locPosB % 32 + xMeta * fbArgs.dbXLength;
+						int y = int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength);
+						int z = bitPos + zMeta * fbArgs.dbZLength;
+						testDilsSinglePoint(pointsList, x,y,z,pointsNumberRef,false );
 					}
 				}
 			}
@@ -121,7 +177,7 @@ void testDilatations (ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPo
 	
 	//by now we checked wheather a point is present in dilatation array now we need to also establish is dilatation that we are looking for is in range
 	for(int i =0; i<pointsNumberRef;i++ ){
-		forTestPointStruct point= points[i];
+		forTestPointStruct point= pointsList[i];
 		//this point
 		if( !point.isFoundAndDilatated){
 			printf(" point %d %d %d not found at all \n", point.x, point.y, point.z);
@@ -160,48 +216,6 @@ void testDilatations (ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPo
 }
 
 
-void testDilsSinglePoint (  forTestPointStruct*& points, int x, int y, int z ,int& pointsNumberRef, bool isGold){
-	for(int i =0; i<pointsNumberRef;i++ ){
-		forTestPointStruct point= points[i];
-		if( (point.isGold  && isGold ) ||  (!point.isGold  && !isGold )   ){
-		//this point
-		if( point.x == (x) && point.y == (y) point.z == (z) ){
-			point.isFoundAndDilatated = true; 
-		}
-		//top
-		if( point.x == (x) && point.y == (y) point.z-1 == (z) ){
-			point.isFoundDilTop = true; 
-		}	
-		//bottom
-		if( point.x == (x) && point.y == (y) point.z+1 == (z) ){
-			point.isFoundDilBottom = true; 
-		}	
-		
-		
-		//anterior
-		if( point.x == (x) && point.y -1 == (y) point.z == (z) ){
-			point.isFoundDilAnterior = true; 
-		}	
-		//posterior
-		if( point.x == (x) && point.y +1 == (y) point.z == (z) ){
-			point.isFoundDilPosterior = true; 
-		}	
-		
-				
-		//left
-		if( point.x +1 == (x) && point.y == (y) point.z == (z) ){
-			point.isFoundDilLeft = true; 
-		}	
-		//right
-		if( point.x -1 == (x) && point.y == (y) point.z == (z) ){
-			point.isFoundDilRight = true; 
-		}	
-	}}
-		
-	
-
-}
-
 
 
 /*
@@ -211,25 +225,24 @@ additionally we will collect the fp counts and fncounts and in the end of the fu
 of the block in metadata are correct
 */
 #pragma once
-void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPointStruct* pointsList, int& pointsNumberRef
+void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,forTestPointStruct* points, int& pointsNumberRef
 ,uint32_t*& resultListPointerMetaCPU, uint32_t*& resultListPointerLocalCPU, uint32_t*& resultListPointerIterNumb
 , int numberOfResults, uint32_t* metaDataArrPointerCPU, MetaDataGPU metaData) {
 		
-	    int* fpCounts =  (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
-	    int* fnCounts =  (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
-
+		int* fpCounts = (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
+		int* fnCounts = (int*)calloc(fbArgs.metaData.totalMetaLength, sizeof(int));
 
 
 
 	
 		for(int iRes=0;iRes< numberOfResults; iRes++){
-		if(resultListPointerMetaCPU[i]>0){
-			uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] > isGoldOffset))-1;
+		if(resultListPointerMetaCPU[iRes]>0){
+			uint32_t linIdexMeta = resultListPointerMetaCPU[iRes] - (isGoldOffset * (resultListPointerMetaCPU[iRes] > isGoldOffset))-1;
 			uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
 			uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength))));
 			uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength)));
 			
-			uint32_t linLocal = resultListPointerLocalCPU[i];
+			uint32_t linLocal = resultListPointerLocalCPU[iRes];
 			uint32_t xLoc = linLocal % fbArgs.dbXLength;
 			uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * fbArgs.dbYLength))));
 			uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * fbArgs.dbYLength) + xLoc)) / 32)));
@@ -243,7 +256,7 @@ void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,for
 			uint32_t iterNumb = resultListPointerIterNumb[iRes];
    // bool shouldBeInResAfterOneDil;
     //bool shouldBeInResAfterTwoDil;
-			if((resultListPointerMetaCPU[i] > isGoldOffset)){
+			if((resultListPointerMetaCPU[iRes] > isGoldOffset)){
 				fpCounts[linIdexMeta]+=1;
 			}
 			else{
@@ -261,31 +274,32 @@ void testResultsAndCounters(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU,for
 		
 		}
 		}
-	for(int i =0; i<pointsNumberRef;i++ ){
-		forTestPointStruct point= points[i];
-		if( (point.shouldBeInResAfterOneDil || point.shouldBeInResAfterTwoDil  )  && !point.isFoundInResult  ){
-			printf("fff point %d %d %d not found in result \n", point.x, point.y, point.z);
+		for (int i = 0; i < pointsNumberRef; i++) {
+			forTestPointStruct point = points[i];
+			if ((point.shouldBeInResAfterOneDil || point.shouldBeInResAfterTwoDil) && !point.isFoundInResult) {
+				printf("fff point %d %d %d not found in result \n", point.x, point.y, point.z);
 
-		}else{
-			printf("ttt  point %d %d %d found in result \n", point.x, point.y, point.z);
-		
-		}
-		
-		}	
+			}
+			else {
+				printf("ttt  point %d %d %d found in result \n", point.x, point.y, point.z);
+
+			}
+
+		};
 //checking weather counters in metadata match the count that should be present 		
 for(int linIdexMeta=0;linIdexMeta< fbArgs.metaData.totalMetaLength; linIdexMeta++){
 if(fpCounts[linIdexMeta]>0){
 	if(metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 3] = fpCounts[linIdexMeta] ){
 		printf(" correct fp count %d in linMeta %d  "
 		,fpCounts[linIdexMeta]
-		.linIdexMeta
+		,linIdexMeta
 		);
 
 	}else{
 		printf("fff incorrect fp count %d is in meta %d in linMeta %d  "
 		,fpCounts[linIdexMeta]
 		,metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 3]
-		.linIdexMeta
+		,linIdexMeta
 		);
 	}
 }
@@ -293,14 +307,14 @@ if(fnCounts[linIdexMeta]>0){
 	if(metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 4] = fnCounts[linIdexMeta] ){
 		printf(" correct fn count %d in linMeta %d  "
 		,fnCounts[linIdexMeta]
-		.linIdexMeta
+		,linIdexMeta
 		);
 
 	}else{
 		printf("fff incorrect fn count %d is in meta %d in linMeta %d  "
 		,fnCounts[linIdexMeta]
 		,metaDataArrPointerCPU[ linIdexMeta* metaData.metaDataSectionLength + 4]
-		.linIdexMeta
+		,linIdexMeta
 		);
 	}
 }

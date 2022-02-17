@@ -50,6 +50,12 @@ __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t 
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
+            if (linIdexMeta==11) {
+                //printf("setting neighbour indexes inArrIndex %d linMeta %d \n "
+                //    , inArrIndex
+                //    , linIdexMeta
+                //);
+            }
             localBlockMetaData[inArrIndex] = (linIdexMeta + toAdd);
         }
         else {
@@ -57,10 +63,6 @@ __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t 
         }
     };
 }
-
-
-
-
 
 /*
 iteration over metadata - becouse metadata may be small and to maximize occupancy we use linear index and then clalculate xMeta,ymeta,zMeta from this linear index ...

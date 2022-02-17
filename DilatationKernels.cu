@@ -90,10 +90,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                 
                 
                 pipeline.consumer_wait();
-                afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i,
+                afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i-1,
                         metaData, tile, localFpConter, localFnConter
                         , blockFpConter, blockFnConter
-                        , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue);
+                        , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
                 //needed for after block metadata update
                 if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {
                     lastI[0] = i;
@@ -160,7 +160,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
             metaData, tile, localFpConter, localFnConter
             , blockFpConter, blockFnConter
-            , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue);
+            , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
     }
     sync(cta);
 

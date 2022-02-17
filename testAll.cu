@@ -151,14 +151,14 @@ extern "C" inline void testMainPasswes() {
 
 
 
-	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
-//	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+   setArrCPU(arrSegmObj, 0, 0, 31, 2);//
 
-	setArrCPU(arrGoldObj, 0, 9, 0, 2);//
-	setArrCPU(arrSegmObj, 0, 10, 0, 2);//
 
-	setArrCPU(arrGoldObj, 11, 10, 0, 2);//
-	setArrCPU(arrSegmObj, 11, 9, 0, 2);//
+//	setArrCPU(arrGoldObj, 64, 15, 15, 2);//
+	setArrCPU(arrGoldObj, 68, 18, 68, 2);//
+
+	//setArrCPU(arrGoldObj, 11, 10, 0, 2);//
+	//setArrCPU(arrSegmObj, 11, 9, 0, 2);//
 
 	//setArrCPU(arrGoldObj, 0, 7, 7, 2);//
 
@@ -211,7 +211,7 @@ minZ 2  [6]
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
 		);
 
-	printFromReduced(fbArgs, reducedResCPU);
+	//printFromReduced(fbArgs, reducedResCPU);
 
 
 	for (int i = 0; i < 5;i++) {
