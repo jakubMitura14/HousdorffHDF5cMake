@@ -151,7 +151,8 @@ extern "C" inline void testMainPasswes() {
 
 
 
-   setArrCPU(arrSegmObj, 0, 0, 31, 2);//
+   setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+   setArrCPU(arrSegmObj, 31, 0, 0, 2);//
 
 
 //	setArrCPU(arrGoldObj, 64, 15, 15, 2);//
@@ -212,6 +213,13 @@ minZ 2  [6]
 		);
 
 	//printFromReduced(fbArgs, reducedResCPU);
+
+
+
+	for (int wQi = 0; wQi < minMaxesCPU[9]; wQi ++ ) {
+		printf("\n in work q %d  \n ", workQueuePointerCPU[wQi]);
+	}
+
 
 
 	for (int i = 0; i < 5;i++) {

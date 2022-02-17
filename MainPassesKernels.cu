@@ -268,12 +268,8 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         , fbArgs.metaDataArrPointer, iasAnyProcessed,   isGoldForLocQueue
         , lastI, pipeline, bigShape, thirdRegShape);
 
+    grid.sync();
 
-
-
-    // grid.sync();
-
-     //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
     /////////////// loading work queue for padding dilatations
     metadataPass(fbArgs, true, 11, 7, 8,
         12, 9, 10
@@ -281,26 +277,32 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
         , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
+   
+    
     //////////// padding dilatations
+    grid.sync();
+    //mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
+    //    , fbArgs.workQueuePointer
+    //    , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
+    //    , cta, tile, grid, mainShmem
+    //    , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset,
+    //    globalWorkQueueCounter, localWorkQueueCounter, localTotalLenthOfWorkQueue, localFpConter,
+    //    localFnConter, blockFpConter, blockFnConter, resultfpOffset,
+    //    resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
+    //    , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
+    //    , fbArgs.metaDataArrPointer, iasAnyProcessed, isGoldForLocQueue
+    //    , lastI, pipeline, bigShape, thirdRegShape);
+
+//grid.sync();
+//     ////////////////////////main metadata pass
+//metadataPass(fbArgs, false, 7, 8, 8,
+//    9, 10,8
+//    , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+//    , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+//    , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+//    , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
 
 
-
-
-
-
-//     grid.sync();
-     ////////////////////////main metadata pass
-        //  krowa predicates must be lambdas probablu now they will not compute well as we do not have for example linIdexMeta ...
-
-     //metadataPass(false,(isGoldPassToContinue[0] &&  mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 7]
-     //         && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 8]),
-     //         (isSegmPassToContinue[0] && mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 9]
-     //             && !mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.metaDataOffset + 10]),
-     //         , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-     //         , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-     //         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-     //         , mainArr, metaData, minMaxes, workQueue,metaDataArr);
-     // 
 
 //  }// end while
 
@@ -368,18 +370,18 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     int theadsForFirstMetaPass = blockSize;
     int blockForFirstMetaPass = minGridSize;
     //for main pass kernel
-    //cudaOccupancyMaxPotentialBlockSize(
-    //    &minGridSize,
-    //    &blockSize,
-    //    (void*)mainPassKernel<int>,
-    //    0);
-    //int warpsNumbForMainPass = blockSize / 32;
-    //int blockForMainPass = minGridSize;
-    //    printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
+    cudaOccupancyMaxPotentialBlockSize(
+        &minGridSize,
+        &blockSize,
+        (void*)mainPassKernel<int>,
+        0);
+    int warpsNumbForMainPass = blockSize / 32;
+    int blockForMainPass = minGridSize;
+        printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
 
-    int warpsNumbForMainPass = 10;
-    int blockForMainPass = 1;
+    //int warpsNumbForMainPass = 10;
+    //int blockForMainPass = 1;
 
 
 

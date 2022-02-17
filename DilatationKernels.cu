@@ -19,11 +19,11 @@ using namespace cooperative_groups;
 
 //template <typename TKKI, typename forPipeline >
 template <typename TKKI >
-inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t* mainArrAPointer,
-    uint32_t* mainArrBPointer, MetaDataGPU& metaData
-    , unsigned int* minMaxes, uint32_t* workQueue
+inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t*& mainArrAPointer,
+    uint32_t*& mainArrBPointer, MetaDataGPU& metaData
+    , unsigned int*& minMaxes, uint32_t*& workQueue
     , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb,
-    thread_block& cta, thread_block_tile<32>& tile, grid_group& grid, uint32_t mainShmem[lengthOfMainShmem]
+    thread_block& cta, thread_block_tile<32>& tile, grid_group& grid, uint32_t (&mainShmem)[lengthOfMainShmem]
     , bool isAnythingInPadding[6], bool isBlockFull[], int iterationNumb[1], unsigned int globalWorkQueueOffset[1],
     unsigned int globalWorkQueueCounter[1], unsigned int localWorkQueueCounter[1],
     unsigned int localTotalLenthOfWorkQueue[1], unsigned int localFpConter[1],

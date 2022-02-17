@@ -79,13 +79,13 @@ sync(cta);
 //iterations 
 for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
     //goldpass
-
-
     if (isGoldPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAa]
         && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAb]
         && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAc])) {
 
-        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
+       // printf("in Is To Be activated gold linIdexMeta %d \n", linIdexMeta);
+
+        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) ;
         if (old < lengthOfMainShmem) {
             mainShmem[old] = linIdexMeta + (isGoldOffset);
         }
@@ -105,7 +105,9 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBb]
         && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBc]) ) {
 
-        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) - 1;
+       // printf("\n in Is To Be activated segm linIdexMeta %d \n", linIdexMeta);
+
+        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1);
         if (old < lengthOfMainShmem) {
             mainShmem[old] = linIdexMeta;
         }
@@ -126,6 +128,9 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
 sync(cta);
 if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
     if (localWorkQueueCounter[0] > 0) {
+        //printf("local work Counter in meta pass %d  \n"
+        //    , localWorkQueueCounter[0]
+        //    );
         globalWorkQueueCounter[0] = atomicAdd(&(minMaxes[9]), (localWorkQueueCounter[0]));
     }
 }
