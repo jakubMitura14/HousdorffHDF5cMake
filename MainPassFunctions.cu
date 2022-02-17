@@ -20,7 +20,7 @@ basically arrays will alternate between iterations once one will be source other
 wheather the iteration number is odd or even
 */
 template <typename TXPI>
-inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, int iterationNumb[1]) {
+inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI>& fbArgs, int(&iterationNumb)[1]) {
 
 
     if ((iterationNumb[0] & 1) == 0) {
@@ -39,7 +39,7 @@ inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI> fbArgs, int
 gettinng target array for dilatations
 */
 template <typename TXPPI>
-inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs, int iterationNumb[1]) {
+inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI>& fbArgs, int(&iterationNumb)[1]) {
 
     if ((iterationNumb[0] & 1) == 0) {
         //printf(" BB ");
@@ -61,7 +61,7 @@ inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI> fbArgs, in
 dilatation up and down - using bitwise operators
 */
 #pragma once
-inline __device__ uint32_t bitDilatate(uint32_t x) {
+inline __device__ uint32_t bitDilatate(uint32_t& x) {
     return ((x) >> 1) | (x) | ((x) << 1);
 }
 
@@ -69,12 +69,12 @@ inline __device__ uint32_t bitDilatate(uint32_t x) {
 return 1 if at given position of given number bit is set otherwise 0 
 */
 #pragma once
-inline __device__ uint32_t isBitAt(uint32_t numb, int pos) {
+inline __device__ uint32_t isBitAt(uint32_t& numb, const int pos) {
     return (numb & (1 << (pos)));
 }
 
 
-inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
+inline uint32_t isBitAtCPU(uint32_t& numb, const int pos) {
     return (numb & (1 << (pos)));
 }
 
@@ -83,15 +83,15 @@ inline uint32_t isBitAtCPU(uint32_t numb, int pos) {
 
 
 
-
-/*
-given source and target uint32 it will check the bit of intrest  of source and set the target to bit of target intrest
-*/
-#pragma once
-inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t resShared[32][32], uint8_t targetBit) {   
-    resShared[threadIdx.x][threadIdx.y] |= ((source >> sourceBit) & 1) << targetBit;
-   // return target;
-}
+//
+///*
+//given source and target uint32 it will check the bit of intrest  of source and set the target to bit of target intrest
+//*/
+//#pragma once
+//inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t resShared[32][32], uint8_t targetBit) {   
+//    resShared[threadIdx.x][threadIdx.y] |= ((source >> sourceBit) & 1) << targetBit;
+//   // return target;
+//}
 
 ///////////////////////////////// new functions
 
@@ -111,11 +111,11 @@ metaDataCoordIndex - index where in the metadata of this block th linear index o
 targetShmemOffset - offset where loaded data needed for dilatation of outside of the block is present for example defining  register shmem one or 2 ...
 */
 #pragma once
-inline __device__ void dilatateHelperForTransverse(bool predicate,
-    uint8_t paddingPos,    int8_t  normalXChange, int8_t normalYchange
-, uint32_t mainShmem[], bool isAnythingInPadding[6]
-,uint8_t forBorderYcoord, uint8_t forBorderXcoord
-,uint8_t metaDataCoordIndex, uint32_t targetShmemOffset , uint32_t*& localBlockMetaData, uint32_t& i ) {
+inline __device__ void dilatateHelperForTransverse(const bool predicate,
+    const uint8_t  paddingPos, const   int8_t  normalXChange, const  int8_t normalYchange
+, uint32_t (&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6]
+,const uint8_t forBorderYcoord,const  uint8_t forBorderXcoord
+,const uint8_t metaDataCoordIndex,const uint32_t targetShmemOffset , uint32_t (&localBlockMetaData)[40], uint32_t& i ) {
     // so we first check for corner cases 
     if (predicate) {
         // now we need to load the data from the neigbouring blocks
@@ -145,12 +145,12 @@ inline __device__ void dilatateHelperForTransverse(bool predicate,
 
 
 #pragma once
-inline __device__ void dilatateHelperTopDown( uint8_t paddingPos, 
-uint32_t* mainShmem, bool isAnythingInPadding[6], uint32_t*& localBlockMetaData
-,uint8_t metaDataCoordIndex
-, uint8_t sourceBit 
-, uint8_t targetBit
-, uint32_t targetShmemOffset, uint32_t& i
+inline __device__ void dilatateHelperTopDown( const uint8_t paddingPos, 
+uint32_t(&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6], uint32_t(&localBlockMetaData)[40]
+,const uint8_t metaDataCoordIndex
+,const  uint8_t sourceBit 
+, const uint8_t targetBit
+, const uint32_t targetShmemOffset, uint32_t& i
 ) {
        // now we need to load the data from the neigbouring blocks
        //first checking is there anything to look to 
@@ -212,14 +212,14 @@ finilizing operations for last block
 
 
 
-inline __device__  void afterBlockClean(thread_block cta
-    , unsigned int worQueueStep[1], uint32_t*& localBlockMetaData
-    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
+inline __device__  void afterBlockClean(thread_block& cta
+    , unsigned int(&worQueueStep)[1], uint32_t (&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem],const uint32_t i, MetaDataGPU& metaData
     , thread_block_tile<32>& tile
-    , unsigned int localFpConter[1], unsigned int localFnConter[1]
-    , unsigned int blockFpConter[1], unsigned int blockFnConter[1]
-    , uint32_t* metaDataArr
-    , bool isAnythingInPadding[6],bool isBlockFull[1], bool isPaddingPass, bool isGoldForLocQueue[localWorkQueLength], uint32_t lastI[1]
+    , unsigned int(&localFpConter)[1], unsigned int(&localFnConter)[1]
+    , unsigned int(&blockFpConter)[1], unsigned int (&blockFnConter)[1]
+    , uint32_t*& metaDataArr
+    , bool (&isAnythingInPadding)[6],bool (&isBlockFull)[1],const bool isPaddingPass, bool (&isGoldForLocQueue)[localWorkQueLength], uint32_t(&lastI)[1]
    ) {
 
 
@@ -293,12 +293,14 @@ inline __device__  void afterBlockClean(thread_block cta
 initial cleaning  and initializations of dilatation kernel
 
 */
-inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool isPaddingPass, int iterationNumb[1], 
-    unsigned int localWorkQueueCounter[1], unsigned int blockFpConter[1],
-    unsigned int blockFnConter[1], unsigned int localFpConter[1],
-    unsigned int localFnConter[1], bool*& isBlockFull, unsigned int fpFnLocCounter[1],
-    bool oldIsGold[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int globalWorkQueueOffset[1]
-    , unsigned int worQueueStep[1], unsigned int* minMaxes, unsigned int localMinMaxes[5], uint32_t lastI[1])
+inline __device__  void dilBlockInitialClean(thread_block_tile<32>& tile,
+    const  bool isPaddingPass, int(&iterationNumb)[1],
+    unsigned int(&localWorkQueueCounter)[1], unsigned int(&blockFpConter)[1],
+    unsigned int(&blockFnConter)[1], unsigned int(&localFpConter)[1],
+    unsigned int(&localFnConter)[1],bool (&isBlockFull)[1], 
+    unsigned int(&fpFnLocCounter)[1],
+    unsigned int(&localTotalLenthOfWorkQueue)[1], unsigned int(&globalWorkQueueOffset)[1]
+    , unsigned int(&worQueueStep)[1], unsigned int*& minMaxes, unsigned int(&localMinMaxes)[5], uint32_t(&lastI)[1])
  {
 
     if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0 && !isPaddingPass) {
@@ -328,10 +330,6 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
         fpFnLocCounter[0] = 0;
     };
 
-    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
-        // if it will be still of such value it mean that no block was processed
-        oldIsGold[0] = false;
-    };
 
     if (tile.thread_rank() == 10 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
@@ -361,8 +359,8 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32> tile, bool is
 /*
 load work que from global memory
 */
-inline __device__  void loadWorkQueue(uint32_t mainShmem[lengthOfMainShmem], uint32_t* workQueue
-, bool isGoldForLocQueue[localWorkQueLength], uint32_t bigloop, unsigned int worQueueStep[1]) {
+inline __device__  void loadWorkQueue(uint32_t(&mainShmem)[lengthOfMainShmem], uint32_t*& workQueue
+, bool(&isGoldForLocQueue)[localWorkQueLength], uint32_t& bigloop, unsigned int(&worQueueStep)[1]) {
 
     //to do change into barrier
 
@@ -382,9 +380,9 @@ inline __device__  void loadWorkQueue(uint32_t mainShmem[lengthOfMainShmem], uin
 /*
 loads metadata of given block to meta data 
 */
-inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t mainShmem[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
-, uint32_t* metaDataArr, MetaDataGPU& metaData, uint8_t toAdd, uint32_t ii) {
+inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
+, uint32_t*& metaDataArr, MetaDataGPU& metaData, const uint8_t toAdd, uint32_t& ii) {
    
     //cuda::memcpy_async(cta, (&localBlockMetaData[(ii&1)*20]),
     //    (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd+ii])

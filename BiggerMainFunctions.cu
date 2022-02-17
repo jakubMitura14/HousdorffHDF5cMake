@@ -27,10 +27,10 @@ using namespace cooperative_groups;
 loading data about this block to shmem
 */
 template <typename TXPI>
-inline __device__  void loadMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1]) {
 
     pipeline.producer_acquire();
     cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
@@ -45,10 +45,10 @@ inline __device__  void loadMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
 process data about this block 
 */
 template <typename TXPI>
-inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1]) {
 
     pipeline.consumer_wait();
 
@@ -64,10 +64,10 @@ inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
 loading data about block above to shmem
 */
 template <typename TXPI>
-inline __device__  void loadTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1]) {
 
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+13] < isGoldOffset) {
@@ -85,10 +85,10 @@ inline __device__  void loadTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& c
 loading data about block above to shmem
 */
 template <typename TXPI>
-inline __device__  void processTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6] ) {
 
     pipeline.consumer_wait();
 
@@ -102,10 +102,10 @@ inline __device__  void processTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block
 
 /////BOTTOM
 template <typename TXPI>
-inline __device__  void loadBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+14] < isGoldOffset) {
@@ -120,10 +120,10 @@ inline __device__  void loadBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_block
 }
 
 template <typename TXPI>
-inline __device__  void processBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.consumer_wait();
 
@@ -142,10 +142,10 @@ inline __device__  void processBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_bl
 
 ///////////// right
 template <typename TXPI>
-inline __device__  void loadRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
 
 
@@ -161,10 +161,10 @@ inline __device__  void loadRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_block&
 
 
 template <typename TXPI>
-inline __device__  void processRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
 
     pipeline.consumer_wait();
@@ -181,10 +181,10 @@ inline __device__  void processRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_blo
 
 ///////////// left
 template <typename TXPI>
-inline __device__  void loadLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
 
 
@@ -200,10 +200,10 @@ inline __device__  void loadLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
 
 
 template <typename TXPI>
-inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
 
     pipeline.consumer_wait();
@@ -218,10 +218,10 @@ inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
 
 ///////////// anterior
 template <typename TXPI>
-inline __device__  void loadAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+17] < isGoldOffset && tile.meta_group_rank() == 0) {
@@ -236,10 +236,10 @@ inline __device__  void loadAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_blo
 
 
 template <typename TXPI>
-inline __device__  void processAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.consumer_wait();
     dilatateHelperForTransverse((threadIdx.y == (fbArgs.dbYLength - 1)), 4
@@ -251,10 +251,10 @@ inline __device__  void processAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_
 
 ///////////// posterior
 template <typename TXPI>
-inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+18] < isGoldOffset && tile.meta_group_rank() == 0) {
@@ -277,10 +277,11 @@ inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_bl
 load reference if needed or data for next iteration if there is such
 */
 template <typename TXPI>
-inline __device__  void lastLoad(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void lastLoad(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding, uint32_t*& origArrs, unsigned int*& worQueueStep) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]
+    , uint32_t*& origArrs, unsigned int (&worQueueStep)[1]) {
 
     pipeline.producer_acquire();
       
@@ -304,10 +305,12 @@ inline __device__  void lastLoad(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
 }
 
 template <typename TXPI>
-inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta
+    , uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding, bool*& isBlockFull) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6],
+    bool (&isBlockFull)[1]   ) {
 
     pipeline.consumer_wait();
     //dilatate posterior 
@@ -330,11 +333,12 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
 //////////// validation
 
 template <typename TXPI>
-inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t*& localBlockMetaData
-    , uint32_t*& mainShmem, cuda::pipeline<cuda::thread_scope_block>& pipeline
+inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
+    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool*& isGoldForLocQueue, int*& iterationNumb, bool*& isAnythingInPadding, bool*& isBlockFull
-, unsigned int*& localFpConter, unsigned int*& localFnConter
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]
+    , bool(&isBlockFull)[1]
+, unsigned int (&localFpConter)[1], unsigned int (&localFnConter)[1]
 , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb
 
 ) {

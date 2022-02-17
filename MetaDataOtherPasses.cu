@@ -38,14 +38,15 @@ https://stackoverflow.com/questions/13548172/bitshifts-to-obtain-remainder
 
 #pragma once
 template <typename TKKI>
-inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, bool isPaddingPass
-    , uint8_t predicateAa, uint8_t predicateAb, uint8_t predicateAc
-    , uint8_t predicateBa, uint8_t predicateBb, uint8_t predicateBc
-    ,uint32_t mainShmem[], unsigned int globalWorkQueueOffset[1], unsigned int globalWorkQueueCounter[1]
-    , unsigned int localWorkQueueCounter[1], unsigned int localTotalLenthOfWorkQueue[1], unsigned int localMinMaxes[5]
-    , unsigned int fpFnLocCounter[1], bool isGoldPassToContinue[1], bool isSegmPassToContinue[1], thread_block cta, thread_block_tile<32> tile
-    , MetaDataGPU metaData
-    , unsigned int* minMaxes, uint32_t* workQueue, uint32_t* metaDataArr
+inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, const bool isPaddingPass
+    , const uint8_t predicateAa, const uint8_t predicateAb, const uint8_t predicateAc
+    , const uint8_t predicateBa, const uint8_t predicateBb, const uint8_t predicateBc
+    ,uint32_t (&mainShmem)[lengthOfMainShmem], unsigned int(&globalWorkQueueOffset)[1], unsigned int(&globalWorkQueueCounter)[1]
+    , unsigned int(&localWorkQueueCounter)[1], unsigned int(&localTotalLenthOfWorkQueue)[1], unsigned int(&localMinMaxes)[5]
+    , unsigned int(&fpFnLocCounter)[1], bool(&isGoldPassToContinue)[1], bool(&isSegmPassToContinue)[1]
+    , thread_block& cta, thread_block_tile<32>& tile
+    , MetaDataGPU& metaData
+    , unsigned int*& minMaxes, uint32_t*& workQueue, uint32_t*& metaDataArr
 
 ) {
   // preparation loads

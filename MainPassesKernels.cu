@@ -104,12 +104,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     thread_block_tile<32> tile = tiled_partition<32>(cta);
     grid_group grid = cooperative_groups::this_grid();
 
-
-
-    cuda::aligned_size_t<128Ui64> bigShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (fbArgs.metaData.mainArrXLength));
-    cuda::aligned_size_t<128Ui64> thirdRegShape = cuda::aligned_size_t<128>(sizeof(uint32_t) * (32));
-
-
     /*
     * according to https://forums.developer.nvidia.com/t/find-the-limit-of-shared-memory-that-can-be-used-per-block/48556 it is good to keep shared memory below 16kb kilo bytes
     main shared memory spaces
@@ -145,7 +139,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
     __shared__ bool isAnythingInPadding[6];
 
-    __shared__ bool isBlockFull[2];
+    __shared__ bool isBlockFull[1];
 
     __shared__ uint32_t lastI[1];
 
@@ -173,11 +167,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     __shared__ unsigned int worQueueStep[1];
 
-    __shared__ uint32_t isGold[1];
-    __shared__ uint32_t currLinIndM[1];
-
-
-    __shared__ bool iasAnyProcessed[1];
 
     /* will be used to store all of the minMaxes varibles from global memory (from 7 to 11)
     0 : global FP count;
@@ -255,18 +244,27 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-
+    for (uint8_t i = 0; i < 5;i++) {
     mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
         , fbArgs.workQueuePointer
         , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
         , cta, tile, grid, mainShmem
-        , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset,
-        globalWorkQueueCounter, localWorkQueueCounter, localTotalLenthOfWorkQueue, localFpConter,
-        localFnConter, blockFpConter, blockFnConter, resultfpOffset,
-        resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
-        , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-        , fbArgs.metaDataArrPointer, iasAnyProcessed,   isGoldForLocQueue
-        , lastI, pipeline, bigShape, thirdRegShape);
+       , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
+       ,globalWorkQueueCounter
+        , localWorkQueueCounter
+       , localTotalLenthOfWorkQueue
+       , localFpConter
+        , localFnConter, blockFpConter
+        , blockFnConter
+        , resultfpOffset
+        ,resultfnOffset, worQueueStep, localMinMaxes
+        , localBlockMetaData, fpFnLocCounter
+        , isGoldPassToContinue, isSegmPassToContinue
+         , fbArgs.origArrsPointer
+        , fbArgs.metaDataArrPointer,  isGoldForLocQueue
+        , lastI, pipeline
+    
+    ); 
 
     grid.sync();
 
@@ -278,22 +276,33 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
         , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
    
-    
-    //////////// padding dilatations
-    grid.sync();
+    }
+
+
+    ////////////// padding dilatations
+    //grid.sync();
     //mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
     //    , fbArgs.workQueuePointer
     //    , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
     //    , cta, tile, grid, mainShmem
-    //    , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset,
-    //    globalWorkQueueCounter, localWorkQueueCounter, localTotalLenthOfWorkQueue, localFpConter,
-    //    localFnConter, blockFpConter, blockFnConter, resultfpOffset,
-    //    resultfnOffset, worQueueStep, isGold, currLinIndM, localMinMaxes
-    //    , localBlockMetaData, fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, fbArgs.origArrsPointer
-    //    , fbArgs.metaDataArrPointer, iasAnyProcessed, isGoldForLocQueue
-    //    , lastI, pipeline, bigShape, thirdRegShape);
+    //    , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
+    //    , globalWorkQueueCounter
+    //    , localWorkQueueCounter
+    //    , localTotalLenthOfWorkQueue
+    //    , localFpConter
+    //    , localFnConter, blockFpConter
+    //    , blockFnConter
+    //    , resultfpOffset
+    //    , resultfnOffset, worQueueStep, localMinMaxes
+    //    , localBlockMetaData, fpFnLocCounter
+    //    , isGoldPassToContinue, isSegmPassToContinue
+    //    , fbArgs.origArrsPointer
+    //    , fbArgs.metaDataArrPointer, isGoldForLocQueue
+    //    , lastI, pipeline
 
-//grid.sync();
+    //);
+
+    //grid.sync();
 //     ////////////////////////main metadata pass
 //metadataPass(fbArgs, false, 7, 8, 8,
 //    9, 10,8
