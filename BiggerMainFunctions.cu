@@ -260,13 +260,13 @@ inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_bl
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+18] < isGoldOffset) {
 
-        if (threadIdx.x==0 && threadIdx.y==0) {
-            printf("address to load  posterior %d isGold %d start index %d\n"
-                , localBlockMetaData[(i & 1) * 20 + 18]
-                , isGoldForLocQueue[i]
-                , (localBlockMetaData[(i & 1) * 20 + 18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
-            );
-        }
+        //if (threadIdx.x==0 && threadIdx.y==0) {
+        //    printf("address to load  posterior %d isGold %d start index %d\n"
+        //        , localBlockMetaData[(i & 1) * 20 + 18]
+        //        , isGoldForLocQueue[i]
+        //        , (localBlockMetaData[(i & 1) * 20 + 18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+        //    );
+        //}
 
         cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
             &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 18] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],

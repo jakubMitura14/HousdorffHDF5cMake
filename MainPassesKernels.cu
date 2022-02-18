@@ -247,7 +247,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-    //for (auto i = 0; i < 2; i++) {
+    for (auto i = 0; i < 5; i++) {
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -316,21 +316,13 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         grid.sync();
 
 
-  // }
+   }
 
 //  }// end while
 
   //setting global iteration number to local one 
 
 }
-
-
-
-
-
-
-
-
 
 
 

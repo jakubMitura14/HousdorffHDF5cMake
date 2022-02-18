@@ -118,44 +118,7 @@ inline __device__ void dilatateHelperForTransverse(ForBoolKernelArgs<TXPI>& fbAr
 ,const uint8_t forBorderYcoord,const  uint8_t forBorderXcoord
 ,const uint8_t metaDataCoordIndex,const uint32_t targetShmemOffset , uint32_t (&localBlockMetaData)[40], uint32_t& i ) {
  
-    if (localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex] < isGoldOffset) {
-        if (normalYchange == (-1)) {
-            if (mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] > 0) {
-                //   auto linIdexMeta = mainShmem[startOfLocalWorkQ + i];
-             /*      uint8_t xMeta = linIdexMeta % metaData.metaXLength;
-                   uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
-                   uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));*/
-
-
-                printf("in block from posterior idX %d idY %d  linMeta %d targetLin meta %d \n"
-                    , threadIdx.x, threadIdx.y
-                    , mainShmem[startOfLocalWorkQ + i]
-                    , localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex]
-                );
-            }
-
-            if (fbArgs.mainArrAPointer[
-                (localBlockMetaData[(i & 1) * 20 + 18]) * fbArgs.metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32] > 0) {
-                //   auto linIdexMeta = mainShmem[startOfLocalWorkQ + i];
-             /*      uint8_t xMeta = linIdexMeta % metaData.metaXLength;
-                   uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
-                   uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));*/
-
-
-                printf("in orig from posterior idX %d idY %d  linMeta %d targetLin meta %d  vall %d\n"
-                    , threadIdx.x, threadIdx.y
-                    , mainShmem[startOfLocalWorkQ + i]
-                    , localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex]
-                    , fbArgs.mainArrAPointer[
-                        (localBlockMetaData[(i & 1) * 20 + 18]) * fbArgs.metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32]
-                );
-            }
-
-
-
-        }
-    }
-    
+       
     
     // so we first check for corner cases 
     if (predicate) {
