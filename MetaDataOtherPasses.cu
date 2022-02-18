@@ -23,6 +23,54 @@ using namespace cooperative_groups;
 
 
 
+
+inline __device__ bool getPredGoldPass(const bool isPaddingPass
+    , bool(&isGoldPassToContinue)[1], bool(&isSegmPassToContinue)[1]
+    , MetaDataGPU& metaData
+   , uint32_t*& metaDataArr, uint32_t& linIdexMeta
+
+){
+    if (isPaddingPass) {
+
+
+        return (isGoldPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11]
+            && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7]
+            && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8]);
+
+
+    }
+    else {
+        return (isGoldPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7]
+            && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8]);
+
+
+    }
+
+}
+
+
+inline __device__ bool getPredSegmPass(const bool isPaddingPass
+    , bool(&isGoldPassToContinue)[1], bool(&isSegmPassToContinue)[1]
+    , MetaDataGPU& metaData
+   , uint32_t*& metaDataArr, uint32_t& linIdexMeta
+
+) {
+    if (isPaddingPass) {
+        return (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + +12]
+            && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9]
+            && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10]);
+
+    }
+    else {
+        return (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9]
+            && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10]);
+    }
+
+
+}
+
+
+
 /*
 as we have limited space in work queue we will use also the resShmem and source shmem in order to keep calculations easy 
 we will divide all shared memory in  blocks of 32 length what will enable us using fast shift operators 
@@ -75,16 +123,38 @@ tile.sync();
      */
 if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { isGoldPassToContinue[0] = ((localMinMaxes[0] * fbArgs.robustnessPercent) > localMinMaxes[3]); };
 if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { isGoldPassToContinue[0] = ((localMinMaxes[1] * fbArgs.robustnessPercent) > localMinMaxes[4]); };
+
+
+
+
 sync(cta);
 
 //iterations 
-for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-    //goldpass
-    if (isGoldPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAa]
-        && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAb]
-        && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateAc])) {
+for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta <= metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+    
+    //if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11]) {
+    //    printf("in meta pass gold  linIdexMeta %d to be activated  1  isActiveGold %d  isFullGold %d \n"
+    //        , linIdexMeta
+    //        , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7]
+    //    , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8]);
 
-       // printf("in Is To Be activated gold linIdexMeta %d \n", linIdexMeta);
+    //
+    //}
+    //
+    //
+    //if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] ) {
+    //    printf("in meta pass segm  linIdexMeta %d to be activated  1  isActive %d  isFull %d \n"
+    //        , linIdexMeta
+    //        , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9]
+    //        , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10]);
+
+    //}
+
+
+    //goldpass
+    if (getPredGoldPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue    , metaData, metaDataArr, linIdexMeta)) {
+
+        //printf("in meta pass gold linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) ;
         if (old < lengthOfMainShmem) {
@@ -102,11 +172,9 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
     }
     //segm pass
-    if (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBa]
-        && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBb]
-        && (isPaddingPass &&  !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + predicateBc]) ) {
+    if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue  , metaData, metaDataArr, linIdexMeta)) {
 
-       // printf("\n in Is To Be activated segm linIdexMeta %d \n", linIdexMeta);
+       // printf("in meta pass gold linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1);
         if (old < lengthOfMainShmem) {

@@ -169,7 +169,7 @@ inline __device__  void processRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_blo
 
     pipeline.consumer_wait();
 
-    dilatateHelperForTransverse((threadIdx.x == (fbArgs.dbXLength - 1)),
+    dilatateHelperForTransverse(fbArgs,(threadIdx.x == (fbArgs.dbXLength - 1)),
         3, (1), (0), mainShmem, isAnythingInPadding
         , threadIdx.y, 0
         , 16, begfirstRegShmem, localBlockMetaData,i);
@@ -189,9 +189,9 @@ inline __device__  void loadLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
 
 
     pipeline.producer_acquire();
-    if (localBlockMetaData[(i & 1) * 20+15] < isGoldOffset) {
+    if (mainShmem[startOfLocalWorkQ + i]>0) {
         cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20+15] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+            &getSourceReduced(fbArgs, iterationNumb)[(mainShmem[startOfLocalWorkQ + i]-1) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
             cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
             , pipeline);
     }
@@ -208,7 +208,7 @@ inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
 
     pipeline.consumer_wait();
 
-    dilatateHelperForTransverse((threadIdx.x == 0),
+    dilatateHelperForTransverse(fbArgs,(threadIdx.x == 0),
         2, (-1), (0), mainShmem, isAnythingInPadding
         , threadIdx.y, 31
         , 15, begSecRegShmem, localBlockMetaData,i);
@@ -224,12 +224,12 @@ inline __device__  void loadAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_blo
     , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.producer_acquire();
-    if (localBlockMetaData[(i & 1) * 20+17] < isGoldOffset && tile.meta_group_rank() == 0) {
+    if (localBlockMetaData[(i & 1) * 20+17] < isGoldOffset ) {
 
-        cuda::memcpy_async(tile, &mainShmem[begfirstRegShmem], &getSourceReduced(fbArgs, iterationNumb)[
-            (localBlockMetaData[(i & 1) * 20+17]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-            cuda::aligned_size_t<128>(sizeof(uint32_t) * (32)), pipeline);
-
+        cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
+            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 17] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+            cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
+            , pipeline);
     }
     pipeline.producer_commit();
 }
@@ -242,10 +242,11 @@ inline __device__  void processAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_
     , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.consumer_wait();
-    dilatateHelperForTransverse((threadIdx.y == (fbArgs.dbYLength - 1)), 4
+
+    dilatateHelperForTransverse(fbArgs,(threadIdx.y == (fbArgs.dbYLength - 1)), 4
         , (0), (1), mainShmem, isAnythingInPadding
         , 0, threadIdx.x
-        , 17, begfirstRegShmem, localBlockMetaData,i);
+        , 17, begfirstRegShmem, localBlockMetaData, i);
     pipeline.consumer_release();
 }
 
@@ -257,12 +258,20 @@ inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_bl
     , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]) {
 
     pipeline.producer_acquire();
-    if (localBlockMetaData[(i & 1) * 20+18] < isGoldOffset && tile.meta_group_rank() == 0) {
+    if (localBlockMetaData[(i & 1) * 20+18] < isGoldOffset) {
 
-        cuda::memcpy_async(tile, &mainShmem[begSecRegShmem], &getSourceReduced(fbArgs, iterationNumb)[
-            (localBlockMetaData[(i & 1) * 20+18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-            cuda::aligned_size_t<128>(sizeof(uint32_t) * (32)), pipeline);
+        if (threadIdx.x==0 && threadIdx.y==0) {
+            printf("address to load  posterior %d isGold %d start index %d\n"
+                , localBlockMetaData[(i & 1) * 20 + 18]
+                , isGoldForLocQueue[i]
+                , (localBlockMetaData[(i & 1) * 20 + 18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+            );
+        }
 
+        cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
+            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 18] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
+            cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
+            , pipeline);
     }
     pipeline.producer_commit();
 }
@@ -314,10 +323,14 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
 
     pipeline.consumer_wait();
     //dilatate posterior 
-    dilatateHelperForTransverse((threadIdx.y == 0), 5
+    dilatateHelperForTransverse(fbArgs,(threadIdx.y == 0), 5
         , (0), (-1), mainShmem, isAnythingInPadding
-        , 0, threadIdx.x // we add offset depending on y dimension
+        , fbArgs.dbYLength-1, threadIdx.x // we add offset depending on y dimension
         , 18, begSecRegShmem, localBlockMetaData,i);
+
+
+
+
     //now all data should be properly dilatated we save it to global memory
     getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
         + threadIdx.x + threadIdx.y * 32]

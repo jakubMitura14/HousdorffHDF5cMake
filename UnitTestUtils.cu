@@ -47,10 +47,11 @@ void printFromReduced(ForBoolKernelArgs<int> fbArgs, uint32_t* arrsCPU) {
 
 
 #pragma once
-void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArrPointerCPU,MetaDataGPU metaData, uint32_t* metaDataArr) {
+void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArr,MetaDataGPU metaData) {
 //testing dilatations
-	
-	for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
+	printf("\n********* printIsBlockActiveEtc %d ***************\n", fbArgs.metaData.totalMetaLength);
+
+	for (uint32_t linIdexMeta = 0; linIdexMeta <= fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
 		//we get from linear index  the coordinates of the metadata block of intrest
 		uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
 		uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
@@ -61,8 +62,7 @@ void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArr
 // 10 :isFullSegm
 // 11 :isToBeActivatedGold
 // 12 :isToBeActivatedSegm
-		
-	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] ==1 ){
+	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] >0 ){
 		printf("is active gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8] ==1 ){
@@ -81,7 +81,12 @@ void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArr
 		printf("is to be activated segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	
-	}}
+	}
+
+	printf("\n********* end ***************\n");
+
+
+}
 
 
 

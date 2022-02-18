@@ -136,9 +136,9 @@ __global__ void firstMetaPrepareKernel(ForBoolKernelArgs<PYO> fbArgs
     for (uint32_t i = threadIdx.x; i < localWorkQueueCounter[0]; i += blockDim.x) {
         workQueue[globalWorkQueueCounter[0] +i]=localWorkQueue[i]; 
 
-     /*   printf("FFIrst meta pass lin meta to Work Q %d is gold %d \n "
+   /*     printf("FFIrst meta pass lin meta to Work Q %d is gold %d to spot %d  \n "
     , localWorkQueue[i] - isGoldOffset*(localWorkQueue[i] >= isGoldOffset)
-        , (localWorkQueue[i] >= isGoldOffset));*/
+        , (localWorkQueue[i] >= isGoldOffset), globalWorkQueueCounter[0] + i);*/
 
         //FP pass
         if (localWorkQueue[i]>= isGoldOffset) {

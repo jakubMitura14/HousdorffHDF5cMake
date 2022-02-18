@@ -19,7 +19,7 @@ using namespace cooperative_groups;
 
 //template <typename TKKI, typename forPipeline >
 template <typename TKKI >
-inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t*& mainArrAPointer,
+inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t*& mainArrAPointer,
     uint32_t*& mainArrBPointer, MetaDataGPU& metaData
     , unsigned int*& minMaxes, uint32_t*& workQueue
     , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb,
@@ -64,10 +64,10 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
         //loading metadata
         pipeline.producer_acquire();
 
-        cuda::memcpy_async(cta, (&localBlockMetaData[20]),
-            (&metaDataArr[(mainShmem[startOfLocalWorkQ ])
-                * metaData.metaDataSectionLength])
-            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
+        //cuda::memcpy_async(cta, (&localBlockMetaData[20]),
+        //    (&metaDataArr[(mainShmem[startOfLocalWorkQ ])
+        //        * metaData.metaDataSectionLength])
+        //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
 
         cuda::memcpy_async(cta, (&localBlockMetaData[0]),
             (&metaDataArr[(mainShmem[startOfLocalWorkQ])
@@ -82,9 +82,9 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
 
         for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
             if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {                      
-                    printf("linMeta beg %d is gold %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i]);
-                };
+                //if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {                      
+                //    printf("\n linMeta beg %d is gold %d is padding pass %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i], isPaddingPass);
+                //};
 
 //////////////// step 0  load main data and final processing of previous block
                //loading main data for first dilatation
@@ -101,72 +101,92 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {
                     lastI[0] = i;
                 }
-//
-//                pipeline.consumer_release();
-/////////// step 1 load top and process main data 
-//               //load top 
-//                loadTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);
-//                //process main
-//                processMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);                
-/////////// step 2 load bottom and process top 
-//                loadBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-//                //process top
-//                processTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);                     
+
+                pipeline.consumer_release();
+///////// step 1 load top and process main data 
+               //load top 
+                loadTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);
+                //process main
+                processMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);                
+///////// step 2 load bottom and process top 
+                loadBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                //process top
+                processTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);                     
 /////////// step 3 load right  process bottom  
-//                loadRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-//                //process bototm
-//                processBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                loadRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                //process bototm
+                processBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 /////////// step 4 load left process right  
-//                loadLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-//                processRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-/////////// step 5 load anterior process left 
-//                loadAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-//                processLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-/////////// step 6 load posterior process anterior 
-//                loadPosterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-//                processAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
-///////// step 7 
+               
+                loadLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                processRight(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+/////// step 5 load anterior process left 
+                loadAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                processLeft(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+/////// step 6 load posterior process anterior 
+                loadPosterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+                processAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
+/////// step 7 
                 //load reference if needed or data for next iteration if there is such 
                 //process posterior, save data from res shmem to global memory also we mark weather block is full
                 lastLoad(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, origArrs, worQueueStep);
                 processPosteriorAndSaveResShmem(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull);
 
- ////////// step 8 basically in order to complete here anyting the count need to be bigger than counter
-                //loading for next block if block is not to be validated it was already done earlier
-                //pipeline.producer_acquire();
-                //if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
-                //  > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
-                //    if (i + 1 <= worQueueStep[0]) {
-                //        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
-                //    }
-                //}
-                //pipeline.producer_commit();
-                //
+ //////// step 8 basically in order to complete here anyting the count need to be bigger than counter
+               // loading for next block if block is not to be validated it was already done earlier
+                pipeline.producer_acquire();
+                if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+                  > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
+                    if (i + 1 <= worQueueStep[0]) {
+                        loadMetaDataToShmem(cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, 1, i);
+                    }
+                }
+                pipeline.producer_commit();
+                
 
-                ////validation - so looking for newly covered voxel for opposite array so new fps or new fns
+                //validation - so looking for newly covered voxel for opposite array so new fps or new fns
+                pipeline.consumer_wait();
+
+                validate(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull, localFpConter, localFnConter, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
+                /////////
+                pipeline.consumer_release();
+
+                //pipeline.producer_acquire();
+
+                //pipeline.producer_commit();
+
                 //pipeline.consumer_wait();
 
-                //validate(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull, localFpConter, localFnConter, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
+                //getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+                //    + threadIdx.x + threadIdx.y * 32]
+                //    = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
 
                 //pipeline.consumer_release();
 
            }
        }
+        //here we are after all of the blocks planned to be processed by this block are
+
+//updating local counters of last local block (normally it is done at the bagining of the next block)
+//but we need to check weather any block was processed at all
+        pipeline.consumer_wait();
+
+        if (lastI[0] != UINT32_MAX) {
+            afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
+                metaData, tile, localFpConter, localFnConter
+                , blockFpConter, blockFnConter
+                , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
+        }
+        pipeline.consumer_release();
+
+
+
 
 
     }
 
-    //here we are after all of the blocks planned to be processed by this block are
 
-    //updating local counters of last local block (normally it is done at the bagining of the next block)
-    //but we need to check weather any block was processed at all
- 
-    if (lastI[0] != UINT32_MAX){
-    afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
-            metaData, tile, localFpConter, localFnConter
-            , blockFpConter, blockFnConter
-            , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
-    }
+
     sync(cta);
 
     //     updating global counters

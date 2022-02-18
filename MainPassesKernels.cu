@@ -97,7 +97,10 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     //    , unsigned int* minMaxes, uint32_t * workQueue
     //    , uint32_t * resultListPointerMeta, uint32_t * resultListPointerLocal, uint32_t * resultListPointerIterNumb, uint32_t * origArrs, uint32_t * metaDataArr) {
 
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+        printf("in metadataPass totalMetaLength  %d   \n", fbArgs.metaData.totalMetaLength);
 
+    };
 
     thread_block cta = cooperative_groups::this_thread_block();
 
@@ -244,74 +247,76 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-    for (uint8_t i = 0; i < 5;i++) {
-    mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
-        , fbArgs.workQueuePointer
-        , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
-        , cta, tile, grid, mainShmem
-       , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
-       ,globalWorkQueueCounter
-        , localWorkQueueCounter
-       , localTotalLenthOfWorkQueue
-       , localFpConter
-        , localFnConter, blockFpConter
-        , blockFnConter
-        , resultfpOffset
-        ,resultfnOffset, worQueueStep, localMinMaxes
-        , localBlockMetaData, fpFnLocCounter
-        , isGoldPassToContinue, isSegmPassToContinue
-         , fbArgs.origArrsPointer
-        , fbArgs.metaDataArrPointer,  isGoldForLocQueue
-        , lastI, pipeline
-    
-    ); 
+    //for (auto i = 0; i < 2; i++) {
+        mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
+            , fbArgs.workQueuePointer
+            , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
+            , cta, tile, grid, mainShmem
+            , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
+            , globalWorkQueueCounter
+            , localWorkQueueCounter
+            , localTotalLenthOfWorkQueue
+            , localFpConter
+            , localFnConter, blockFpConter
+            , blockFnConter
+            , resultfpOffset
+            , resultfnOffset, worQueueStep, localMinMaxes
+            , localBlockMetaData, fpFnLocCounter
+            , isGoldPassToContinue, isSegmPassToContinue
+            , fbArgs.origArrsPointer
+            , fbArgs.metaDataArrPointer, isGoldForLocQueue
+            , lastI, pipeline
 
-    grid.sync();
+        );
 
-    /////////////// loading work queue for padding dilatations
-    metadataPass(fbArgs, true, 11, 7, 8,
-        12, 9, 10
-        , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-        , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-        , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-        , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
-   
-    }
+        grid.sync();
+
+        ///////////// loading work queue for padding dilatations
+        metadataPass(fbArgs, true, 11, 7, 8,
+            12, 9, 10
+            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+            , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
 
 
-    ////////////// padding dilatations
-    //grid.sync();
-    //mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
-    //    , fbArgs.workQueuePointer
-    //    , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
-    //    , cta, tile, grid, mainShmem
-    //    , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
-    //    , globalWorkQueueCounter
-    //    , localWorkQueueCounter
-    //    , localTotalLenthOfWorkQueue
-    //    , localFpConter
-    //    , localFnConter, blockFpConter
-    //    , blockFnConter
-    //    , resultfpOffset
-    //    , resultfnOffset, worQueueStep, localMinMaxes
-    //    , localBlockMetaData, fpFnLocCounter
-    //    , isGoldPassToContinue, isSegmPassToContinue
-    //    , fbArgs.origArrsPointer
-    //    , fbArgs.metaDataArrPointer, isGoldForLocQueue
-    //    , lastI, pipeline
-
-    //);
-
-    //grid.sync();
-//     ////////////////////////main metadata pass
-//metadataPass(fbArgs, false, 7, 8, 8,
-//    9, 10,8
-//    , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-//    , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-//    , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-//    , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
 
 
+          //////////// padding dilatations
+        grid.sync();
+        mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
+            , fbArgs.workQueuePointer
+            , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
+            , cta, tile, grid, mainShmem
+            , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
+            , globalWorkQueueCounter
+            , localWorkQueueCounter
+            , localTotalLenthOfWorkQueue
+            , localFpConter
+            , localFnConter, blockFpConter
+            , blockFnConter
+            , resultfpOffset
+            , resultfnOffset, worQueueStep, localMinMaxes
+            , localBlockMetaData, fpFnLocCounter
+            , isGoldPassToContinue, isSegmPassToContinue
+            , fbArgs.origArrsPointer
+            , fbArgs.metaDataArrPointer, isGoldForLocQueue
+            , lastI, pipeline
+
+        );
+
+        grid.sync();
+        ////////////////////////main metadata pass
+        metadataPass(fbArgs, false, 7, 8, 8,
+            9, 10, 8
+            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+            , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
+        grid.sync();
+
+
+  // }
 
 //  }// end while
 
@@ -389,8 +394,8 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
         printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
 
-    //int warpsNumbForMainPass = 10;
-    //int blockForMainPass = 1;
+    warpsNumbForMainPass = 5;
+    blockForMainPass = 1;
 
 
 
@@ -495,7 +500,6 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
     cudaMemcpy(reducedResCPU, mainArrBPointer, sizeCPU, cudaMemcpyDeviceToHost);
 
-
     origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
     cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
 
@@ -507,12 +511,14 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     resultListPointerLocalCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
    resultListPointerIterNumbCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
    cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
+
    cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
+
    cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
 
    size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
    metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
-   cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizeRes, cudaMemcpyDeviceToHost);
+   cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizemetaDataArr, cudaMemcpyDeviceToHost);
 
    size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
 

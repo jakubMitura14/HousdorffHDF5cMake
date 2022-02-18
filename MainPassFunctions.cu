@@ -111,11 +111,52 @@ metaDataCoordIndex - index where in the metadata of this block th linear index o
 targetShmemOffset - offset where loaded data needed for dilatation of outside of the block is present for example defining  register shmem one or 2 ...
 */
 #pragma once
-inline __device__ void dilatateHelperForTransverse(const bool predicate,
+template <typename TXPI>
+inline __device__ void dilatateHelperForTransverse(ForBoolKernelArgs<TXPI>& fbArgs,const bool predicate,
     const uint8_t  paddingPos, const   int8_t  normalXChange, const  int8_t normalYchange
 , uint32_t (&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6]
 ,const uint8_t forBorderYcoord,const  uint8_t forBorderXcoord
 ,const uint8_t metaDataCoordIndex,const uint32_t targetShmemOffset , uint32_t (&localBlockMetaData)[40], uint32_t& i ) {
+ 
+    if (localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex] < isGoldOffset) {
+        if (normalYchange == (-1)) {
+            if (mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] > 0) {
+                //   auto linIdexMeta = mainShmem[startOfLocalWorkQ + i];
+             /*      uint8_t xMeta = linIdexMeta % metaData.metaXLength;
+                   uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
+                   uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));*/
+
+
+                printf("in block from posterior idX %d idY %d  linMeta %d targetLin meta %d \n"
+                    , threadIdx.x, threadIdx.y
+                    , mainShmem[startOfLocalWorkQ + i]
+                    , localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex]
+                );
+            }
+
+            if (fbArgs.mainArrAPointer[
+                (localBlockMetaData[(i & 1) * 20 + 18]) * fbArgs.metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32] > 0) {
+                //   auto linIdexMeta = mainShmem[startOfLocalWorkQ + i];
+             /*      uint8_t xMeta = linIdexMeta % metaData.metaXLength;
+                   uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
+                   uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));*/
+
+
+                printf("in orig from posterior idX %d idY %d  linMeta %d targetLin meta %d  vall %d\n"
+                    , threadIdx.x, threadIdx.y
+                    , mainShmem[startOfLocalWorkQ + i]
+                    , localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex]
+                    , fbArgs.mainArrAPointer[
+                        (localBlockMetaData[(i & 1) * 20 + 18]) * fbArgs.metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32]
+                );
+            }
+
+
+
+        }
+    }
+    
+    
     // so we first check for corner cases 
     if (predicate) {
         // now we need to load the data from the neigbouring blocks
@@ -125,6 +166,9 @@ inline __device__ void dilatateHelperForTransverse(const bool predicate,
             if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
             };
+
+
+
             mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
                 mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
                 | mainShmem[targetShmemOffset + forBorderXcoord + forBorderYcoord * 32];
@@ -224,33 +268,33 @@ inline __device__  void afterBlockClean(thread_block& cta
 
 
 
-    if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
-                    //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
-        if (localFpConter[0] >= 0) {
-            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
-            blockFpConter[0] += localFpConter[0];
-            localFpConter[0] = 0;
-        }
-    };
-    if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+    //if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+    //                //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
+    //    if (localFpConter[0] >= 0) {
+    //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
+    //        blockFpConter[0] += localFpConter[0];
+    //        localFpConter[0] = 0;
+    //    }
+    //};
+    //if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
 
-        if (localFnConter[0] >= 0) {
-            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
+    //    if (localFnConter[0] >= 0) {
+    //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
 
-            blockFnConter[0] += localFnConter[0];
-            localFnConter[0] = 0;
-        }
-    };
-    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
+    //        blockFnConter[0] += localFnConter[0];
+    //        localFnConter[0] = 0;
+    //    }
+    //};
+    //if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
-        //executed in case of previous block
-        if (isBlockFull[0] && i >= 0) {
-            //setting data in metadata that block is full
-            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
-        }
-        //resetting
-        isBlockFull[0] = true;
-    };
+    //    //executed in case of previous block
+    //    if (isBlockFull[0] && i >= 0) {
+    //        //setting data in metadata that block is full
+    //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
+    //    }
+    //    //resetting
+    //    isBlockFull[0] = true;
+    //};
 
 
 
@@ -270,7 +314,11 @@ inline __device__  void afterBlockClean(thread_block& cta
 
                 if (isAnythingInPadding[tile.thread_rank()]) {
                     metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
-                    //printf("info in padding AND range %d linMeta %d \n ", 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]);
+                    //printf("info in padding AND range %d linMeta %d new block adress %d   inMetadataArrIndex %d \n "
+                    //    , 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]
+                    //    , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()]
+                    //    , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]
+                    //);
 
                 }
                 

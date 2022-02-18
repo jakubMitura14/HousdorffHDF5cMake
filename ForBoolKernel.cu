@@ -50,12 +50,7 @@ __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t 
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
-            if (linIdexMeta==11) {
-                //printf("setting neighbour indexes inArrIndex %d linMeta %d \n "
-                //    , inArrIndex
-                //    , linIdexMeta
-                //);
-            }
+
             localBlockMetaData[inArrIndex] = (linIdexMeta + toAdd);
         }
         else {
@@ -124,9 +119,9 @@ __device__ void metaDataIter(ForBoolKernelArgs<TYU> fbArgs
     //main metadata iteration
     for (uint32_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
         //we get from linear index  the coordinates of the metadata block of intrest
-        uint8_t xMeta = linIdexMeta % metaData.metaXLength;
-        uint8_t zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
-        uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
+        auto xMeta = linIdexMeta % metaData.metaXLength;
+        auto zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
+        auto yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
         //reset
         isNotEmpty = false;
         sumFp = 0;
@@ -338,9 +333,6 @@ metaDataArr[linIdexMeta * metaData.metaDataSectionLength+ threadIdx.x]= localBlo
 
     //setting global fp and fn
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-      /*  printf("metaData.totalMetaLength %d metaData.mainArrSectionLength %d metaData.metaXLength %d \n"
-            , metaData.totalMetaLength, metaData.mainArrSectionLength, metaData.metaXLength);*/
-
         atomicAdd(&(metaData.minMaxes[7]), fpSFnS[0]);
     };
 

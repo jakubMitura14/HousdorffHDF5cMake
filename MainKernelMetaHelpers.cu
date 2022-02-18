@@ -90,7 +90,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4]+1;
     unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6]+1;
     unsigned int totalMetaLength = xRange* yRange* zRange;
-
+    printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d   \n", totalMetaLength);
  
     //updating size informations
     metaData.metaXLength = xRange;

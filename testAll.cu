@@ -47,8 +47,8 @@ extern "C" inline void testMainPasswes() {
 
 	//metadata
 	const int metaXLength = 6;
-	const int MetaYLength = 6;
-	const int MetaZLength = 10;
+	const int MetaYLength = 10;
+	const int MetaZLength = 6;
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -151,12 +151,16 @@ extern "C" inline void testMainPasswes() {
 
 
 
-   setArrCPU(arrSegmObj, 0, 0, 0, 2);//
-   setArrCPU(arrSegmObj, 31, 0, 0, 2);//
+   //setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+   setArrCPU(arrGoldObj, 0, 4, 0, 2);//
+   //setArrCPU(arrSegmObj, 31, 10, 31, 2);//
+   //setArrCPU(arrSegmObj, 63, 10, 63, 2);//
+  // setArrCPU(arrSegmObj, 63, 14, 63, 2);//
+   setArrCPU(arrSegmObj, 50, 40, 100, 2);//
 
 
 //	setArrCPU(arrGoldObj, 64, 15, 15, 2);//
-	setArrCPU(arrGoldObj, 68, 18, 68, 2);//
+	//setArrCPU(arrGoldObj, 68, 18, 68, 2);//
 
 	//setArrCPU(arrGoldObj, 11, 10, 0, 2);//
 	//setArrCPU(arrSegmObj, 11, 9, 0, 2);//
@@ -212,14 +216,23 @@ minZ 2  [6]
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
 		);
 
-	//printFromReduced(fbArgs, reducedResCPU);
-
+	printFromReduced(fbArgs, reducedResCPU);
+	//printIsBlockActiveEtc(fbArgs, metaDataArrPointerCPU, fbArgs.metaData);
 
 
 	for (int wQi = 0; wQi < minMaxesCPU[9]; wQi ++ ) {
-		printf("\n in work q %d  \n ", workQueuePointerCPU[wQi]);
+		printf("\n in work q %d  \n ", workQueuePointerCPU[wQi] - isGoldOffset * (workQueuePointerCPU[wQi] >= isGoldOffset) );
 	}
 
+	//for (int wQi = 0; wQi < 700; wQi++) {
+	//	if (metaDataArrPointerCPU[wQi]==1) {
+	//		printf("\n in metadaArr i %d  \n ", wQi);
+	//	}
+	//}
+
+	//info in padding AND range 14 linMeta 2 new block adress 30   inMetadataArrIndex 612
+	//	info in padding AND range 15 linMeta 2 new block adress 1   inMetadataArrIndex 32
+	//	info in padding AND range 14 linMeta 0 new block adress 28   inMetadataArrIndex 571
 
 
 	for (int i = 0; i < 5;i++) {
