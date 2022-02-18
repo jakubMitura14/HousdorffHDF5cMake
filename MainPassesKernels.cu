@@ -247,7 +247,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-    for (auto i = 0; i < 5; i++) {
+    for (auto i = 0; i < 200; i++) {
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -269,6 +269,13 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
         );
 
+        grid.sync();
+        if (threadIdx.x == 2 && threadIdx.y == 0) {
+            //  if (blockIdx.x == 0) {
+
+            fbArgs.minMaxes[9] = 0;
+            // }
+        };
         grid.sync();
 
         ///////////// loading work queue for padding dilatations
@@ -304,7 +311,13 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             , lastI, pipeline
 
         );
+        grid.sync();
+        if (threadIdx.x == 2 && threadIdx.y == 0) {
+            //  if (blockIdx.x == 0) {
 
+            fbArgs.minMaxes[9] = 0;
+            // }
+        };
         grid.sync();
         ////////////////////////main metadata pass
         metadataPass(fbArgs, false, 7, 8, 8,

@@ -109,6 +109,8 @@ if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
 }
 if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
     localWorkQueueCounter[0] = 0;
+    //printf(" workCounter at start %d ", minMaxes[9] );
+
 }
 if (tile.meta_group_rank() == 1) {
     cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));

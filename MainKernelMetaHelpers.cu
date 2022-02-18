@@ -90,7 +90,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4]+1;
     unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6]+1;
     unsigned int totalMetaLength = xRange* yRange* zRange;
-    printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d   \n", totalMetaLength);
+    //printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d   \n", totalMetaLength);
  
     //updating size informations
     metaData.metaXLength = xRange;
@@ -127,7 +127,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
 
     
-    size_t sizeC = (totalMetaLength * sizeof(uint32_t));
+    size_t sizeC = (totalMetaLength *2* sizeof(uint32_t));
    //cudaMallocAsync(&workQueue, size, 0);
     cudaMallocAsync(&workQueue, sizeC,0);
 

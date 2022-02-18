@@ -201,10 +201,11 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
         }
     };
     // in first thread block we zero work queue counter
-    if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
-        if (blockIdx.x == 0) {
+    if (threadIdx.x == 2 && threadIdx.y == 0) {
+      //  if (blockIdx.x == 0) {
+       
             minMaxes[9] = 0;
-        }
+       // }
     };
 
 
