@@ -33,12 +33,15 @@ using std::endl;
 
 
 using namespace H5;
-const H5std_string FILE_NAME("C:\\Users\\1\\PycharmProjects\\pythonProject3\\mytestfile.hdf5");
-const H5std_string DATASET_NAME("onlyLungsBoolFlat");
 
 
 
-void loadHDF() {
+
+
+
+
+
+void loadHDFIntoBoolArr(H5std_string FILE_NAME, H5std_string DATASET_NAME, bool*& data) {
     /*
      * Open the specified file and the specified dataset in the file.
      */
@@ -62,9 +65,8 @@ void loadHDF() {
     DataSpace memspace(1, dimsm);
 
 
-    // create a vector the same size as the dataset
-    bool* data = (bool*)calloc(dims[0], sizeof(bool));
     
+   data = (bool*)calloc(dims[0], sizeof(bool));
 
 
 
@@ -80,61 +82,16 @@ void loadHDF() {
 
 
     file.close();
-    /*
-     * Get the dimension size of each dimension in the dataspace and
-     * display them.
-     */
- //   hsize_t dims_out[1];
- //   int ndims = dataspace.getSimpleExtentDims(dims_out, NULL);
- //   cout << "rank " << rank << ", dimensions " <<
- //       (unsigned long)(dims_out[0]) << " x " <<
- //endl;
+
+}
 
 
 
+void loadHDF() {
 
-
-
-
-
-
-    /* Close the dataset and dataspace */
-   // dataset.
-   //auto  status = H5Dclose(dataset);
-
-   // status = H5Sclose(dataspace);
-
-
-
-    /// <summary>
-    /// ////////////original morphological hausdorff
-    /// </summary>
-
-    //bool* img1B = img1I.getBooleanLinearImage(0);
-    //bool* img2B = img2I.getBooleanLinearImage(0);
-
-    //auto begin = std::chrono::high_resolution_clock::now();
-
-    ////img1.setVoxelValue(1, 0, 0, 0);
-    ////img2.setVoxelValue(1, 255, 0, 0);
-
-    //HausdorffDistance* hd = new HausdorffDistance();
-    //int dist = (*hd).computeDistance(&img1, &img2);
-
-
-
-    //auto end = std::chrono::high_resolution_clock::now();
-
-    //std::cout << "Total elapsed time: ";
-    //std::cout << (double)(::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / (double)1000000000) << "s" << std::endl;
-
-    //printf("HD: %d \n", dist);
-
-
-
-
-
-
-
-
+    const H5std_string FILE_NAME("C:\\Users\\1\\PycharmProjects\\pythonProject3\\mytestfile.hdf5");
+    const H5std_string DATASET_NAME("onlyLungsBoolFlat");
+    // create a vector the same size as the dataset
+    bool* data;
+    loadHDFIntoBoolArr(FILE_NAME, DATASET_NAME, data);
 }
