@@ -176,6 +176,11 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 metaData, tile, localFpConter, localFnConter
                 , blockFpConter, blockFnConter
                 , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
+        
+         if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
+                 lastI[0] = UINT32_MAX;
+            }
+
         }
         pipeline.consumer_release();
 
@@ -193,11 +198,13 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
     if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
         if (blockFpConter[0] > 0) {
             atomicAdd(&(minMaxes[10]), (blockFpConter[0]));
+            printf("adding fp to global %d \n ", blockFpConter[0]);
         }
     };
     if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
         if (blockFnConter[0] > 0) {
             atomicAdd(&(minMaxes[11]), (blockFnConter[0]));
+            printf("adding fn to global %d \n ", blockFnConter[0]);\
         }
     };
     // in first thread block we zero work queue counter

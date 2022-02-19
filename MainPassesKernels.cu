@@ -238,17 +238,21 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         isSegmPassToContinue[0] = true;
     };
 
+
     //here we caclulate the offset for given block depending on length of the workqueue and number of the  available blocks in a grid
     // - this will give us number of work queue items per block - we will calculate offset on the basis of the block number
 
 
 
+    //isGoldPassToContinue[0] || isSegmPassToContinue[0]
+    int i = 0;
+  //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
+   ///  
+    //do{
+    for (auto j = 0; j < 50; j++) {
 
-
-    //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
-
-    for (auto i = 0; i < 250; i++) {
         //if (blockIdx.x == 0) {
+        //    i++;
         //    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) { printf("##************************* i %d  ******************##\n ", i); }
         //};
 
@@ -287,7 +291,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
-          //////////// padding dilatations
+        //////////// padding dilatations
         grid.sync();
         mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
@@ -309,7 +313,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             , lastI, pipeline
 
         );
- 
+
 
         grid.sync();
         ////////////////////////main metadata pass
@@ -320,9 +324,19 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
             , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
         grid.sync();
+        if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
+            printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
+        };
+    }
+  //  } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
 
-   }
+    //grid.sync();
+
+
+    //if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
+    //    printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
+    //};
 
 //  }// end while
 

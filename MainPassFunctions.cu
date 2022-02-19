@@ -231,23 +231,23 @@ inline __device__  void afterBlockClean(thread_block& cta
 
 
 
-    //if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
-    //                //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
-    //    if (localFpConter[0] >= 0) {
-    //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
-    //        blockFpConter[0] += localFpConter[0];
-    //        localFpConter[0] = 0;
-    //    }
-    //};
-    //if (tile.thread_rank() == 8 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+    if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0) {// this is how it is encoded wheather it is gold or segm block
+                    //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
+        if (localFpConter[0] >= 0) {
+            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
+            blockFpConter[0] += localFpConter[0];
+            localFpConter[0] = 0;
+        }
+    };
+    if (tile.thread_rank() == 8 && tile.meta_group_rank() == 3) {
 
-    //    if (localFnConter[0] >= 0) {
-    //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
+        if (localFnConter[0] >= 0) {
+            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
 
-    //        blockFnConter[0] += localFnConter[0];
-    //        localFnConter[0] = 0;
-    //    }
-    //};
+            blockFnConter[0] += localFnConter[0];
+            localFnConter[0] = 0;
+        }
+    };
     if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
         //executed in case of previous block
@@ -277,13 +277,12 @@ inline __device__  void afterBlockClean(thread_block& cta
         }
         isAnythingInPadding[0] = false;
     };
-    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
+    //if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
 
-    //executed in case of previous block
-        if (i >= 0) {
-            lastI[0] = UINT32_MAX;
-        };
-    }
+    //    if (i >= 0) {
+    //        lastI[0] = UINT32_MAX;
+    //    };
+    //}
 
 }
 

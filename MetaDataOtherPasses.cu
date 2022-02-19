@@ -112,10 +112,7 @@ if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
     //printf(" workCounter at start %d ", minMaxes[9] );
 
 }
-if (tile.meta_group_rank() == 1) {
-    cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
-}
-tile.sync();
+
 /*
 0 : global FP count;
 1 : global FN count;
@@ -123,8 +120,36 @@ tile.sync();
 3 : resultFP globalCounter
 4 : resultFn globalCounter
      */
-if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { isGoldPassToContinue[0] = ((localMinMaxes[0] * fbArgs.robustnessPercent) > localMinMaxes[3]); };
-if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { isGoldPassToContinue[0] = ((localMinMaxes[1] * fbArgs.robustnessPercent) > localMinMaxes[4]); };
+if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { 
+
+  
+    isGoldPassToContinue[0] 
+= (  (minMaxes[7] * fbArgs.robustnessPercent) > minMaxes[10]); 
+
+    //printf("in meta pass fp count %d  ceiled %f fp counter %d isTo be continued %d \n "
+    //    , minMaxes[7]
+    //    , minMaxes[7] * fbArgs.robustnessPercent
+    //    , minMaxes[10]
+    //    , isGoldPassToContinue[0]
+    //);
+
+
+};
+
+if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) { 
+
+    isSegmPassToContinue[0] 
+        = ((minMaxes[8] * fbArgs.robustnessPercent) > minMaxes[11]); 
+   
+    
+    //printf("in meta pass fn count %d  ceiled %f fn counter %d isTo be continued %d \n "
+    //    , minMaxes[8]
+    //    , minMaxes[8] * fbArgs.robustnessPercent
+    //    , minMaxes[11]
+    //    , isSegmPassToContinue[0]
+    //);
+
+};
 
 
 

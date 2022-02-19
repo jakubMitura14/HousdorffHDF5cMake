@@ -388,6 +388,8 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                 }
                 else {
                     old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4];
+                    printf("local fn counter add \n");
+
                 };
                 //   add results to global memory    
                 //we add one gere jjust to distinguish it from empty result
