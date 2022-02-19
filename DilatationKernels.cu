@@ -19,7 +19,7 @@ using namespace cooperative_groups;
 
 //template <typename TKKI, typename forPipeline >
 template <typename TKKI >
-inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t*& mainArrAPointer,
+inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t*& mainArrAPointer,
     uint32_t*& mainArrBPointer, MetaDataGPU& metaData
     , unsigned int*& minMaxes, uint32_t*& workQueue
     , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb,
@@ -107,7 +107,7 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
                //load top 
                 loadTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);
                 //process main
-                processMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);                
+                processMain(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isBlockFull);
 ///////// step 2 load bottom and process top 
                 loadBottom(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
                 //process top
@@ -202,10 +202,10 @@ inline __device__ void mainDilatation(bool isPaddingPass, ForBoolKernelArgs<TKKI
     };
     // in first thread block we zero work queue counter
     if (threadIdx.x == 2 && threadIdx.y == 0) {
-      //  if (blockIdx.x == 0) {
+        if (blockIdx.x == 0) {
        
             minMaxes[9] = 0;
-       // }
+        }
     };
 
 

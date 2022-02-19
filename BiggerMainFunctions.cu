@@ -48,11 +48,17 @@ template <typename TXPI>
 inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
     , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1]) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isBlockFull)[1]) {
 
     pipeline.consumer_wait();
-
+    //if ((((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]))  > 0)
+//    || mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]==0
+//    ) {
+   // isBlockFull[0] = false;
+    //    }
     mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
+    //marking weather block is already full and no more dilatations are possible 
+
 
     pipeline.consumer_release();
 
@@ -330,15 +336,11 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
 
 
 
-
     //now all data should be properly dilatated we save it to global memory
     getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
         + threadIdx.x + threadIdx.y * 32]
         = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
-    //marking weather block is already full and no more dilatations are possible 
-    if (mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] != UINT32_MAX) {
-        isBlockFull[(i&1)] = false;
-    }
+
     pipeline.consumer_release();
 }
 
@@ -358,18 +360,24 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
 
     if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
     > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
-        mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
+        //mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = 
+        //    ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) 
+        //        & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
 
 
 
         //we now look for bits prasent in both reference arrays and current one
-        mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32]);
+       // mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32]);
 
         // now we look through bits and when some is set we call it a result 
         #pragma unroll
         for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
             //if any bit here is set it means it should be added to result list 
-            if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
+            if (isBitAt(mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32], bitPos)
+                && !isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)
+                && isBitAt(mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32], bitPos)
+                ) {
+           // if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
                 //first we add to the resList
                 //TODO consider first passing it into shared memory and then async mempcy ...
                 //we use offset plus number of results already added (we got earlier count from global memory now we just atomically add locally)
@@ -387,21 +395,33 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                 resultListPointerLocal[old] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
                 resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
 
-                   printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
-                       ,i
-                       ,mainShmem[startOfLocalWorkQ + i]
+                   //printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
+                   //    ,i
+                   //    ,mainShmem[startOfLocalWorkQ + i]
+                   //    , isGoldForLocQueue[i]
+                   //    , old
+                   //    , localFpConter[0]
+                   //    , localFnConter[0]
+                   //    , localBlockMetaData[(i & 1) * 20+ 5]
+                   //    , localBlockMetaData[(i & 1) * 20+6]
+                   //    , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
+                   //    , uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x))
+                   //    , threadIdx.x
+                   //    , threadIdx.y
+                   //    , bitPos
+                   //);
+
+
+                   printf("rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
+                       , mainShmem[startOfLocalWorkQ + i]
                        , isGoldForLocQueue[i]
                        , old
-                       , localFpConter[0]
-                       , localFnConter[0]
-                       , localBlockMetaData[(i & 1) * 20+ 5]
-                       , localBlockMetaData[(i & 1) * 20+6]
-                       , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
-                       , uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x))
                        , threadIdx.x
                        , threadIdx.y
                        , bitPos
+                       , iterationNumb[0]
                    );
+
 
             }
 

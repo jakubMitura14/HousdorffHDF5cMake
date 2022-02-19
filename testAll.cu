@@ -151,12 +151,22 @@ extern "C" inline void testMainPasswes() {
 
 
 
-   setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+   //setArrCPU(arrGoldObj, 0, 49, 32, 2);//
+   //setArrCPU(arrSegmObj, 0, 0, 32, 2);//
+
+
+	setArrCPU(arrGoldObj, 0, 0,2, 2);//
+	setArrCPU(arrSegmObj, 0, 0,200, 2);//
+	//setArrCPU(arrSegmObj, 1, 1, 10, 2);//
+	//setArrCPU(arrSegmObj, 100, 40, 100, 2);//
+
+
+
    //setArrCPU(arrGoldObj, 31, 4, 31, 2);//
    //setArrCPU(arrSegmObj, 31, 10, 31, 2);//
    //setArrCPU(arrSegmObj, 63, 10, 63, 2);//
   // setArrCPU(arrSegmObj, 63, 14, 63, 2);//
-   setArrCPU(arrSegmObj, 100, 40, 100, 2);//
+
 
 
 //	setArrCPU(arrGoldObj, 64, 15, 15, 2);//
@@ -188,8 +198,16 @@ extern "C" inline void testMainPasswes() {
 
 
 
-
-
+	int pointsNumber = 0;
+	int& pointsNumberRef = pointsNumber;
+	forTestPointStruct allPointsA[] = {
+		// meta 2,2,2 only gold points not in result after 2 dilataions
+	getTestPoint(
+	2,2,2//x,y,z
+	,true//isGold
+	,0,0,0//xMeta,yMeta,Zmeta
+	,dbXLength,dbYLength,dbZLength,pointsNumberRef)
+	};
 
 	/*
 	maxX 2  [1]
@@ -216,13 +234,25 @@ minZ 2  [6]
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
 		);
 
+
+
+
+
+
+	//testDilatations(fbArgs, allPointsA, );
+
+
+
+
+
+
 	//printFromReduced(fbArgs, reducedResCPU);
 	//printIsBlockActiveEtc(fbArgs, metaDataArrPointerCPU, fbArgs.metaData);
 
 
-	for (int wQi = 0; wQi < minMaxesCPU[9]; wQi ++ ) {
-		printf("in work q %d  \n ", workQueuePointerCPU[wQi] - isGoldOffset * (workQueuePointerCPU[wQi] >= isGoldOffset) );
-	}
+	//for (int wQi = 0; wQi < minMaxesCPU[9]; wQi ++ ) {
+	//	printf("in work q %d  \n ", workQueuePointerCPU[wQi] - isGoldOffset * (workQueuePointerCPU[wQi] >= isGoldOffset) );
+	//}
 
 	//for (int wQi = 0; wQi < 700; wQi++) {
 	//	if (metaDataArrPointerCPU[wQi]==1) {
@@ -251,13 +281,15 @@ minZ 2  [6]
 			uint32_t x = xMeta * 32 + xLoc;
 			uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
 			uint32_t z = zMeta * 32 + zLoc;
+			uint32_t iterNumb  = resultListPointerIterNumbCPU[i];
 
-			printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d   \n"
+			printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d  iterNumb %d \n"
 				,linIdexMeta
 				,x,y,z
 				,xMeta,yMeta, zMeta
 				,xLoc,yLoc,zLoc
 				, linLocal
+				, iterNumb
 
 
 			);

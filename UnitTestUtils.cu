@@ -63,22 +63,22 @@ void printIsBlockActiveEtc(ForBoolKernelArgs<int> fbArgs,  uint32_t* metaDataArr
 // 11 :isToBeActivatedGold
 // 12 :isToBeActivatedSegm
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] >0 ){
-		printf("is active gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
+		//printf("is active gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8] ==1 ){
 		printf("is full gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] ==1 ){
-		printf("is active segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
+		//printf("is active segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10] ==1 ){
 		printf("is full segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11] ==1 ){
-		printf("is to be activated gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
+		//printf("is to be activated gold linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}	
 	if( metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] ==1 ){
-		printf("is to be activated segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
+		//printf("is to be activated segm linMeta %d xMeta %d yMeta %d zMeta %d   \n", linIdexMeta, xMeta, yMeta, zMeta);
 	}
 	
 	}

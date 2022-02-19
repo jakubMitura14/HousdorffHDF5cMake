@@ -97,10 +97,10 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     //    , unsigned int* minMaxes, uint32_t * workQueue
     //    , uint32_t * resultListPointerMeta, uint32_t * resultListPointerLocal, uint32_t * resultListPointerIterNumb, uint32_t * origArrs, uint32_t * metaDataArr) {
 
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-        printf("in metadataPass totalMetaLength  %d   \n", fbArgs.metaData.totalMetaLength);
+    //if (threadIdx.x == 0 && threadIdx.y == 0) {
+    //    printf("in metadataPass totalMetaLength  %d   \n", fbArgs.metaData.totalMetaLength);
 
-    };
+    //};
 
     thread_block cta = cooperative_groups::this_thread_block();
 
@@ -247,7 +247,12 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
 
-    for (auto i = 0; i < 200; i++) {
+    for (auto i = 0; i < 250; i++) {
+        //if (blockIdx.x == 0) {
+        //    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) { printf("##************************* i %d  ******************##\n ", i); }
+        //};
+
+
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -269,13 +274,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
         );
 
-        grid.sync();
-        if (threadIdx.x == 2 && threadIdx.y == 0) {
-            //  if (blockIdx.x == 0) {
-
-            fbArgs.minMaxes[9] = 0;
-            // }
-        };
         grid.sync();
 
         ///////////// loading work queue for padding dilatations
@@ -311,13 +309,8 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             , lastI, pipeline
 
         );
-        grid.sync();
-        if (threadIdx.x == 2 && threadIdx.y == 0) {
-            //  if (blockIdx.x == 0) {
+ 
 
-            fbArgs.minMaxes[9] = 0;
-            // }
-        };
         grid.sync();
         ////////////////////////main metadata pass
         metadataPass(fbArgs, false, 7, 8, 8,
@@ -503,7 +496,7 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     //copy to CPU
     size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
     reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-    cudaMemcpy(reducedResCPU, mainArrBPointer, sizeCPU, cudaMemcpyDeviceToHost);
+    cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
 
     origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
     cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);

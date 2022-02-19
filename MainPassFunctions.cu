@@ -248,16 +248,16 @@ inline __device__  void afterBlockClean(thread_block& cta
     //        localFnConter[0] = 0;
     //    }
     //};
-    //if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
+    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
 
-    //    //executed in case of previous block
-    //    if (isBlockFull[0] && i >= 0) {
-    //        //setting data in metadata that block is full
-    //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
-    //    }
-    //    //resetting
-    //    isBlockFull[0] = true;
-    //};
+        //executed in case of previous block
+        if (isBlockFull[0] && i > 0) {
+            //setting data in metadata that block is full
+           // metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
+        }
+        //resetting for some reason  block 0 gets as full even if it should not ...
+        isBlockFull[0] = true;// mainShmem[startOfLocalWorkQ + i]>0;//!isPaddingPass;
+    };
 
 
 
@@ -266,22 +266,10 @@ inline __device__  void afterBlockClean(thread_block& cta
     if (tile.thread_rank() < 6 && tile.meta_group_rank() == 1 && !isPaddingPass) {   
         //executed in case of previous block
         if (i>=0) {
-
-          /*  if (isAnythingInPadding[tile.thread_rank()]) {
-                printf("info in padding %d linMeta %d \n ", 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]);
-
-            }*/
-
             if (localBlockMetaData[(i & 1) * 20+   13+tile.thread_rank()] < isGoldOffset) {
-                //printf("info in range %d linMeta %d \n ", 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]);
 
                 if (isAnythingInPadding[tile.thread_rank()]) {
                     metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
-                    //printf("info in padding AND range %d linMeta %d new block adress %d   inMetadataArrIndex %d \n "
-                    //    , 13 + tile.thread_rank(), mainShmem[startOfLocalWorkQ + i]
-                    //    , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()]
-                    //    , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]
-                    //);
 
                 }
                 
@@ -289,8 +277,13 @@ inline __device__  void afterBlockClean(thread_block& cta
         }
         isAnythingInPadding[0] = false;
     };
+    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
 
-
+    //executed in case of previous block
+        if (i >= 0) {
+            lastI[0] = UINT32_MAX;
+        };
+    }
 
 }
 
