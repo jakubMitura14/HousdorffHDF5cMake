@@ -151,6 +151,7 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 /////////
                 pipeline.consumer_release();
 
+                sync(cta);
 
                 //pipeline.producer_acquire();
 
@@ -166,7 +167,6 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
 
            }
        }
-        sync(cta);
 
         //here we are after all of the blocks planned to be processed by this block are
 

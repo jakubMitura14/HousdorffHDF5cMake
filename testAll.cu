@@ -24,7 +24,7 @@ extern "C" inline void testMainPasswes() {
 
 	//datablock dimensions
 	const int dbXLength = xThreadDim;
-	const int dbYLength = yThreadDim;
+	const int dbYLength = 5;
 	const int dbZLength = 32;
 
 
@@ -45,24 +45,17 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 16;//8
-	const int MetaYLength = 33;//30
+	const int metaXLength = 10;//8
+	const int MetaYLength = 10;//30
 	const int MetaZLength = 22;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
-	const int loopMetaTimes = floor(totalLength / blocks);
 
 	/*   int*** h_tensor;
 	   h_tensor = alloc_tensorToZeros<int>(metaXLength, MetaYLength, MetaZLength);*/
 
 	int i, j, k, value = 0;
-	int*** forDebugArr;
-
-	const int dXLength = 8;
-	const int dYLength = 1;
-	const int dZLength = 1;
-
 
 	const int mainXLength = dbXLength * metaXLength;
 	const int mainYLength = dbYLength * MetaYLength;
@@ -142,16 +135,16 @@ extern "C" inline void testMainPasswes() {
 	////setArrCPU(arrSegmObj, 38, 38, 35, 2);//
 	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
 	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
-	 
-	for (int y = 0; y<300;y++) {
+	int plane = mainXLength * mainYLength;
+	for (int y = 0; y< mainXLength * (mainYLength/2);y++) {
 		goldArr[y] = true;
 
 	}
 
 
 	
-	int offset = mainXLength * mainYLength*100;
-	for (int y = offset; y < offset+300; y++) {
+	int offset = plane *200;
+	for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
 		segmArr[y] = true;
 
 	}
