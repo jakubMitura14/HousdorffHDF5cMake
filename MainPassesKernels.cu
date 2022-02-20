@@ -501,11 +501,18 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
    checkCuda(cudaDeviceSynchronize(), "a3");
 
 
+
   int fpPlusFn =  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData,goldArr,segmArr);
+
+
+
 
     checkCuda(cudaDeviceSynchronize(), "a4");
 
-   // firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
+    //cudaFreeAsync(goldArrPointer, 0);
+    //cudaFreeAsync(segmArrPointer, 0);
+
+    firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
    checkCuda(cudaDeviceSynchronize(), "a5");
   //  //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
@@ -594,16 +601,16 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
   //  checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
   //  //cudaGetLastError();
 
-  cudaFreeAsync(goldArrPointer, 0);
-  cudaFreeAsync(segmArrPointer, 0);
+  //cudaFreeAsync(goldArrPointer, 0);
+  //cudaFreeAsync(segmArrPointer, 0);
 
 
   //  cudaFreeAsync(resultListPointerMeta, 0);
   //  cudaFreeAsync(resultListPointerLocal, 0);
   //  cudaFreeAsync(resultListPointerIterNumb, 0);
-    cudaFreeAsync(workQueuePointer, 0);
-    cudaFreeAsync(origArrsPointer, 0);
-    cudaFreeAsync(metaDataArrPointer, 0);
+    //cudaFreeAsync(workQueuePointer, 0);
+    //cudaFreeAsync(origArrsPointer, 0);
+    //cudaFreeAsync(metaDataArrPointer, 0);
 
     checkCuda(cudaDeviceSynchronize(), "last ");
 

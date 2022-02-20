@@ -51,14 +51,8 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFul
     cudaMemcpyAsync(resultListPointerMeta, resultListPointerMetaCPU, size, cudaMemcpyHostToDevice,0);
     free(resultListPointerMetaCPU);
     
-   // size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
-    
-   // metaData.resultList = resultListPointer;
 
 
-    // cudaFreeAsync(gpuArgs.metaData.resultList, 0);
-
-     //cudaFree(resultListPointer);
 
     return fpPlusFn;
 };
