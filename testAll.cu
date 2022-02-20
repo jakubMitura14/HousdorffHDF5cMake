@@ -288,39 +288,39 @@ minZ 2  [6]
 	//	info in padding AND range 14 linMeta 0 new block adress 28   inMetadataArrIndex 571
 
 
-	//for (int i = 0; i < 5;i++) {
-	//	if (resultListPointerLocalCPU[i]>0 || resultListPointerMetaCPU[i]>0) {
-	//		uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] >= isGoldOffset))-1;
-	//		uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-	//		uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength))));
-	//		uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength)));
-	//		
-	//		uint32_t linLocal = resultListPointerLocalCPU[i];
-	//		uint32_t xLoc = linLocal % fbArgs.dbXLength;
-	//		uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * fbArgs.dbYLength))));
-	//		uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * fbArgs.dbYLength) + xLoc)) / 32)));
+	for (int i = 0; i < 5;i++) {
+		if (resultListPointerLocalCPU[i]>0 || resultListPointerMetaCPU[i]>0) {
+			uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] >= isGoldOffset))-1;
+			uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
+			uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength))));
+			uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength)));
+			
+			uint32_t linLocal = resultListPointerLocalCPU[i];
+			uint32_t xLoc = linLocal % fbArgs.dbXLength;
+			uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * fbArgs.dbYLength))));
+			uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * fbArgs.dbYLength) + xLoc)) / 32)));
 
 
-	//		uint32_t x = xMeta * 32 + xLoc;
-	//		uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
-	//		uint32_t z = zMeta * 32 + zLoc;
-	//		uint32_t iterNumb  = resultListPointerIterNumbCPU[i];
+			uint32_t x = xMeta * 32 + xLoc;
+			uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
+			uint32_t z = zMeta * 32 + zLoc;
+			uint32_t iterNumb  = resultListPointerIterNumbCPU[i];
 
-	//		printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d  iterNumb %d \n"
-	//			,linIdexMeta
-	//			,x,y,z
-	//			,xMeta,yMeta, zMeta
-	//			,xLoc,yLoc,zLoc
-	//			, linLocal
-	//			, iterNumb
-
-
-	//		);
+			printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d  iterNumb %d \n"
+				,linIdexMeta
+				,x,y,z
+				,xMeta,yMeta, zMeta
+				,xLoc,yLoc,zLoc
+				, linLocal
+				, iterNumb
 
 
-	//	
-	//	}
-	//}
+			);
+
+
+		
+		}
+	}
 
 
 
@@ -476,25 +476,20 @@ minZ 2  [6]
 
 
 
-	//free(workQueuePointer);
-	////	free(resultListPointer);
-
-	////free(isToBeActivatedGoldPointer);
-	////free(isToBeActivatedSegmPointer);
+	free(goldArr);
+	free(segmArr);
 
 
-	//free(goldArr);
-	//free(segmArr);
+	free(resultListPointerMetaCPU);
+	free(resultListPointerLocalCPU);
+	free(resultListPointerIterNumbCPU);
+	free(metaDataArrPointerCPU);
+	free(workQueuePointerCPU);
+
+	free(reducedResCPU);
+	free(origArrsCPU);
 
 
-	//free(resultListPointerMetaCPU);
-	//free(resultListPointerLocalCPU);
-	//free(resultListPointerIterNumbCPU);
-	//free(metaDataArrPointerCPU);
-	//free(workQueuePointerCPU);
-
-	//free(reducedResCPU);
-	//free(origArrsCPU);
 
 }
 
