@@ -52,29 +52,29 @@ inline T*** alloc_tensor(int Nx, int Ny, int Nz) {
 */
 #pragma once
 template <typename TC>
-inline TC*** alloc_tensorToZeros(int Nx, int Ny, int Nz) {
+inline TC* alloc_tensorToZeros(int Nx, int Ny, int Nz) {
     int i, j;
-    TC*** tensor;
+    TC* tensor;
 
 
 
-    tensor = (TC***)calloc(Nz, sizeof(TC**));
-    tensor[0] = (TC**)calloc(Nz * Ny, sizeof(TC*));
-    tensor[0][0] = (TC*)calloc(Nz * Ny * Nx, sizeof(TC));
+    tensor = (TC*)calloc(Nx* Ny* Nz, sizeof(TC));
+    //tensor[0] = (TC**)calloc(Nz * Ny, sizeof(TC*));
+    //tensor[0][0] = (TC*)calloc(Nz * Ny * Nx, sizeof(TC));
 
 
-    //tensor = (TC***)calloc((size_t)(Nz , sizeof(TC**)));
-    //tensor[0] = (TC**)calloc((size_t)(Nz * Ny , sizeof(TC*)));
-    //tensor[0][0] = (TC*)calloc((size_t)(Nz * Ny * Nx , sizeof(TC)));
+    ////tensor = (TC***)calloc((size_t)(Nz , sizeof(TC**)));
+    ////tensor[0] = (TC**)calloc((size_t)(Nz * Ny , sizeof(TC*)));
+    ////tensor[0][0] = (TC*)calloc((size_t)(Nz * Ny * Nx , sizeof(TC)));
 
-    for (j = 1; j < Ny; j++)
-        tensor[0][j] = tensor[0][j - 1] + Nx;
-    for (i = 1; i < Nz; i++) {
-        tensor[i] = tensor[i - 1] + Ny;
-        tensor[i][0] = tensor[i - 1][0] + Ny * Nx;
-        for (j = 1; j < Ny; j++)
-            tensor[i][j] = tensor[i][j - 1] + Nx;
-    }
+    //for (j = 1; j < Ny; j++)
+    //    tensor[0][j] = tensor[0][j - 1] + Nx;
+    //for (i = 1; i < Nz; i++) {
+    //    tensor[i] = tensor[i - 1] + Ny;
+    //    tensor[i][0] = tensor[i - 1][0] + Ny * Nx;
+    //    for (j = 1; j < Ny; j++)
+    //        tensor[i][j] = tensor[i][j - 1] + Nx;
+    //}
 
     return tensor;
     //int i, j;
@@ -100,7 +100,7 @@ inline TC*** alloc_tensorToZeros(int Nx, int Ny, int Nz) {
 
 #pragma once
 template <typename EEY>
-array3dWithDimsCPU<EEY>  get3dArrCPU(EEY*** arrP, int Nx, int Ny, int Nz) {
+array3dWithDimsCPU<EEY>  get3dArrCPU(EEY* arrP, int Nx, int Ny, int Nz) {
     array3dWithDimsCPU<EEY> res;
     res.Nx = Nx;
     res.Ny = Ny;

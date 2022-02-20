@@ -38,7 +38,8 @@ of 3d arrays
 #pragma once
 template <typename TFPP>
 struct array3dWithDimsCPU {
-    TFPP*** arrP;
+    //TFPP*** arrP;
+    TFPP* arrP;
     int Nx;
     int Ny;
     int Nz;
@@ -46,8 +47,11 @@ struct array3dWithDimsCPU {
 
 
 #pragma once
+template <typename TFPP>
 struct array3dWithDimsGPU {
-    cudaPitchedPtr arrPStr;
+    TFPP* arrP;
+    //cudaPitchedPtr arrPStr;
+    //cudaPitchedPtr arrPStr;
     int Nx;
     int Ny;
     int Nz;
@@ -130,8 +134,7 @@ struct ForFullBoolPrepArgs {
 
     //metadata struct
     MetaDataCPU metaData;
-    //pointer to the array used to debug
-    array3dWithDimsCPU<int> forDebugArr;
+
     // dimensions of data block
     int dbXLength;
     int dbYLength;
@@ -140,7 +143,6 @@ struct ForFullBoolPrepArgs {
     array3dWithDimsCPU<TFF> goldArr;
     array3dWithDimsCPU<TFF> segmArr;
     TFF numberToLookFor;// what we will look for in arrays
-
     //number and dimensionality of threads and blocks required to lounch bool kernel
     dim3 threads;
     int blocks;
@@ -173,16 +175,13 @@ template <typename TFB>
 struct ForBoolKernelArgs {
     //matadata struct
     MetaDataGPU metaData;
-    //pointer to the array used to debug
-    array3dWithDimsGPU forDebugArr;
-
     // dimensions of data block
     int dbXLength;
     int dbYLength;
     int dbZLength;
     // gold standard and segmentation output array
-    array3dWithDimsGPU goldArr;
-    array3dWithDimsGPU segmArr;
+    array3dWithDimsGPU<TFB> goldArr;
+    array3dWithDimsGPU<TFB> segmArr;
     TFB numberToLookFor;
 
     uint32_t* resultListPointerMeta;

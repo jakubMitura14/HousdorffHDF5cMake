@@ -33,7 +33,6 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU, unsigned int*&
 
 	size_t size = sizeof(unsigned int) * 20;
 	cudaMemcpy(minMaxes, metaDataCPU.minMaxes, size, cudaMemcpyHostToDevice);
-	res.minMaxes = minMaxes;
 
 	//res.resultList = allocate3dInGPU(metaDataCPU.resultList);
 

@@ -151,7 +151,6 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 /////////
                 pipeline.consumer_release();
 
-                sync(cta);
 
                 //pipeline.producer_acquire();
 
@@ -167,6 +166,8 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
 
            }
        }
+        sync(cta);
+
         //here we are after all of the blocks planned to be processed by this block are
 
 //updating local counters of last local block (normally it is done at the bagining of the next block)
@@ -182,16 +183,8 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
          if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
                  lastI[0] = UINT32_MAX;
             }
-
         }
-
-
-
         pipeline.consumer_release();
-
-
-
-
 
     }
 

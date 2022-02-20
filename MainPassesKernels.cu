@@ -349,16 +349,18 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 #pragma once
-ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*& reducedResCPU
+template <typename T>
+ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& reducedResCPU
     , uint32_t*& resultListPointerMetaCPU
     ,uint32_t*& resultListPointerLocalCPU
     ,uint32_t*& resultListPointerIterNumbCPU
     ,uint32_t*& metaDataArrPointerCPU
     ,uint32_t*& workQueuePointerCPU
     ,uint32_t*& origArrsCPU
+    , const int WIDTH, const int HEIGHT, const int DEPTH
 ) {
 
-    cudaDeviceReset();
+    //cudaDeviceReset();
     cudaError_t syncErr;
     cudaError_t asyncErr;
     int device = 0;
@@ -374,7 +376,7 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
-        (void*)getMinMaxes<int>,
+        (void*)getMinMaxes,
         0);
     int warpsNumbForMinMax = blockSize / 32;
     int blockSizeForMinMax = minGridSize;
@@ -383,7 +385,7 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
-        (void*)boolPrepareKernel<int>,
+        (void*)boolPrepareKernel<T>,
         0);
     int warpsNumbForboolPrepareKernel = blockSize / 32;
     int blockSizeFoboolPrepareKernel = minGridSize;
@@ -391,7 +393,7 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
-        (void*)boolPrepareKernel<int>,
+        (void*)boolPrepareKernel<T>,
         0);
     int theadsForFirstMetaPass = blockSize;
     int blockForFirstMetaPass = minGridSize;
@@ -399,51 +401,75 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
-        (void*)mainPassKernel<int>,
+        (void*)mainPassKernel<T>,
         0);
     int warpsNumbForMainPass = blockSize / 32;
     int blockForMainPass = minGridSize;
         printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
 
-   // warpsNumbForMainPass = 5;
-    //blockForMainPass = 1;
+    warpsNumbForMainPass = 5;
+    blockForMainPass = 1;
+
+        
+    ////main arrays allocations
+    //T* goldArrPointer;
+    //T* segmArrPointer ;
 
 
 
+    ////pointers ...
+    //uint32_t* resultListPointerMeta;
+    //uint32_t* resultListPointerLocal;
+    //uint32_t* resultListPointerIterNumb;
+
+    //uint32_t* origArrsPointer;
+    //uint32_t* mainArrAPointer;
+    //uint32_t* mainArrBPointer;
+    //uint32_t* metaDataArrPointer;
+
+    //uint32_t* workQueuePointer;
+
+    //
+    //
+    //
+    ////size_t sizeMainArr = (sizeof(T) * WIDTH * HEIGHT * DEPTH);
+    //size_t sizeMainArr = (sizeof(T) * WIDTH * HEIGHT * DEPTH);
+
+    //cudaMallocAsync(&goldArrPointer, sizeMainArr,0);
+    //cudaMallocAsync(&segmArrPointer, sizeMainArr,0);
+
+    //array3dWithDimsGPU<T> goldArr;
+    //array3dWithDimsGPU<T> segmArr;
+
+    //goldArr.arrP = goldArrPointer;
+    //goldArr.Nx = WIDTH;
+    //goldArr.Ny = HEIGHT;
+    //goldArr.Nz = DEPTH;
 
 
 
+    //segmArr.arrP = segmArrPointer;
+    //segmArr.Nx = WIDTH;
+    //segmArr.Ny = HEIGHT;
+    //segmArr.Nz = DEPTH;
+    //checkCuda(cudaDeviceSynchronize(), "a0a");
 
-    //for debugging
-    array3dWithDimsGPU forDebug = allocate3dInGPU(fFArgs.forDebugArr);
-    //main arrays allocations
-    array3dWithDimsGPU goldArr = allocate3dInGPU(fFArgs.goldArr);
-
-    array3dWithDimsGPU segmArr = allocate3dInGPU(fFArgs.segmArr);
-    //pointers ...
-    uint32_t* resultListPointerMeta;
-    uint32_t* resultListPointerLocal;
-    uint32_t* resultListPointerIterNumb;
-
-    uint32_t* origArrsPointer;
-    uint32_t* mainArrAPointer;
-    uint32_t* mainArrBPointer;
-    uint32_t* metaDataArrPointer;
-
-    uint32_t* workQueuePointer;
     unsigned int* minMaxes;
-    size_t size = sizeof(unsigned int) * 20;
-    cudaMalloc(&minMaxes, size);
+    size_t sizeminMaxes = sizeof(unsigned int) * 20;
+    cudaMalloc(&minMaxes, sizeminMaxes);
 
 
-    checkCuda(cudaDeviceSynchronize(), "a0");
-    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, forDebug, goldArr, segmArr, minMaxes, warpsNumbForMainPass, blockForMainPass);
-    MetaDataGPU metaData = fbArgs.metaData;
-    fbArgs.metaData.minMaxes = minMaxes;
 
 
-    //3086
+    checkCuda(cudaDeviceSynchronize(), "a0b");
+   // ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, goldArrPointer, segmArrPointer, minMaxes, warpsNumbForMainPass, blockForMainPass, WIDTH,HEIGHT, DEPTH);
+    //MetaDataGPU metaData = fbArgs.metaData;
+    //fbArgs.metaData.minMaxes = minMaxes;
+
+
+//    fbArgs.goldArr = goldArr;
+  //  fbArgs.segmArr = segmArr;
 
 
     ////preparation kernel
@@ -453,166 +479,131 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
     checkCuda(cudaDeviceSynchronize(), "a1");
 
 
-    getMinMaxes << <blockSizeForMinMax, dim3(32, warpsNumbForMinMax) >> > (fbArgs, minMaxes);
+    getMinMaxes << <blockSizeForMinMax, dim3(32, warpsNumbForMinMax) >> > ( minMaxes);
+    //getMinMaxes << <blockSizeForMinMax, dim3(32, warpsNumbForMinMax) >> > (fbArgs, minMaxes, goldArrPointer, segmArrPointer);
 
-    checkCuda(cudaDeviceSynchronize(), "a1");
+    checkCuda(cudaDeviceSynchronize(), "a1b");
 
 
-    checkCuda(cudaDeviceSynchronize(), "a2");
+    checkCuda(cudaDeviceSynchronize(), "a2a");
 
-    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, workQueuePointer, minMaxes, metaData, origArrsPointer, metaDataArrPointer);
+    //metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, workQueuePointer, minMaxes, metaData, origArrsPointer, metaDataArrPointer);
 
-    checkCuda(cudaDeviceSynchronize(), "a2");
+    checkCuda(cudaDeviceSynchronize(), "a2b");
 
-    boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, metaData, origArrsPointer, metaDataArrPointer);
-    //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
+  // boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, metaData, origArrsPointer, metaDataArrPointer);
+  ////  //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
 
-    checkCuda(cudaDeviceSynchronize(), "a3");
+  // checkCuda(cudaDeviceSynchronize(), "a3");
 
 
-   int fpPlusFn =  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData, goldArr, segmArr);
+  // int fpPlusFn =  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData, fbArgs.goldArr, fbArgs.segmArr);
 
-    checkCuda(cudaDeviceSynchronize(), "a4");
+  //  checkCuda(cudaDeviceSynchronize(), "a4");
 
-    firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
+  //  //firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
-    checkCuda(cudaDeviceSynchronize(), "a5");
-    //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
-    
-    
-    
-    fbArgs.forDebugArr = forDebug;
-    fbArgs.goldArr = goldArr;
-    fbArgs.segmArr = segmArr;
-    fbArgs.metaData = metaData;
+  //  checkCuda(cudaDeviceSynchronize(), "a5");
+  //  //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
+  //  
+  //  
+  //  
+  //  //fbArgs.goldArr = goldArr;
+  //  //fbArgs.segmArr = segmArr;
+  //  fbArgs.metaData = metaData;
 
-    fbArgs.resultListPointerMeta = resultListPointerMeta;
-    fbArgs.resultListPointerLocal = resultListPointerLocal;
-    fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
+  //  fbArgs.resultListPointerMeta = resultListPointerMeta;
+  //  fbArgs.resultListPointerLocal = resultListPointerLocal;
+  //  fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
 
-    fbArgs.origArrsPointer = origArrsPointer;
-    fbArgs.mainArrAPointer = mainArrAPointer;
-    fbArgs.mainArrBPointer = mainArrBPointer;
+  //  fbArgs.origArrsPointer = origArrsPointer;
+  //  fbArgs.mainArrAPointer = mainArrAPointer;
+  //  fbArgs.mainArrBPointer = mainArrBPointer;
 
 
-    fbArgs.metaDataArrPointer = metaDataArrPointer;
-    fbArgs.workQueuePointer = workQueuePointer;
-    fbArgs.minMaxes = minMaxes;
-    void* kernel_args[] = { &fbArgs };
+  //  fbArgs.metaDataArrPointer = metaDataArrPointer;
+  //  fbArgs.workQueuePointer = workQueuePointer;
+  //  fbArgs.minMaxes = minMaxes;
+  //  void* kernel_args[] = { &fbArgs };
 
 
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+  ////  //cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
 
 
 
-    checkCuda(cudaDeviceSynchronize(), "a6");
+  //  checkCuda(cudaDeviceSynchronize(), "a6");
 
-    //copy to CPU
-    size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
-    reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-    cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
+  //  //copy to CPU
+  //  size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
+  //  reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+  //  cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
 
-    origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-    cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
+  //  origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+  //  cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
 
 
-    size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
+  //  size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
 
 
-  resultListPointerMetaCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-    resultListPointerLocalCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-   resultListPointerIterNumbCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-   cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
+  //resultListPointerMetaCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+  //  resultListPointerLocalCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+  // resultListPointerIterNumbCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+  // cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
 
-   cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
+  // cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
 
-   cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
+  // cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
 
-   size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
-   metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
-   cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizemetaDataArr, cudaMemcpyDeviceToHost);
+  // size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
+  // metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
+  // cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizemetaDataArr, cudaMemcpyDeviceToHost);
 
-   size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
+  // size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
 
-   workQueuePointerCPU = (uint32_t*)calloc(metaData.totalMetaLength, sizeof(uint32_t));
-   cudaMemcpy(workQueuePointerCPU, workQueuePointer, sizeC, cudaMemcpyDeviceToHost);
+  // workQueuePointerCPU = (uint32_t*)calloc(metaData.totalMetaLength, sizeof(uint32_t));
+  // cudaMemcpy(workQueuePointerCPU, workQueuePointer, sizeC, cudaMemcpyDeviceToHost);
 
 
 
+  // checkCuda(cudaDeviceSynchronize(), "a7");
 
 
 
 
 
 
-    //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
+  //  //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
 
 
 
 
-  //  ////mainPassKernel << <fFArgs.blocksMainPass, fFArgs.threadsMainPass >> > (fbArgs);
+  //  ////copyDeviceToHost3d(goldArr, fFArgs.goldArr);
+  //  ////copyDeviceToHost3d(segmArr, fFArgs.segmArr);
+  //  //// getting arrays allocated on  cpu to 
 
-    //testKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, minMaxes, mainArrBPointer, metaData, workQueuePointer, origArrsPointer);
 
-    //  testKernel << <10, 512 >> > (fbArgs, minMaxes);
+  //  //copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
 
+  //  //// printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
 
-      ////sync
-    checkCuda(cudaDeviceSynchronize(), "cc");
 
+  //  checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
+  //  //cudaGetLastError();
 
+  //cudaFreeAsync(goldArrPointer, 0);
+  //cudaFreeAsync(segmArrPointer, 0);
 
 
-    //deviceTohost
+  //  cudaFreeAsync(resultListPointerMeta, 0);
+  //  cudaFreeAsync(resultListPointerLocal, 0);
+  //  cudaFreeAsync(resultListPointerIterNumb, 0);
+    //cudaFreeAsync(workQueuePointer, 0);
+    //cudaFreeAsync(origArrsPointer, 0);
+    //cudaFreeAsync(metaDataArrPointer, 0);
 
+  //  checkCuda(cudaDeviceSynchronize(), "last ");
 
-
-    copyDeviceToHost3d(forDebug, fFArgs.forDebugArr);
-
-
-    //copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-    //copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-    // getting arrays allocated on  cpu to 
-
-
-    copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-
-    // printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
-
-
-    checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-    //cudaGetLastError();
-
-    cudaFreeAsync(forDebug.arrPStr.ptr, 0);
-    //cudaFreeAsync(goldArr.arrPStr.ptr, 0);
-    //cudaFreeAsync(segmArr.arrPStr.ptr, 0);
-
-
-    cudaFreeAsync(resultListPointerMeta, 0);
-    cudaFreeAsync(resultListPointerLocal, 0);
-    cudaFreeAsync(resultListPointerIterNumb, 0);
-    cudaFreeAsync(workQueuePointer, 0);
-    cudaFreeAsync(origArrsPointer, 0);
-    cudaFreeAsync(metaDataArrPointer, 0);
-
-    checkCuda(cudaDeviceSynchronize(), "last ");
-
-    /*   cudaFree(reducedGold.arrPStr.ptr);
-       cudaFree(reducedSegm.arrPStr.ptr);
-       cudaFree(reducedGoldPrev.arrPStr.ptr);
-       cudaFree(reducedSegmPrev.arrPStr.ptr);*/
-
-       //    cudaFreeAsync(resultListPointer, 0);
-
-       //    freeMetaDataGPU(fbArgs.metaData);
-
-
-           /*
-        * Catch errors for both the kernel launch above and any
-        * errors that occur during the asynchronous `doubleElements`
-        * kernel execution.
-        */
-
+/////////// error handling 
     syncErr = cudaGetLastError();
     asyncErr = cudaDeviceSynchronize();
     if (syncErr != cudaSuccess) printf("Error in syncErr: %s\n", cudaGetErrorString(syncErr));
@@ -621,7 +612,9 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
 
     cudaDeviceReset();
 
-    return fbArgs;
+    ForBoolKernelArgs<T> res;
+    return res;
+   // return fbArgs;
 }
 
 

@@ -3,17 +3,17 @@ becouse we need a lot of the additional memory spaces to minimize memory consump
 */
 #pragma once
 template <typename ZZR>
-inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs, 
+inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFullBoolPrepArgs<ZZR>& cpuArgs, 
     uint32_t*& resultListPointerMeta
     ,uint32_t*& resultListPointerLocal
     ,uint32_t*& resultListPointerIterNumb,
     uint32_t*& origArrsPointer,
     uint32_t*& mainArrAPointer,
-    uint32_t*& mainArrBPointer, MetaDataGPU metaData,array3dWithDimsGPU goldArr, array3dWithDimsGPU segmArr) {
+    uint32_t*& mainArrBPointer, MetaDataGPU& metaData,array3dWithDimsGPU<ZZR>& goldArr, array3dWithDimsGPU<ZZR>& segmArr) {
     
     //free no longer needed arrays
-    cudaFreeAsync(goldArr.arrPStr.ptr, 0);
-    cudaFreeAsync(segmArr.arrPStr.ptr, 0);
+    cudaFreeAsync(goldArr.arrP, 0);
+    cudaFreeAsync(segmArr.arrP, 0);
     
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
@@ -24,11 +24,6 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFull
 
     size = sizeof(uint32_t)* (fpPlusFn + 50);
 
-
-
-    //cudaMalloc(&resultListPointerLocal, size);
-    //cudaMalloc(&resultListPointerIterNumb, size);
-    //cudaMalloc(&resultListPointerMeta, size);
 
     cudaMallocAsync(&resultListPointerLocal, size, 0);
     cudaMallocAsync(&resultListPointerIterNumb, size, 0);
@@ -73,7 +68,7 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFull
 
 #pragma once
 template <typename ZZR>
-inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuArgs, ForFullBoolPrepArgs<ZZR> cpuArgs,
+inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFullBoolPrepArgs<ZZR>& cpuArgs,
              uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr
     , uint32_t*& metaDataArr) {
     ////reduced arrays
@@ -90,7 +85,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4]+1;
     unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6]+1;
     unsigned int totalMetaLength = xRange* yRange* zRange;
-    //printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d   \n", totalMetaLength);
+    printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d   \n", totalMetaLength);
  
     //updating size informations
     metaData.metaXLength = xRange;
@@ -110,26 +105,26 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR> gpuA
     metaData.maxZ = cpuArgs.metaData.minMaxes[5];
     metaData.minZ = cpuArgs.metaData.minMaxes[6];
 
-    //allocating needed memory
-    // main array
-    unsigned int mainArrXLength = gpuArgs.dbXLength * gpuArgs.dbYLength;
-    unsigned int mainArrSectionLength = (mainArrXLength * 2);
-    metaData.mainArrXLength = mainArrXLength;
-    metaData.mainArrSectionLength = mainArrSectionLength;
-    
-    size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
+   // //allocating needed memory
+   // // main array
+   // unsigned int mainArrXLength = gpuArgs.dbXLength * gpuArgs.dbYLength;
+   // unsigned int mainArrSectionLength = (mainArrXLength * 2);
+   // metaData.mainArrXLength = mainArrXLength;
+   // metaData.mainArrSectionLength = mainArrSectionLength;
+   // 
+   // size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
 
 
-    //cudaMallocAsync(&mainArr, sizeB, 0);
-    size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
-    cudaMallocAsync(&origArr, sizeorigArr, 0);
-    size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint32_t);
-    cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
+   // //cudaMallocAsync(&mainArr, sizeB, 0);
+   // size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
+   // cudaMallocAsync(&origArr, sizeorigArr, 0);
+   // size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint32_t);
+   // cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
 
-    
-    size_t sizeC = (totalMetaLength *2* sizeof(uint32_t));
-   //cudaMallocAsync(&workQueue, size, 0);
-    cudaMallocAsync(&workQueue, sizeC,0);
+   // 
+   // size_t sizeC = (totalMetaLength *2* sizeof(uint32_t));
+   ////cudaMallocAsync(&workQueue, size, 0);
+   // cudaMallocAsync(&workQueue, sizeC,0);
 
    return metaData;
 };

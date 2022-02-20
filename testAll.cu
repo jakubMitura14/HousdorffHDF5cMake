@@ -41,14 +41,14 @@ extern "C" inline void testMainPasswes() {
 	int blocksOtherMetaDataPasses = 7;
 
 
-	int minMaxesLength = 17;
+	int minMaxesLength = 20;
 
 
 
 	//metadata
-	const int metaXLength = 8;
-	const int MetaYLength = 30;
-	const int MetaZLength = 8;
+	const int metaXLength = 2;//8
+	const int MetaYLength = 2;//30
+	const int MetaZLength = 2;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -71,10 +71,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//main data arrays
-	int*** goldArr = alloc_tensorToZeros<int>(mainXLength, mainYLength, mainZLength);
+	int* goldArr = alloc_tensorToZeros<int>(mainXLength, mainYLength, mainZLength);
 
-	int*** segmArr;
-	segmArr = alloc_tensorToZeros<int>(mainXLength, mainYLength, mainZLength);
+	int* segmArr = alloc_tensorToZeros<int>(mainXLength, mainYLength, mainZLength);
 	MetaDataCPU metaData;
 	metaData.metaXLength = metaXLength;
 	metaData.MetaYLength = MetaYLength;
@@ -93,14 +92,12 @@ extern "C" inline void testMainPasswes() {
 	auto workQueuePointer = alloc_tensorToZeros<uint32_t>(workQueueAndRLLength, workQueueWidth, 1);
 
 
-	forDebugArr = alloc_tensorToZeros<int>(dXLength, dYLength, dZLength);
 
 
 	// arguments to pass
 	ForFullBoolPrepArgs<int> forFullBoolPrepArgs;
 	forFullBoolPrepArgs.metaData = metaData;
 	forFullBoolPrepArgs.numberToLookFor = 2;
-	forFullBoolPrepArgs.forDebugArr = get3dArrCPU(forDebugArr, dXLength, dYLength, dZLength);
 	forFullBoolPrepArgs.dbXLength = dbXLength;
 	forFullBoolPrepArgs.dbYLength = dbYLength;
 	forFullBoolPrepArgs.dbZLength = dbZLength;
@@ -147,15 +144,17 @@ extern "C" inline void testMainPasswes() {
 	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
 	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
 
+	 goldArr[5]=2 ;
+
+	segmArr[0]=2;
 
 
 
-
-   setArrCPU(arrGoldObj, 0, 0, 200, 2);//
+   //setArrCPU(arrGoldObj, 0, 0, 200, 2);//
 
 
 	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
-	setArrCPU(arrSegmObj,0,0 , 0, 2);//
+	//setArrCPU(arrSegmObj,0,0 , 0, 2);//
 
 
 	/*
@@ -230,9 +229,12 @@ minZ 2  [6]
 
 	uint32_t* reducedResCPU;
 	uint32_t* origArrsCPU;
+	
+	
+	
 	ForBoolKernelArgs<int> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
 		, resultListPointerLocalCPU, resultListPointerIterNumbCPU
-		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
+		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, mainXLength, mainYLength, mainZLength
 	);
 
 	//for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
@@ -287,39 +289,39 @@ minZ 2  [6]
 	//	info in padding AND range 14 linMeta 0 new block adress 28   inMetadataArrIndex 571
 
 
-	for (int i = 0; i < 5;i++) {
-		if (resultListPointerLocalCPU[i]>0 || resultListPointerMetaCPU[i]>0) {
-			uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] >= isGoldOffset))-1;
-			uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-			uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength))));
-			uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength)));
-			
-			uint32_t linLocal = resultListPointerLocalCPU[i];
-			uint32_t xLoc = linLocal % fbArgs.dbXLength;
-			uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * fbArgs.dbYLength))));
-			uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * fbArgs.dbYLength) + xLoc)) / 32)));
+	//for (int i = 0; i < 5;i++) {
+	//	if (resultListPointerLocalCPU[i]>0 || resultListPointerMetaCPU[i]>0) {
+	//		uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] >= isGoldOffset))-1;
+	//		uint32_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
+	//		uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength))));
+	//		uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength)));
+	//		
+	//		uint32_t linLocal = resultListPointerLocalCPU[i];
+	//		uint32_t xLoc = linLocal % fbArgs.dbXLength;
+	//		uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * fbArgs.dbYLength))));
+	//		uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * fbArgs.dbYLength) + xLoc)) / 32)));
 
 
-			uint32_t x = xMeta * 32 + xLoc;
-			uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
-			uint32_t z = zMeta * 32 + zLoc;
-			uint32_t iterNumb  = resultListPointerIterNumbCPU[i];
+	//		uint32_t x = xMeta * 32 + xLoc;
+	//		uint32_t y= yMeta * fbArgs.dbYLength + yLoc;
+	//		uint32_t z = zMeta * 32 + zLoc;
+	//		uint32_t iterNumb  = resultListPointerIterNumbCPU[i];
 
-			printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d  iterNumb %d \n"
-				,linIdexMeta
-				,x,y,z
-				,xMeta,yMeta, zMeta
-				,xLoc,yLoc,zLoc
-				, linLocal
-				, iterNumb
-
-
-			);
+	//		printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d  iterNumb %d \n"
+	//			,linIdexMeta
+	//			,x,y,z
+	//			,xMeta,yMeta, zMeta
+	//			,xLoc,yLoc,zLoc
+	//			, linLocal
+	//			, iterNumb
 
 
-		
-		}
-	}
+	//		);
+
+
+	//	
+	//	}
+	//}
 
 
 
@@ -473,42 +475,27 @@ minZ 2  [6]
 
 	printf("cleaaning");
 
-	//free(isToBeValidatedFpPointer);
-	//free(isToBeValidatedFnPointer);
-	/*free(metaData.minMaxes);
-	free(metaData.fpCount.arrP);
-	free(metaData.fnCount.arrP);
-	free(metaData.fpCounter.arrP);
-	free(metaData.fnCounter.arrP);
-	free(metaData.fpOffset.arrP);
-	free(metaData.fnOffset.arrP);
-
-	free(metaData.isActiveGold.arrP);
-	free(metaData.isFullGold.arrP);
-
-	free(metaData.isActiveSegm.arrP);
-	free(metaData.isFullSegm.arrP);*/
-
-	free(workQueuePointer);
-	//	free(resultListPointer);
-
-	//free(isToBeActivatedGoldPointer);
-	//free(isToBeActivatedSegmPointer);
 
 
-	free(forDebugArr);
-	free(goldArr);
-	free(segmArr);
+	//free(workQueuePointer);
+	////	free(resultListPointer);
+
+	////free(isToBeActivatedGoldPointer);
+	////free(isToBeActivatedSegmPointer);
 
 
-	free(resultListPointerMetaCPU);
-	free(resultListPointerLocalCPU);
-	free(resultListPointerIterNumbCPU);
-	free(metaDataArrPointerCPU);
-	free(workQueuePointerCPU);
+	//free(goldArr);
+	//free(segmArr);
 
-	free(reducedResCPU);
-	free(origArrsCPU);
+
+	//free(resultListPointerMetaCPU);
+	//free(resultListPointerLocalCPU);
+	//free(resultListPointerIterNumbCPU);
+	//free(metaDataArrPointerCPU);
+	//free(workQueuePointerCPU);
+
+	//free(reducedResCPU);
+	//free(origArrsCPU);
 
 }
 
