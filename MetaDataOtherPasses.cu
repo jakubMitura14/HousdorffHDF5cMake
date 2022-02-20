@@ -126,13 +126,17 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) {
     isGoldPassToContinue[0] 
 = (  (minMaxes[7] * fbArgs.robustnessPercent) > minMaxes[10]); 
 
-    //printf("in meta pass fp count %d  ceiled %f fp counter %d isTo be continued %d \n "
-    //    , minMaxes[7]
-    //    , minMaxes[7] * fbArgs.robustnessPercent
-    //    , minMaxes[10]
-    //    , isGoldPassToContinue[0]
-    //);
 
+
+    //if (blockIdx.x == 0) {
+
+    //    printf("in meta pass fp count %d  ceiled %f fp counter %d isTo be continued %d \n "
+    //        , minMaxes[7]
+    //        , minMaxes[7] * fbArgs.robustnessPercent
+    //        , minMaxes[10]
+    //        , isGoldPassToContinue[0]
+    //    );
+    //}
 
 };
 
@@ -141,13 +145,15 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) {
     isSegmPassToContinue[0] 
         = ((minMaxes[8] * fbArgs.robustnessPercent) > minMaxes[11]); 
    
-    
-    //printf("in meta pass fn count %d  ceiled %f fn counter %d isTo be continued %d \n "
-    //    , minMaxes[8]
-    //    , minMaxes[8] * fbArgs.robustnessPercent
-    //    , minMaxes[11]
-    //    , isSegmPassToContinue[0]
-    //);
+    //if (blockIdx.x == 0) {
+
+    //    printf("in meta pass fn count %d  ceiled %f fn counter %d isTo be continued %d \n "
+    //        , minMaxes[8]
+    //        , minMaxes[8] * fbArgs.robustnessPercent
+    //        , minMaxes[11]
+    //        , isSegmPassToContinue[0]
+    //    );
+    //}
 
 };
 

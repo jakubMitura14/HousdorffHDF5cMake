@@ -132,6 +132,66 @@ void benchmarkOliviera(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const
 
 
 
+
+void benchmarkMitura(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const int WIDTH, const int HEIGHT, const int DEPTH) {
+    
+    //// some preparations and configuring
+    MetaDataCPU metaData;
+    size_t size = sizeof(unsigned int) * 20;
+    unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
+    metaData.minMaxes = minMaxesCPU;
+    ForFullBoolPrepArgs<bool> forFullBoolPrepArgs;
+    forFullBoolPrepArgs.metaData = metaData;
+    forFullBoolPrepArgs.numberToLookFor = true;
+    forFullBoolPrepArgs.goldArr = get3dArrCPU(onlyBladderBoolFlat, WIDTH, HEIGHT, DEPTH);
+    forFullBoolPrepArgs.segmArr = get3dArrCPU(onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);
+    /// for debugging
+    uint32_t* resultListPointerMetaCPU;
+    uint32_t* resultListPointerLocalCPU;
+    uint32_t* resultListPointerIterNumbCPU;
+    uint32_t* metaDataArrPointerCPU;
+    uint32_t* workQueuePointerCPU;
+    uint32_t* reducedResCPU;
+    uint32_t* origArrsCPU;
+
+
+    //function invocation
+    auto begin = std::chrono::high_resolution_clock::now();
+
+    ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
+        , resultListPointerLocalCPU, resultListPointerIterNumbCPU
+        , metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, WIDTH, HEIGHT, DEPTH
+    );
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::cout << "Total elapsed time: ";
+    std::cout << (double)(std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / (double)1000000000) << "s" << std::endl;
+
+
+    size_t sizeMinMax = sizeof(unsigned int) * 20;
+    cudaMemcpy(minMaxesCPU, fbArgs.metaData.minMaxes, sizeMinMax, cudaMemcpyDeviceToHost);
+
+    printf("HD: %d \n", minMaxesCPU[13]);
+
+
+    // freeee
+    free(onlyBladderBoolFlat);
+    free(onlyLungsBoolFlat);
+
+
+    free(resultListPointerMetaCPU);
+    free(resultListPointerLocalCPU);
+    free(resultListPointerIterNumbCPU);
+    free(metaDataArrPointerCPU);
+    free(workQueuePointerCPU);
+
+    free(reducedResCPU);
+    free(origArrsCPU);
+
+}
+
+
+
 void loadHDF() {
     const int WIDTH = 512;
     const int HEIGHT = 512;
@@ -149,7 +209,8 @@ void loadHDF() {
     bool* onlyBladderBoolFlat;
     loadHDFIntoBoolArr(FILE_NAMEonlyBladderBoolFlat, DATASET_NAMEonlyBladderBoolFlat, onlyBladderBoolFlat);
 
-
+  //  benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);
+    benchmarkMitura(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);
 
 
 

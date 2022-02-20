@@ -467,7 +467,7 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
 
 
     checkCuda(cudaDeviceSynchronize(), "a0b");
-    ForBoolKernelArgs<int> fbArgs = getArgsForKernel<int>(fFArgs, goldArrPointer, segmArrPointer, minMaxes, warpsNumbForMainPass, blockForMainPass, WIDTH,HEIGHT, DEPTH);
+    ForBoolKernelArgs<T> fbArgs = getArgsForKernel<T>(fFArgs, goldArrPointer, segmArrPointer, minMaxes, warpsNumbForMainPass, blockForMainPass, WIDTH,HEIGHT, DEPTH);
     MetaDataGPU metaData = fbArgs.metaData;
     fbArgs.metaData.minMaxes = minMaxes;
 

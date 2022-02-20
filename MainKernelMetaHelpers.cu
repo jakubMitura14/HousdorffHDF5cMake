@@ -99,6 +99,45 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpu
     metaData.maxZ = cpuArgs.metaData.minMaxes[5];
     metaData.minZ = cpuArgs.metaData.minMaxes[6];
 
+
+
+
+
+    int i = 1;
+    printf("maxX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    i = 2;
+    printf("minX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    i = 3;
+    printf("maxY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    i = 4;
+    printf("minY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    i = 5;
+    printf("maxZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    i = 6;
+    printf("minZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+
+  /*  int ii = 7;
+    printf("global FP count %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
+    ii = 8;
+    printf("global FN count %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
+    ii = 9;
+    printf("workQueueCounter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
+    ii = 10;
+    printf("resultFP globalCounter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
+    ii = 11;
+    printf("resultFn globalCounter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
+    ii = 12;
+    printf("global offset counter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);*/
+
+
+
+
+
+
+
+
+
+
     //allocating needed memory
     // main array
     unsigned int mainArrXLength = gpuArgs.dbXLength * gpuArgs.dbYLength;
