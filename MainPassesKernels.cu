@@ -515,68 +515,68 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
     firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
    checkCuda(cudaDeviceSynchronize(), "a5");
-  //  //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
-  //  
-  //  
-  //  
-  //  //fbArgs.goldArr = goldArr;
-  //  //fbArgs.segmArr = segmArr;
-  //  fbArgs.metaData = metaData;
+    //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
+    
+    
+    
+    //fbArgs.goldArr = goldArr;
+    //fbArgs.segmArr = segmArr;
+    fbArgs.metaData = metaData;
 
-  //  fbArgs.resultListPointerMeta = resultListPointerMeta;
-  //  fbArgs.resultListPointerLocal = resultListPointerLocal;
-  //  fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
+    fbArgs.resultListPointerMeta = resultListPointerMeta;
+    fbArgs.resultListPointerLocal = resultListPointerLocal;
+    fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
 
-  //  fbArgs.origArrsPointer = origArrsPointer;
-  //  fbArgs.mainArrAPointer = mainArrAPointer;
-  //  fbArgs.mainArrBPointer = mainArrBPointer;
-
-
-  //  fbArgs.metaDataArrPointer = metaDataArrPointer;
-  //  fbArgs.workQueuePointer = workQueuePointer;
-  //  fbArgs.minMaxes = minMaxes;
-  //  void* kernel_args[] = { &fbArgs };
+    fbArgs.origArrsPointer = origArrsPointer;
+    fbArgs.mainArrAPointer = mainArrAPointer;
+    fbArgs.mainArrBPointer = mainArrBPointer;
 
 
-  ////  //cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    fbArgs.metaDataArrPointer = metaDataArrPointer;
+    fbArgs.workQueuePointer = workQueuePointer;
+    fbArgs.minMaxes = minMaxes;
+    void* kernel_args[] = { &fbArgs };
 
 
-
-  //  checkCuda(cudaDeviceSynchronize(), "a6");
-
-  //  //copy to CPU
-  //  size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
-  //  reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-  //  cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
-
-  //  origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-  //  cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
-
-
-  //  size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
-
-
-  //resultListPointerMetaCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-  //  resultListPointerLocalCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-  // resultListPointerIterNumbCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-  // cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
-
-  // cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
-
-  // cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
-
-  // size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
-  // metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
-  // cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizemetaDataArr, cudaMemcpyDeviceToHost);
-
-  // size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
-
-  // workQueuePointerCPU = (uint32_t*)calloc(metaData.totalMetaLength, sizeof(uint32_t));
-  // cudaMemcpy(workQueuePointerCPU, workQueuePointer, sizeC, cudaMemcpyDeviceToHost);
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
 
 
 
-  // checkCuda(cudaDeviceSynchronize(), "a7");
+    checkCuda(cudaDeviceSynchronize(), "a6");
+
+    //copy to CPU
+    size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
+    reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+    cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
+
+    origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
+    cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
+
+
+    size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
+
+
+  resultListPointerMetaCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+    resultListPointerLocalCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+   resultListPointerIterNumbCPU= (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
+   cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
+
+   cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
+
+   cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
+
+   size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
+   metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
+   cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizemetaDataArr, cudaMemcpyDeviceToHost);
+
+   size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
+
+   workQueuePointerCPU = (uint32_t*)calloc(metaData.totalMetaLength, sizeof(uint32_t));
+   cudaMemcpy(workQueuePointerCPU, workQueuePointer, sizeC, cudaMemcpyDeviceToHost);
+
+
+
+   checkCuda(cudaDeviceSynchronize(), "a7");
 
 
 
@@ -605,12 +605,16 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
   //cudaFreeAsync(segmArrPointer, 0);
 
 
-  //  cudaFreeAsync(resultListPointerMeta, 0);
-  //  cudaFreeAsync(resultListPointerLocal, 0);
-  //  cudaFreeAsync(resultListPointerIterNumb, 0);
-    //cudaFreeAsync(workQueuePointer, 0);
-    //cudaFreeAsync(origArrsPointer, 0);
-    //cudaFreeAsync(metaDataArrPointer, 0);
+    cudaFreeAsync(resultListPointerMeta, 0);
+    cudaFreeAsync(resultListPointerLocal, 0);
+    cudaFreeAsync(resultListPointerIterNumb, 0);
+    cudaFreeAsync(workQueuePointer, 0);
+    cudaFreeAsync(origArrsPointer, 0);
+    cudaFreeAsync(metaDataArrPointer, 0);
+    cudaFreeAsync(mainArrAPointer, 0);
+    cudaFreeAsync(mainArrBPointer, 0);
+
+
 
     checkCuda(cudaDeviceSynchronize(), "last ");
 

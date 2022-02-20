@@ -46,9 +46,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 2;//8
-	const int MetaYLength = 2;//30
-	const int MetaZLength = 2;//8
+	const int metaXLength = 8;//8
+	const int MetaYLength = 20;//30
+	const int MetaZLength = 8;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -143,17 +143,17 @@ extern "C" inline void testMainPasswes() {
 	////setArrCPU(arrSegmObj, 38, 38, 35, 2);//
 	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
 	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
-	 goldArr[100]=2 ;
+	// goldArr[100]=2 ;
 
-	segmArr[0]=2;
+	//segmArr[0]=2;
 
 
 
    //setArrCPU(arrGoldObj, 0, 0, 200, 2);//
 
 
-//	setArrCPU(arrGoldObj, 90, 0, 0, 2);//
-	//setArrCPU(arrSegmObj,0,0 , 0, 2);//
+	setArrCPU(arrGoldObj, 90, 0, 0, 2);//
+	setArrCPU(arrSegmObj,0,0 , 0, 2);//
 
 
 	/*
