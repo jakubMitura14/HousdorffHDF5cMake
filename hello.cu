@@ -43,7 +43,7 @@ int main(void){
   //  const int WIDTH = atoi(argv[1]), HEIGHT = WIDTH, DEPTH = 1;
  //   Volume img1 = Volume(WIDTH, HEIGHT, DEPTH), img2 = Volume(WIDTH, HEIGHT, DEPTH);
     testMainPasswes();
-   // loadHDF();
+  //  loadHDF();
   
 
 

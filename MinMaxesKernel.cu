@@ -2,7 +2,7 @@
 
 #include "CPUAllocations.cu"
 #include "MetaData.cu"
-#include "IterationUtils.cu"
+ 
 #include "ExceptionManagUtils.cu"
 #include "CooperativeGroupsUtils.cu"
 #include <cooperative_groups.h>

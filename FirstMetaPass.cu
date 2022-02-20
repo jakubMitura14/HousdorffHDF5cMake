@@ -1,7 +1,6 @@
 #include <cuda_runtime.h>
 #include "CPUAllocations.cu"
 #include "MetaData.cu"
-#include "IterationUtils.cu"
 #include "ExceptionManagUtils.cu"
 #include "CooperativeGroupsUtils.cu"
 #include "ForBoolKernel.cu"

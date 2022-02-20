@@ -4,7 +4,7 @@
 #include "cuda_runtime.h"
 #include "CPUAllocations.cu"
 #include "MetaData.cu"
-#include "IterationUtils.cu"
+ 
 #include "ExceptionManagUtils.cu"
 #include "CooperativeGroupsUtils.cu"
 #include "MainPassFunctions.cu"
@@ -437,15 +437,15 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                    //);
 
 
-                   printf("\n rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
-                       , mainShmem[startOfLocalWorkQ + i]
-                       , isGoldForLocQueue[i]
-                       , old
-                       , threadIdx.x
-                       , threadIdx.y
-                       , bitPos
-                       , iterationNumb[0]
-                   );
+                   //printf("\n rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
+                   //    , mainShmem[startOfLocalWorkQ + i]
+                   //    , isGoldForLocQueue[i]
+                   //    , old
+                   //    , threadIdx.x
+                   //    , threadIdx.y
+                   //    , bitPos
+                   //    , iterationNumb[0]
+                   //);
 
 
             }

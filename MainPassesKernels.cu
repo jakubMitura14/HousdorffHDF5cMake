@@ -1,6 +1,5 @@
 #include "CPUAllocations.cu"
 #include "MetaData.cu"
-#include "IterationUtils.cu"
 #include "ExceptionManagUtils.cu"
 #include "CooperativeGroupsUtils.cu"
 #include "ForBoolKernel.cu"
@@ -60,30 +59,6 @@ Data
 4) we save data from result shmem into reduced arrays and from paddings into padding store (both in global memory)
 
 */
-
-
-
-
-/**
-CPU part of the loop - where we copy data required to know wheather next loop should be executed and to increment the iteration number
-*/
-template <typename TKKI>
-inline bool runAfterOneLoop(ForBoolKernelArgs<TKKI> gpuArgs, ForFullBoolPrepArgs<TKKI> cpuArgs, unsigned int& cpuIterNumb) {
-    cpuIterNumb += 1;
-
-    //copy on cpu
-    copyDeviceToHost3d(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
-    //read an modify
-    cpuArgs.metaData.minMaxes.arrP[0][0][13] = cpuIterNumb;
-    //copy back on gpu
-    copyHostToDevice(gpuArgs.metaData.minMaxes, cpuArgs.metaData.minMaxes);
-    // returning true - so signal that we need to loop on only when we did not reach yet the required percent of covered voxels
-    return ((ceil(cpuArgs.metaData.minMaxes.arrP[0][0][7] * cpuArgs.robustnessPercent) > cpuArgs.metaData.minMaxes.arrP[0][0][10])
-        || (ceil(cpuArgs.metaData.minMaxes.arrP[0][0][8] * cpuArgs.robustnessPercent) > cpuArgs.metaData.minMaxes.arrP[0][0][11]));
-
-}
-
-
 
 
 
@@ -330,6 +305,16 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     
     } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
+    grid.sync();
+
+
+    if (threadIdx.x == 2 && threadIdx.y == 0) {
+        if (blockIdx.x == 0) {
+
+            fbArgs.minMaxes[9] = 0;
+        }
+    };
+    
 
     //grid.sync();
 
@@ -408,8 +393,8 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
         printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
 
-    warpsNumbForMainPass = 5;
-    blockForMainPass = 1;
+   // warpsNumbForMainPass = 5;
+  //  blockForMainPass = 1;
 
         
 
@@ -470,6 +455,7 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
     ForBoolKernelArgs<T> fbArgs = getArgsForKernel<T>(fFArgs, goldArrPointer, segmArrPointer, minMaxes, warpsNumbForMainPass, blockForMainPass, WIDTH,HEIGHT, DEPTH);
     MetaDataGPU metaData = fbArgs.metaData;
     fbArgs.metaData.minMaxes = minMaxes;
+    fbArgs.minMaxes = minMaxes;
 
 
     fbArgs.goldArr = goldArr;
@@ -543,6 +529,12 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
 
 
     checkCuda(cudaDeviceSynchronize(), "a6");
+
+
+
+    size_t sizeMinnMax  = sizeof(unsigned int) * 20;
+
+    cudaMemcpy(fFArgs.metaData.minMaxes, minMaxes, sizeMinnMax, cudaMemcpyDeviceToHost);
 
     //copy to CPU
     size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);

@@ -1,7 +1,6 @@
 #include "MainPassesKernels.cu"
 //#include "Structs.cu"
 #include "UnitTestUtils.cu"
-#include "testData.cu"
 
 
 
@@ -46,9 +45,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 8;//8
-	const int MetaYLength = 20;//30
-	const int MetaZLength = 8;//8
+	const int metaXLength = 16;//8
+	const int MetaYLength = 33;//30
+	const int MetaZLength = 22;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -143,7 +142,19 @@ extern "C" inline void testMainPasswes() {
 	////setArrCPU(arrSegmObj, 38, 38, 35, 2);//
 	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
 	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
-	// goldArr[100]=2 ;
+	 
+	for (int y = 0; y<300;y++) {
+		goldArr[y] = true;
+
+	}
+
+
+	
+	int offset = mainXLength * mainYLength*100;
+	for (int y = offset; y < offset+300; y++) {
+		segmArr[y] = true;
+
+	}
 
 	//segmArr[0]=2;
 
@@ -171,23 +182,23 @@ extern "C" inline void testMainPasswes() {
 
 
 
-	setArrCPU(arrGoldObj, 90, 0, 0, true);//
-	setArrCPU(arrSegmObj, 0, 0, 0, true);//
-	setArrCPU(arrGoldObj, 90, 0, 0, true);//
-	setArrCPU(arrSegmObj, 0, 0, 200, true);//
+	//setArrCPU(arrGoldObj, 90, 0, 0, true);//
+	//setArrCPU(arrSegmObj, 0, 0, 0, true);//
+	//setArrCPU(arrGoldObj, 90, 0, 0, true);//
+	//setArrCPU(arrSegmObj, 0, 0, 200, true);//
 
 
-	setArrCPU(arrGoldObj, 90, 1, 0, true);//
-	setArrCPU(arrGoldObj, 0, 8, 200, true);//
+	//setArrCPU(arrGoldObj, 90, 1, 0, true);//
+	//setArrCPU(arrGoldObj, 0, 8, 200, true);//
 
-	setArrCPU(arrGoldObj, 90, 9, 0, true);//
-	setArrCPU(arrGoldObj, 0, 19, 200, true);//
+	//setArrCPU(arrGoldObj, 90, 9, 0, true);//
+	//setArrCPU(arrGoldObj, 0, 19, 200, true);//
 
-	setArrCPU(arrGoldObj, 90, 20, 0, true);//
-	setArrCPU(arrGoldObj, 0, 2, 200, true);//
+	//setArrCPU(arrGoldObj, 90, 20, 0, true);//
+	//setArrCPU(arrGoldObj, 0, 2, 200, true);//
 
-	setArrCPU(arrGoldObj, 90, 8, 0, true);//
-	setArrCPU(arrGoldObj, 0, 7, 200, true);//
+	//setArrCPU(arrGoldObj, 90, 8, 0, true);//
+	//setArrCPU(arrGoldObj, 0, 7, 200, true);//
 
 
 
