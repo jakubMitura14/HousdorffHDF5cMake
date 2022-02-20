@@ -143,7 +143,7 @@ extern "C" inline void testMainPasswes() {
 
 
 	
-	int offset = plane *200;
+	int offset = plane *300;
 	for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
 		segmArr[y] = true;
 
