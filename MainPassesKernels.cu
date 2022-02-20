@@ -601,11 +601,11 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
   //  cudaFreeAsync(resultListPointerMeta, 0);
   //  cudaFreeAsync(resultListPointerLocal, 0);
   //  cudaFreeAsync(resultListPointerIterNumb, 0);
-    //cudaFreeAsync(workQueuePointer, 0);
-    //cudaFreeAsync(origArrsPointer, 0);
-    //cudaFreeAsync(metaDataArrPointer, 0);
+    cudaFreeAsync(workQueuePointer, 0);
+    cudaFreeAsync(origArrsPointer, 0);
+    cudaFreeAsync(metaDataArrPointer, 0);
 
-  //  checkCuda(cudaDeviceSynchronize(), "last ");
+    checkCuda(cudaDeviceSynchronize(), "last ");
 
 /////////// error handling 
     syncErr = cudaGetLastError();
