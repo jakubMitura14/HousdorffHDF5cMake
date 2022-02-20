@@ -248,8 +248,8 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
    // int i = 0;
   //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
    ///  
-    //do{
-    for (auto j = 0; j < 300; j++) {
+    do{
+   // for (auto j = 0; j < 300; j++) {
 
         //if (blockIdx.x == 0) {
         //    i++;
@@ -327,8 +327,8 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         //if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
         //    printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
         //};
-    }
-  //  } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
+    
+    } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
 
     //grid.sync();
@@ -406,8 +406,8 @@ ForBoolKernelArgs<int> mainKernelsRun(ForFullBoolPrepArgs<int> fFArgs, uint32_t*
         printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
 
 
-    warpsNumbForMainPass = 5;
-    blockForMainPass = 1;
+   // warpsNumbForMainPass = 5;
+    //blockForMainPass = 1;
 
 
 
