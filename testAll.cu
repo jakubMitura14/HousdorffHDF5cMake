@@ -45,9 +45,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 10;//8
-	const int MetaYLength = 10;//30
-	const int MetaZLength = 22;//8
+	const int metaXLength = 15;//8
+	const int MetaYLength = 15;//30
+	const int MetaZLength = 30;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -141,9 +141,10 @@ extern "C" inline void testMainPasswes() {
 
 	}
 
+	//segmArr[plane+1] = true;
 
 	
-	int offset = plane *300;
+	int offset = plane *10 * dbZLength;
 	for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
 		segmArr[y] = true;
 

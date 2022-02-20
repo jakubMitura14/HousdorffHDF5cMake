@@ -221,7 +221,12 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
     do{
-
+        if (threadIdx.x == 2 && threadIdx.y == 0) {
+    if (blockIdx.x == 0) {
+     //   printf("iter nuumb %d \n", iterationNumb[0]);
+      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
+    }
+};
 
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
