@@ -47,7 +47,7 @@ extern "C" inline void testMainPasswes() {
 
 	//metadata
 	const int metaXLength = 8;
-	const int MetaYLength = 10;
+	const int MetaYLength = 30;
 	const int MetaZLength = 8;
 
 
@@ -151,50 +151,51 @@ extern "C" inline void testMainPasswes() {
 
 
 
-   //setArrCPU(arrGoldObj, 0, 49, 32, 2);//
-   //setArrCPU(arrSegmObj, 0, 0, 32, 2);//
+   setArrCPU(arrGoldObj, 200, 0, 0, 2);//
 
 
-	setArrCPU(arrGoldObj, 0, 0,2, 2);//
-	setArrCPU(arrSegmObj, 0, 0,30, 2);//
-	//setArrCPU(arrSegmObj, 1, 1, 10, 2);//
-	//setArrCPU(arrSegmObj, 100, 40, 100, 2);//
+	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
+	setArrCPU(arrSegmObj,0, 0, 0, 2);//
+
+
+	/*
+		setArrCPU(arrSegmObj, 0, 100, 0, 2);//
+	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+
+	give 
+	rrrrresult meta 20 isGold 1 old 0  xLoc 0 yLoc 0 zLoc 0 iterNumbb 130
+resullt linIdexMeta 20 x 0 y 100 z 0  xMeta 0 yMeta 20 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 130
+resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 99
+
+
+	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+	setArrCPU(arrGoldObj, 0, 100, 0, 2);//
+
+	resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 99
+resullt linIdexMeta 20 x 0 y 100 z 0  xMeta 0 yMeta 20 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 164
+
+
+	setArrCPU(arrSegmObj, 0, 0, 200, 2);//
+	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
+
+	gives 
+
+	resullt linIdexMeta 6 x 0 y 0 z 200  xMeta 0 yMeta 0 zMeta 6 xLoc 0 yLoc 0 zLoc 8 linLocal 1280  iterNumb 142
+resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 200
+
+	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+	setArrCPU(arrGoldObj, 0, 0, 200, 2);//
+
+	gives 
+
+	resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 199
+resullt linIdexMeta 6 x 0 y 0 z 200  xMeta 0 yMeta 0 zMeta 6 xLoc 0 yLoc 0 zLoc 8 linLocal 1280  iterNumb 80
 
 
 
-   //setArrCPU(arrGoldObj, 31, 4, 31, 2);//
-   //setArrCPU(arrSegmObj, 31, 10, 31, 2);//
-   //setArrCPU(arrSegmObj, 63, 10, 63, 2);//
-  // setArrCPU(arrSegmObj, 63, 14, 63, 2);//
+	
+	*/
 
-
-
-//	setArrCPU(arrGoldObj, 64, 15, 15, 2);//
-	//setArrCPU(arrGoldObj, 68, 18, 68, 2);//
-
-	//setArrCPU(arrGoldObj, 11, 10, 0, 2);//
-	//setArrCPU(arrSegmObj, 11, 9, 0, 2);//
-
-	//setArrCPU(arrGoldObj, 0, 7, 7, 2);//
-
-
-	//setArrCPU(arrGoldObj, 3, 3, 32, 2);//
-
-	//setArrCPU(arrGoldObj, 35, 38, 31, 2);//
-	//setArrCPU(arrGoldObj, 35, 38, 39, 2);//
-
-	//setArrCPU(arrSegmObj, 16, 16, 16, 2);//
-	//setArrCPU(arrGoldObj, 38, 38, 36, 2);//
-
-	//setArrCPU(arrSegmObj, 8, 8, 5, 2);//
-
-
-
-
-	//setArrCPU(arrGoldObj, 32, 20, 32, 2);//
-	//setArrCPU(arrSegmObj, 31, 20, 32, 2);//
-	//setArrCPU(arrSegmObj, 32, 19, 32, 2);//
-	//setArrCPU(arrSegmObj, 32, 20, 31, 2);//
 
 
 
@@ -229,14 +230,35 @@ minZ 2  [6]
 
 	uint32_t* reducedResCPU;
 	uint32_t* origArrsCPU;
-	ForBoolKernelArgs<int> fbArgs= mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
+	ForBoolKernelArgs<int> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
 		, resultListPointerLocalCPU, resultListPointerIterNumbCPU
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU
-		);
+	);
 
+	//for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
+	//	//we get from linear index  the coordinates of the metadata block of intrest
+	//	uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
+	//	uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
+	//	uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
 
-
-
+	//	for (int locPos = 32 * fbArgs.dbYLength; locPos < 32 * 2 * fbArgs.dbYLength; locPos++) {
+	//		auto col = reducedResCPU[linIdexMeta * fbArgs.metaData.mainArrSectionLength + locPos];
+	//		if (col > 0) {
+	//			for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
+	//				if (isBitAtCPU(col, bitPos)) {
+	//					int locPosB = locPos - 32 * fbArgs.dbYLength;
+	//					if (bitPos + zMeta * fbArgs.dbZLength>190) {
+	//						printf("point segm  set at x %d y %d z %d  \n"
+	//							, locPosB % 32 + xMeta * fbArgs.dbXLength
+	//							, int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength)
+	//							, bitPos + zMeta * fbArgs.dbZLength
+	//						);
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 
 	//testDilatations(fbArgs, allPointsA, );

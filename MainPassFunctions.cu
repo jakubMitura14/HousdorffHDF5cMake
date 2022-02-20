@@ -167,9 +167,18 @@ uint32_t(&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6], uint32_t
                               isAnythingInPadding[paddingPos] = true;
            };
            // if in bit of intrest of neighbour block is set
-
-     mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
-
+           mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
+           //if (paddingPos==0) {               
+     
+           //    //mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
+           //    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] & uint32_t(1)));
+           //}
+           //else {
+           //  
+           //   // mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
+           //      mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] & uint32_t(2147483648)));
+           //
+           //}
 
 
            //mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
@@ -275,7 +284,7 @@ inline __device__  void afterBlockClean(thread_block& cta
                 
             }
         }
-        isAnythingInPadding[0] = false;
+        isAnythingInPadding[tile.thread_rank()] = false;
     };
     //if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
 

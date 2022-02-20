@@ -56,7 +56,7 @@ inline __device__ bool getPredSegmPass(const bool isPaddingPass
 
 ) {
     if (isPaddingPass) {
-        return (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + +12]
+        return (isSegmPassToContinue[0] && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12]
             && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9]
             && !metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10]);
 
@@ -201,7 +201,7 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
     //segm pass
     if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue  , metaData, metaDataArr, linIdexMeta)) {
 
-       // printf("in meta pass gold linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
+        //printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1);
         if (old < lengthOfMainShmem) {

@@ -56,6 +56,12 @@ inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
 //    ) {
    // isBlockFull[0] = false;
     //    }
+    //if (__popc(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32])<32) {
+    //
+    //    isBlockFull[0] = false;
+    //}
+
+
     mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
     //marking weather block is already full and no more dilatations are possible 
 
@@ -78,7 +84,8 @@ inline __device__  void loadTop(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& c
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+13] < isGoldOffset) {
         cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20+13] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 13]
+            * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
             cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
             , pipeline);
     }
@@ -116,10 +123,10 @@ inline __device__  void loadBottom(ForBoolKernelArgs<TXPI>& fbArgs, thread_block
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+14] < isGoldOffset) {
         cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-            &getSourceReduced(fbArgs, iterationNumb)[
-                localBlockMetaData[(i & 1) * 20+14] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])], //we look for indicies 0,32,64... up to metaData.mainArrXLength
+            &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 14] 
+            * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
             cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                    , pipeline);
+            , pipeline);
     }
     pipeline.producer_commit();
 
@@ -266,13 +273,6 @@ inline __device__  void loadPosterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_bl
     pipeline.producer_acquire();
     if (localBlockMetaData[(i & 1) * 20+18] < isGoldOffset) {
 
-        //if (threadIdx.x==0 && threadIdx.y==0) {
-        //    printf("address to load  posterior %d isGold %d start index %d\n"
-        //        , localBlockMetaData[(i & 1) * 20 + 18]
-        //        , isGoldForLocQueue[i]
-        //        , (localBlockMetaData[(i & 1) * 20 + 18]) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
-        //    );
-        //}
 
         cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
             &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 18] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
@@ -325,21 +325,44 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
     , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
     , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6],
-    bool (&isBlockFull)[1]   ) {
+    bool(&isBlockFull)[1]) {
 
     pipeline.consumer_wait();
     //dilatate posterior 
-    dilatateHelperForTransverse(fbArgs,(threadIdx.y == 0), 5
+    dilatateHelperForTransverse(fbArgs, (threadIdx.y == 0), 5
         , (0), (-1), mainShmem, isAnythingInPadding
-        , fbArgs.dbYLength-1, threadIdx.x // we add offset depending on y dimension
-        , 18, begSecRegShmem, localBlockMetaData,i);
-
-
-
+        , fbArgs.dbYLength - 1, threadIdx.x // we add offset depending on y dimension
+        , 18, begSecRegShmem, localBlockMetaData, i);
     //now all data should be properly dilatated we save it to global memory
+    //try save target reduced via mempcy async ...
+
     getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
         + threadIdx.x + threadIdx.y * 32]
         = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+    //TODO remove 
+
+    //for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
+    //    if (threadIdx.x == 0 && threadIdx.y == 0) {
+
+    //    //if any bit here is set it means it should be added to result list 
+    //    if (isBitAt(mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
+    //        //if (mainShmem[startOfLocalWorkQ + i] * 32 + bitPos>130) {
+    //            printf("bit set loc %d isGold %d \n", mainShmem[startOfLocalWorkQ + i] * 32 + bitPos, isGoldForLocQueue[i]);
+    //        //}
+    //    }
+    //    
+    //    }
+    //}
+    
+    
+    
+    //if (!(localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
+    //> localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)])) {// so count is bigger than counter so we should validate
+    //    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = 0;
+    //    mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = 0;
+    //}
+
 
     pipeline.consumer_release();
 }
@@ -388,7 +411,7 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                 }
                 else {
                     old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4];
-                    printf("local fn counter add \n");
+                //    printf("local fn counter add \n");
 
                 };
                 //   add results to global memory    
@@ -414,19 +437,22 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                    //);
 
 
-                   printf("rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
-                       , mainShmem[startOfLocalWorkQ + i]
-                       , isGoldForLocQueue[i]
-                       , old
-                       , threadIdx.x
-                       , threadIdx.y
-                       , bitPos
-                       , iterationNumb[0]
-                   );
+                   //printf("\n rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
+                   //    , mainShmem[startOfLocalWorkQ + i]
+                   //    , isGoldForLocQueue[i]
+                   //    , old
+                   //    , threadIdx.x
+                   //    , threadIdx.y
+                   //    , bitPos
+                   //    , iterationNumb[0]
+                   //);
 
 
             }
 
         };
+        //mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = 0;
+        //mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = 0;
+
     }
 }

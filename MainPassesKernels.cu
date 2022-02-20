@@ -245,11 +245,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
     //isGoldPassToContinue[0] || isSegmPassToContinue[0]
-    int i = 0;
+   // int i = 0;
   //while (isGoldPassToContinue[0] || isSegmPassToContinue[0]) {
    ///  
     //do{
-    for (auto j = 0; j < 50; j++) {
+    for (auto j = 0; j < 300; j++) {
 
         //if (blockIdx.x == 0) {
         //    i++;
@@ -324,9 +324,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
             , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
         grid.sync();
-        if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
-            printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
-        };
+        //if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
+        //    printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
+        //};
     }
   //  } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
