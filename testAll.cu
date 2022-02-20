@@ -71,9 +71,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//main data arrays
-	int* goldArr = alloc_tensorToZeros<int>(mainXLength, mainYLength, mainZLength);
+	bool* goldArr = alloc_tensorToZeros<bool>(mainXLength, mainYLength, mainZLength);
 
-	int* segmArr = alloc_tensorToZeros<int>(mainXLength, mainYLength, mainZLength);
+	bool* segmArr = alloc_tensorToZeros<bool>(mainXLength, mainYLength, mainZLength);
 	MetaDataCPU metaData;
 	metaData.metaXLength = metaXLength;
 	metaData.MetaYLength = MetaYLength;
@@ -95,7 +95,7 @@ extern "C" inline void testMainPasswes() {
 
 
 	// arguments to pass
-	ForFullBoolPrepArgs<int> forFullBoolPrepArgs;
+	ForFullBoolPrepArgs<bool> forFullBoolPrepArgs;
 	forFullBoolPrepArgs.metaData = metaData;
 	forFullBoolPrepArgs.numberToLookFor = 2;
 	forFullBoolPrepArgs.dbXLength = dbXLength;
@@ -151,62 +151,43 @@ extern "C" inline void testMainPasswes() {
 
    //setArrCPU(arrGoldObj, 0, 0, 200, 2);//
 
-	setArrCPU(arrGoldObj, 90, 0, 0, 2);//
-	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
-	setArrCPU(arrGoldObj, 90, 0, 0, 2);//
-	setArrCPU(arrSegmObj, 0, 0, 200, 2);//
+	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
+	//setArrCPU(arrSegmObj, 0, 0, 0, 2);//
+	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
+	//setArrCPU(arrSegmObj, 0, 0, 200, 2);//
 
 
-	setArrCPU(arrGoldObj, 90, 1, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 8, 200, 2);//
+	//setArrCPU(arrGoldObj, 90, 1, 0, 2);//
+	//setArrCPU(arrGoldObj, 0, 8, 200, 2);//
 
-	setArrCPU(arrGoldObj, 90, 9, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 19, 200, 2);//
+	//setArrCPU(arrGoldObj, 90, 9, 0, 2);//
+	//setArrCPU(arrGoldObj, 0, 19, 200, 2);//
 
-	setArrCPU(arrGoldObj, 90, 20, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 2, 200, 2);//
+	//setArrCPU(arrGoldObj, 90, 20, 0, 2);//
+	//setArrCPU(arrGoldObj, 0, 2, 200, 2);//
 
-	setArrCPU(arrGoldObj, 90, 8, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 7, 200, 2);//
-
-
-	/*
-		setArrCPU(arrSegmObj, 0, 100, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
-
-	give 
-	rrrrresult meta 20 isGold 1 old 0  xLoc 0 yLoc 0 zLoc 0 iterNumbb 130
-resullt linIdexMeta 20 x 0 y 100 z 0  xMeta 0 yMeta 20 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 130
-resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 99
-
-
-	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 100, 0, 2);//
-
-	resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 99
-resullt linIdexMeta 20 x 0 y 100 z 0  xMeta 0 yMeta 20 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 164
-
-
-	setArrCPU(arrSegmObj, 0, 0, 200, 2);//
-	setArrCPU(arrGoldObj, 0, 0, 0, 2);//
-
-	gives 
-
-	resullt linIdexMeta 6 x 0 y 0 z 200  xMeta 0 yMeta 0 zMeta 6 xLoc 0 yLoc 0 zLoc 8 linLocal 1280  iterNumb 142
-resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 200
-
-	setArrCPU(arrSegmObj, 0, 0, 0, 2);//
-	setArrCPU(arrGoldObj, 0, 0, 200, 2);//
-
-	gives 
-
-	resullt linIdexMeta 0 x 0 y 0 z 0  xMeta 0 yMeta 0 zMeta 0 xLoc 0 yLoc 0 zLoc 0 linLocal 0  iterNumb 199
-resullt linIdexMeta 6 x 0 y 0 z 200  xMeta 0 yMeta 0 zMeta 6 xLoc 0 yLoc 0 zLoc 8 linLocal 1280  iterNumb 80
+	//setArrCPU(arrGoldObj, 90, 8, 0, 2);//
+	//setArrCPU(arrGoldObj, 0, 7, 200, 2);//
 
 
 
-	
-	*/
+	setArrCPU(arrGoldObj, 90, 0, 0, true);//
+	setArrCPU(arrSegmObj, 0, 0, 0, true);//
+	setArrCPU(arrGoldObj, 90, 0, 0, true);//
+	setArrCPU(arrSegmObj, 0, 0, 200, true);//
+
+
+	setArrCPU(arrGoldObj, 90, 1, 0, true);//
+	setArrCPU(arrGoldObj, 0, 8, 200, true);//
+
+	setArrCPU(arrGoldObj, 90, 9, 0, true);//
+	setArrCPU(arrGoldObj, 0, 19, 200, true);//
+
+	setArrCPU(arrGoldObj, 90, 20, 0, true);//
+	setArrCPU(arrGoldObj, 0, 2, 200, true);//
+
+	setArrCPU(arrGoldObj, 90, 8, 0, true);//
+	setArrCPU(arrGoldObj, 0, 7, 200, true);//
 
 
 
@@ -245,7 +226,7 @@ minZ 2  [6]
 	
 	
 	
-	ForBoolKernelArgs<int> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
+	ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
 		, resultListPointerLocalCPU, resultListPointerIterNumbCPU
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, mainXLength, mainYLength, mainZLength
 	);
