@@ -87,7 +87,7 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 #pragma once
 template <typename TYO>
 __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
-    , MetaDataGPU metaData, uint32_t* origArrs, uint32_t* metaDataArr) {
+    , MetaDataGPU& metaData, uint32_t* origArrs, uint32_t* metaDataArr, TYO* goldArr, TYO* segmArr, unsigned int* minMaxes) {
 
     ////////////some initializations
     bool goldBool = false;
@@ -356,11 +356,11 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
 
     //setting global fp and fn
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
-        atomicAdd(&(metaData.minMaxes[7]), fpSFnS[0]);
+        atomicAdd(&(minMaxes[7]), fpSFnS[0]);
     };
 
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-          atomicAdd(&(metaData.minMaxes[8]), fpSFnS[1]);
+          atomicAdd(&(minMaxes[8]), fpSFnS[1]);
 
     };
    

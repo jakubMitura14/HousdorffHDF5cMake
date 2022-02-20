@@ -21,13 +21,13 @@ using namespace cooperative_groups;
 iteration over metadata - becouse metadata may be small and to maximize occupancy we use linear index and then clalculate xMeta,ymeta,zMeta from this linear index ...
 */
 #pragma once
-//template <typename TYO>
-//__global__ void getMinMaxes(ForBoolKernelArgs<TYO>& fbArgs
-//    , unsigned int*& minMaxes
-//    , TYO*& goldArr, TYO*& segmArr
-//) {
+template <typename TYO>
+__global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs
+    , unsigned int* minMaxes
+    , TYO* goldArr, TYO* segmArr
+) {
 
-    __global__ void getMinMaxes(unsigned int* minMaxes) {
+   // __global__ void getMinMaxes(unsigned int* minMaxes) {
     ////////////some initializations
     thread_block cta = this_thread_block();
     //thread_block_tile<32> tile = tiled_partition<32>(cta);
@@ -56,86 +56,74 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 
     /////////////////////////
 
-//
-//    //main metadata iteration
-//    for (auto linIdexMeta = blockIdx.x; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += gridDim.x) {
-//        //we get from linear index  the coordinates of the metadata block of intrest
-//        uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-//        uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
-//        uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
-//        //iterating over data block
-//        for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-//            uint32_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
-//            for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-//                uint32_t  y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
-//                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
-//
-//                    // resetting 
-//
-//
-//                    for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
-//                        uint32_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
-//                        if (z < fbArgs.goldArr.Nx) {
-//                            //first array gold
-//                            uint8_t& zLocRef = zLoc; uint8_t& yLocRef = yLoc; uint8_t& xLocRef = xLoc;
-//
-//                            // setting bits
-//                           // bool goldBool = goldArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor;  // (getTensorRow<TYU>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor);
-//                            //bool segmBool = segmArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor;
-//                            bool goldBool = true;
-//                            bool segmBool = true;
-//                            if (segmBool) {
-//                                anyInGold[0] = true;
-//                                printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta, zMeta);
-//
-//                            }if (goldBool) {
-//                                anyInGold[0] = true;
-//                                printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta, zMeta);
-//
-//                            }
-//                           // if ((getTensorRow<TYU>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor) || (getTensorRow<TYU>(tensorslice, fbArgs.segmArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor)) {
-//                            if (goldBool || segmBool) {
-//                                anyInGold[0] = true;
-//                                printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta,zMeta);
-//
-//                            }
-//                        }
-//
-//                    }
-//                }
-//
-//              //  __syncthreads();
-//                //waiting so shared memory will be loaded evrywhere
-//                //on single thread we do last sum reduction
-//
-//                /////////////////// setting min and maxes
-////    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
-//                auto active = coalesced_threads();
-//                sync(cta);
-//                active.sync();
-//
-//                if (isToBeExecutedOnActive(active, 2) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
-//                if (isToBeExecutedOnActive(active, 3) && anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
-//
-//                if (isToBeExecutedOnActive(active, 4) && anyInGold[0]) { minMaxesInShmem[3] = max(yMeta, minMaxesInShmem[3]); };
-//                if (isToBeExecutedOnActive(active, 5) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
-//
-//                if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
-//                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]);
-//               // printf("local fifth %d  \n", minMaxesInShmem[6]);
-//                };
-//                active.sync();
-//               // sync(cta); // just to reduce the warp divergence
-//                anyInGold[0] = false;
-//
-//
-//
-//
-//            }
-//        }
-//
-//    }
-//    sync(cta);
+
+    //main metadata iteration
+    for (auto linIdexMeta = blockIdx.x; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += gridDim.x) {
+        //we get from linear index  the coordinates of the metadata block of intrest
+        uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
+        uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
+        uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
+        //iterating over data block
+        for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
+            uint32_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
+            for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
+                uint32_t  y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
+                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
+
+                    // resetting 
+
+
+                    for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
+                        uint32_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
+                        if (z < fbArgs.goldArr.Nx) {
+                            //first array gold
+                            uint8_t& zLocRef = zLoc; uint8_t& yLocRef = yLoc; uint8_t& xLocRef = xLoc;
+
+                            // setting bits
+                            bool goldBool = goldArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor;  // (getTensorRow<TYU>(tensorslice, fbArgs.goldArr, fbArgs.goldArr.Ny, y, z)[x] == fbArgs.numberToLookFor);
+                            bool segmBool = segmArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor;
+                             if (goldBool || segmBool) {
+                                anyInGold[0] = true;
+                            //    printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta,zMeta);
+
+                            }
+                        }
+
+                    }
+                }
+
+              //  __syncthreads();
+                //waiting so shared memory will be loaded evrywhere
+                //on single thread we do last sum reduction
+
+                /////////////////// setting min and maxes
+//    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
+                auto active = coalesced_threads();
+                sync(cta);
+                active.sync();
+
+                if (isToBeExecutedOnActive(active, 2) && anyInGold[0]) { minMaxesInShmem[1] = max(xMeta, minMaxesInShmem[1]); };
+                if (isToBeExecutedOnActive(active, 3) && anyInGold[0]) { minMaxesInShmem[2] = min(xMeta, minMaxesInShmem[2]); };
+
+                if (isToBeExecutedOnActive(active, 4) && anyInGold[0]) { minMaxesInShmem[3] = max(yMeta, minMaxesInShmem[3]); };
+                if (isToBeExecutedOnActive(active, 5) && anyInGold[0]) { minMaxesInShmem[4] = min(yMeta, minMaxesInShmem[4]); };
+
+                if (isToBeExecutedOnActive(active, 6) && anyInGold[0]) { minMaxesInShmem[5] = max(zMeta, minMaxesInShmem[5]); };
+                if (isToBeExecutedOnActive(active, 7) && anyInGold[0]) { minMaxesInShmem[6] = min(zMeta, minMaxesInShmem[6]);
+               // printf("local fifth %d  \n", minMaxesInShmem[6]);
+                };
+                active.sync();
+               // sync(cta); // just to reduce the warp divergence
+                anyInGold[0] = false;
+
+
+
+
+            }
+        }
+
+    }
+    sync(cta);
 
     auto active = coalesced_threads();
 
@@ -149,26 +137,26 @@ iteration over metadata - becouse metadata may be small and to maximize occupanc
 
     if ((threadIdx.x == 0) && (threadIdx.y == 0)) {
 
-       // atomicMin(&minMaxes[2], minMaxesInShmem[2]);
+        atomicMin(&minMaxes[2], minMaxesInShmem[2]);
     };
 
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-      //  atomicMax(&minMaxes[3], minMaxesInShmem[3]);
+        atomicMax(&minMaxes[3], minMaxesInShmem[3]);
     };
 
     if ((threadIdx.x == 2) && (threadIdx.y == 0)) {
-    //    atomicMin(&minMaxes[4], minMaxesInShmem[4]);
+        atomicMin(&minMaxes[4], minMaxesInShmem[4]);
     };
 
 
 
     if (threadIdx.x == 3 && threadIdx.y == 0) {
-     //   atomicMax(&minMaxes[5], minMaxesInShmem[5]);
+       atomicMax(&minMaxes[5], minMaxesInShmem[5]);
         //printf(" minMaxesInShmem  %d \n ", minMaxes[5]);
     };
 
     if (threadIdx.x == 4 && threadIdx.y == 0) {
-    //    atomicMin(&minMaxes[6], minMaxesInShmem[6]);
+        atomicMin(&minMaxes[6], minMaxesInShmem[6]);
     };
 
 

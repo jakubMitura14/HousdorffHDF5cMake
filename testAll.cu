@@ -143,8 +143,7 @@ extern "C" inline void testMainPasswes() {
 	////setArrCPU(arrSegmObj, 38, 38, 35, 2);//
 	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
 	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
-
-	 goldArr[5]=2 ;
+	 goldArr[100]=2 ;
 
 	segmArr[0]=2;
 
@@ -153,7 +152,7 @@ extern "C" inline void testMainPasswes() {
    //setArrCPU(arrGoldObj, 0, 0, 200, 2);//
 
 
-	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
+//	setArrCPU(arrGoldObj, 90, 0, 0, 2);//
 	//setArrCPU(arrSegmObj,0,0 , 0, 2);//
 
 
