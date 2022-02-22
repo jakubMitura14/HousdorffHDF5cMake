@@ -467,15 +467,15 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                    //);
 
 
-                   printf("\n rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
-                       , mainShmem[startOfLocalWorkQ + i]
-                       , isGoldForLocQueue[i]
-                       , old
-                       , threadIdx.x
-                       , threadIdx.y
-                       , bitPos
-                       , iterationNumb[0]
-                   );
+                   //printf("\n rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
+                   //    , mainShmem[startOfLocalWorkQ + i]
+                   //    , isGoldForLocQueue[i]
+                   //    , old
+                   //    , threadIdx.x
+                   //    , threadIdx.y
+                   //    , bitPos
+                   //    , iterationNumb[0]
+                   //);
 
 
             }

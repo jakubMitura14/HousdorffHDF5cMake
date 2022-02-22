@@ -160,10 +160,11 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpu
     size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint32_t);
     cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
 
-    
-    size_t sizeC = (totalMetaLength *2* sizeof(uint32_t));
+
+    size_t sizeC = (totalMetaLength *2* sizeof(uint32_t) +50);
    //cudaMallocAsync(&workQueue, size, 0);
     cudaMallocAsync(&workQueue, sizeC,0);
+    printf("in allocateMemoryAfterMinMaxesKernel workQueu size  %d \n", sizeC);
 
    return metaData;
 };

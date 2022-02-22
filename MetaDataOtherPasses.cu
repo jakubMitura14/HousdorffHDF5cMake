@@ -194,6 +194,7 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
             mainShmem[old] = linIdexMeta + (isGoldOffset);
         }
         else {
+           // printf("not fit to main queue   \n");
             old = atomicAdd(&(minMaxes[9]), 1);
             workQueue[old] = linIdexMeta + (isGoldOffset) ;
         }
@@ -217,6 +218,7 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
             mainShmem[old] = linIdexMeta;
         }
         else {
+           // printf("not fit to main queue segm  \n");
             old = atomicAdd(&(minMaxes[9]), 1);
             workQueue[old] = linIdexMeta;
         }

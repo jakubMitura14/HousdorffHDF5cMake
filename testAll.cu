@@ -45,9 +45,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 50;//8
-	const int MetaYLength = 4;//30
-	const int MetaZLength = 4;//8
+	const int metaXLength = 8;//8
+	const int MetaYLength = 8;//30
+	const int MetaZLength = 30;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -126,38 +126,38 @@ extern "C" inline void testMainPasswes() {
 	//setArrCPU(arrGoldObj, 0, 0, 0, 2);//
 	//setArrCPU(arrGoldObj, 8, 8, 6, 2);//
 
-	int lenn = 900;
-	goldArr[0] = true;
-	segmArr[lenn] = true;
+	//int lenn = 900;
+	//goldArr[0] = true;
+	//segmArr[lenn] = true;
 	//goldArr[lenn] = true;
 	//segmArr[lenn] = true;
 	//segmArr[49*32] = true;
 
 
 
-	//int plane = mainXLength * mainYLength;
+	int plane = mainXLength * mainYLength;
 
-	//for (int y = 0; y< mainXLength * (mainYLength/2);y++) {
-	//	goldArr[y] = true;
+	for (int y = 0; y< mainXLength * (mainYLength/2);y++) {
+		goldArr[y] = true;
+
+	}
+
+	//segmArr[plane+1] = true;
+
+	int offset = plane * 3 * dbZLength;
+	//for (int y = offset; y < offset + mainXLength * (mainYLength / 2); y++) {
+	//	segmArr[y] = true;
 
 	//}
-
-	////segmArr[plane+1] = true;
-
-	//int offset = plane * 3 * dbZLength;
-	////for (int y = offset; y < offset + mainXLength * (mainYLength / 2); y++) {
-	////	segmArr[y] = true;
-
-	////}
 
 
 
 	//
-	//offset = plane *20 * dbZLength;
-	//for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
-	//	segmArr[y] = true;
+	offset = mainXLength * mainYLength * mainZLength - (plane*4);
+	for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
+		segmArr[y] = true;
 
-	//}
+	}
 
 
 
