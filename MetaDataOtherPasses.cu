@@ -205,9 +205,9 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
     }
     //segm pass
-    if (isPaddingPass && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12]==1) {
-        printf("shooould in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
-    }
+    //if (isPaddingPass && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12]==1) {
+    //    printf("shooould in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
+    //}
     if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue  , metaData, metaDataArr, linIdexMeta)) {
       //  printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 

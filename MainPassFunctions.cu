@@ -122,10 +122,10 @@ inline __device__ void dilatateHelperForTransverse(ForBoolKernelArgs<TXPI>& fbAr
        
     
     //if (paddingPos == 3 && mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 0 ) {
-    if ( mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 1 ) {
-    
-        printf("something in loaded from right idX %d idY %d  paddingPos %d \n", threadIdx.x, threadIdx.y , paddingPos );
-    }
+    //if ( mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 1 ) {
+    //
+    //    printf("something in loaded from right idX %d idY %d  paddingPos %d \n", threadIdx.x, threadIdx.y , paddingPos );
+    //}
 
 
     // so we first check for corner cases 
@@ -146,11 +146,11 @@ inline __device__ void dilatateHelperForTransverse(ForBoolKernelArgs<TXPI>& fbAr
             if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
 
-                if (paddingPos == 3 && isGoldForLocQueue[i] == 0) {
-                    printf("c padding begining  in processs right  \n"
-                    );
+                //if (paddingPos == 3 && isGoldForLocQueue[i] == 0) {
+                //    printf("c padding begining  in processs right  \n"
+                //    );
 
-                }
+                //}
             
             };
 
@@ -306,13 +306,13 @@ inline __device__  void afterBlockClean(thread_block& cta
 
                 if (isAnythingInPadding[tile.thread_rank()]) {
 
-                    if (tile.thread_rank() == 3   && isGoldForLocQueue[i]==1 ) {
-                        printf(" padding in end  processs right  at the end of linMeta %d  isGold %d \n"
-                        , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()]
-                            , isGoldForLocQueue[i]
-                        );
+                    //if (tile.thread_rank() == 3   && isGoldForLocQueue[i]==1 ) {
+                    //    printf(" padding in end  processs right  at the end of linMeta %d  isGold %d \n"
+                    //    , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()]
+                    //        , isGoldForLocQueue[i]
+                    //    );
 
-                    }
+                    //}
 
                     metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
 

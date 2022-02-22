@@ -235,14 +235,14 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
-    for (int t = 0; t < 600 ;t++) {
-//    do{
-        if (threadIdx.x == 2 && threadIdx.y == 0) {
-    if (blockIdx.x == 0) {
-       printf("************  iter nuumb %d \n", iterationNumb[0]);
-      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
-    }
-};
+   // for (int t = 0; t < 600 ;t++) {
+    do{
+//        if (threadIdx.x == 2 && threadIdx.y == 0) {
+//    if (blockIdx.x == 0) {
+//       printf("************  iter nuumb %d \n", iterationNumb[0]);
+//      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
+//    }
+//};
         //if (blockIdx.x == 0) {
         //     printf("a iter nuumb %d \n", iterationNumb[0]);
         //}
@@ -323,9 +323,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         grid.sync();
         //if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
         //    printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
-        };
+       // };
     
-   // } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
+    } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
     //grid.sync();
 
