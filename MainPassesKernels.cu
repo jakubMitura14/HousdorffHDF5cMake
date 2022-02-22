@@ -243,11 +243,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 //      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
 //    }
 //};
-//        if (blockIdx.x == 0) {
-//            if (threadIdx.x == 2 && threadIdx.y == 0) {
-//                printf("a iter nuumb %d \n", iterationNumb[0]);
-//            }
-//        }
+
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -353,7 +349,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 //  }// end while
 
   //setting global iteration number to local one 
-
+    if (blockIdx.x == 0) {
+        if (threadIdx.x == 2 && threadIdx.y == 0) {
+            fbArgs.metaData.minMaxes[13] = iterationNumb[0];
+        }
+    }
 }
 
 

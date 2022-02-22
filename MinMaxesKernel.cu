@@ -147,7 +147,7 @@ __global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs
     auto active = coalesced_threads();
 
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-            printf("\n in minMaxes internal  %d \n", minMaxesInShmem[1]);
+          //  printf("\n in minMaxes internal  %d \n", minMaxesInShmem[1]);
          //getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, fbArgs.metaData.minMaxes.Ny, 0, 0)[0] = 61;
         atomicMax(&minMaxes[1], minMaxesInShmem[1]);
         //atomicMax(&minMaxes[1], 2);

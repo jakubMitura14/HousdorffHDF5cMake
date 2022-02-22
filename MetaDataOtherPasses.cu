@@ -70,6 +70,34 @@ inline __device__ bool getPredSegmPass(const bool isPaddingPass
 }
 
 
+inline __device__ void modifyMetaDataInPaddingPass(const bool isPaddingPass, uint32_t*& metaDataArr, uint32_t& linIdexMeta, MetaDataGPU& metaData, const uint8_t toBeActivated, const uint8_t isActiveNumb) {
+    if (isPaddingPass) {
+        //setting to be activated to 0 
+        metaDataArr[linIdexMeta * metaData.metaDataSectionLength + toBeActivated] = 0;
+        //setting active to 1
+        metaDataArr[linIdexMeta * metaData.metaDataSectionLength + isActiveNumb] = 1;
+    }
+}
+
+
+inline __device__ void saveWorkQueueToGlobal(thread_block& cta, thread_block_tile<32>& tile, unsigned int(&localWorkQueueCounter)[1]
+    , unsigned int*& minMaxes, uint32_t*& workQueue, unsigned int(&globalWorkQueueCounter)[1]
+    , uint32_t(&mainShmem)[lengthOfMainShmem]) {
+    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+        if (localWorkQueueCounter[0] > 0) {
+            //printf("local work Counter in meta pass %d  \n"
+            //    , localWorkQueueCounter[0]
+            //    );
+            globalWorkQueueCounter[0] = atomicAdd(&(minMaxes[9]), (localWorkQueueCounter[0]));
+        }
+    }
+    sync(cta);
+    for (uint32_t linI = threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y) {
+        workQueue[globalWorkQueueCounter[0] + linI] = mainShmem[linI];
+    }
+}
+
+
 
 /*
 as we have limited space in work queue we will use also the resShmem and source shmem in order to keep calculations easy 
@@ -80,9 +108,6 @@ we will divide all shared memory in  blocks of 32 length what will enable us usi
 2) using sutractions and getting remainder will give us spot in 32 subblock where to put the data 
 https://stackoverflow.com/questions/13548172/bitshifts-to-obtain-remainder
 */
-
-
-
 
 #pragma once
 template <typename TKKI>
@@ -162,56 +187,97 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) {
 
 sync(cta);
 
-//iterations 
-for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta <= fbArgs.metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
-    
-    we need to be sure that amount of blocks in local work queue do not exceed lengthOfMainShmem probably the most optimal would be to divide work queue to sections where each warp would be responsible for 
-    then if number in warp queue will exceed the size of available shared memory it will write it to global memory ... this way we will avoid  thread divergence and keep local work queue in available shared memory space
+ 
+uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x;
+bool isLoopToContinue = (linIdexMeta <= fbArgs.metaData.totalMetaLength);
+isLoopToContinue = __syncthreads_or(isLoopToContinue);
 
-    //goldpass
-    if (getPredGoldPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue    , metaData, metaDataArr, linIdexMeta)) {
-
-    //    printf("in meta pass gold linIdexMeta %d isPaddingPass %d  total meta %d \n", linIdexMeta, isPaddingPass, fbArgs.metaData.totalMetaLength);
-
-        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta + (isGoldOffset);
-
-        if (isPaddingPass) {
-            //setting to be activated to 0 
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11] = 0;
-            //setting active to 1
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7] = 1;
+while (isLoopToContinue) {
+        //goldpass
+        if (getPredGoldPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue, metaData, metaDataArr, linIdexMeta)) {
+            //    printf("in meta pass gold linIdexMeta %d isPaddingPass %d  total meta %d \n", linIdexMeta, isPaddingPass, fbArgs.metaData.totalMetaLength);
+            mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta + (isGoldOffset);
+            modifyMetaDataInPaddingPass(isPaddingPass, metaDataArr, linIdexMeta, metaData, 11, 7);
         }
-    }
-    //segm pass
-    if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue  , metaData, metaDataArr, linIdexMeta)) {
-      //  printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
-
-
-        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;
-
-        if (isPaddingPass) {
-            //setting to be activated to 0 
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] = 0;
-            //setting active to 1
-            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9] = 1;
+        //segm pass
+        if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue, metaData, metaDataArr, linIdexMeta)) {
+            //  printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
+            mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;
+            modifyMetaDataInPaddingPass(isPaddingPass, metaDataArr, linIdexMeta, metaData, 12, 9);
         }
-    }
+        // this sway of stopping a loop avoids thread diverging and stalling during synchronization ...
+        isLoopToContinue = (linIdexMeta <= fbArgs.metaData.totalMetaLength );
+        isLoopToContinue = __syncthreads_or(isLoopToContinue);
+
+
+        if (localWorkQueueCounter[0] > (lengthOfMainShmem - (blockDim.x * blockDim.y))) {
+            saveWorkQueueToGlobal(cta, tile, localWorkQueueCounter, minMaxes, workQueue, globalWorkQueueCounter, mainShmem);
+           sync(cta);
+           localWorkQueueCounter[0] = 0;
+           sync(cta);
+             }
+      //  sync(cta);
+       // localWorkQueueCounter[0] = 0;
+        //sync(cta);
+        linIdexMeta += (blockDim.x * blockDim.y * gridDim.x);
 
 }
-//getting begining where we would copy local queue to global one 
+
+
+//
+//for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x
+//        ; linIdexMeta <= fbArgs.metaData.totalMetaLength  // we add in order to 
+//        ; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+//    //TODO() consider doing it warp centric way  
+//    //  we need to be sure that amount of blocks in local work queue do not exceed lengthOfMainShmem probably the most optimal would be to divide work queue to sections where each warp would be responsible for 
+//    //  then if number in warp queue will exceed the size of available shared memory it will write it to global memory ... this way we will avoid  thread divergence and keep local work queue in available shared memory space
+//    //if (localWorkQueueCounter[0] < (lengthOfMainShmem - (blockDim.x * blockDim.y))) {
+//      //goldpass
+//    if (getPredGoldPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue, metaData, metaDataArr, linIdexMeta)) {
+//        //    printf("in meta pass gold linIdexMeta %d isPaddingPass %d  total meta %d \n", linIdexMeta, isPaddingPass, fbArgs.metaData.totalMetaLength);
+//        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta + (isGoldOffset);
+//        modifyMetaDataInPaddingPass(isPaddingPass, metaDataArr, linIdexMeta, metaData, 11, 7);
+//    }
+//    //segm pass
+//    if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue, metaData, metaDataArr, linIdexMeta)) {
+//        //  printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
+//        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;
+//        modifyMetaDataInPaddingPass(isPaddingPass, metaDataArr, linIdexMeta, metaData, 12, 9);
+//    }
+//    //sync(cta);
+//    //if (localWorkQueueCounter[0] > (lengthOfMainShmem - (blockDim.x * blockDim.y))) {
+//    //   saveWorkQueueToGlobal(cta, tile, localWorkQueueCounter, minMaxes, workQueue, globalWorkQueueCounter, mainShmem);
+//    //}
+//    //sync(cta);
+//    //localWorkQueueCounter[0] = 0;
+//    //sync(cta);
+//
+//
+//};
+
+
 sync(cta);
-if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
-    if (localWorkQueueCounter[0] > 0) {
-        //printf("local work Counter in meta pass %d  \n"
-        //    , localWorkQueueCounter[0]
-        //    );
-        globalWorkQueueCounter[0] = atomicAdd(&(minMaxes[9]), (localWorkQueueCounter[0]));
-    }
+
+if (localWorkQueueCounter[0]>0) {
+    saveWorkQueueToGlobal(cta, tile, localWorkQueueCounter, minMaxes, workQueue, globalWorkQueueCounter, mainShmem);
 }
-sync(cta);
-for (uint32_t linI =threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
-  workQueue[globalWorkQueueCounter[0]+linI]=mainShmem[linI];
-}
+
+//
+//
+////getting begining where we would copy local queue to global one 
+//sync(cta);
+//if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+//    if (localWorkQueueCounter[0] > 0) {
+//        //printf("local work Counter in meta pass %d  \n"
+//        //    , localWorkQueueCounter[0]
+//        //    );
+//        globalWorkQueueCounter[0] = atomicAdd(&(minMaxes[9]), (localWorkQueueCounter[0]));
+//    }
+//}
+//sync(cta);
+//for (uint32_t linI =threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y ) {
+//  workQueue[globalWorkQueueCounter[0]+linI]=mainShmem[linI];
+//}
 
 //cooperative_groups::memcpy_async(cta, (&workQueue[globalWorkQueueCounter[0]]), (&mainArr[0]), (sizeof(uint32_t) * localWorkQueueCounter[0]));
 }
