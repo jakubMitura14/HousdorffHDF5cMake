@@ -165,39 +165,16 @@ sync(cta);
 //iterations 
 for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta <= fbArgs.metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
     
-    //if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11]) {
-    //    printf("in meta pass gold  linIdexMeta %d to be activated  1  isActiveGold %d  isFullGold %d \n"
-    //        , linIdexMeta
-    //        , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 7]
-    //    , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 8]);
-
-    //
-    //}
-    //
-    //
-    //if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] ) {
-    //    printf("in meta pass segm  linIdexMeta %d to be activated  1  isActive %d  isFull %d \n"
-    //        , linIdexMeta
-    //        , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 9]
-    //        , metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 10]);
-
-    //}
-
+    we need to be sure that amount of blocks in local work queue do not exceed lengthOfMainShmem probably the most optimal would be to divide work queue to sections where each warp would be responsible for 
+    then if number in warp queue will exceed the size of available shared memory it will write it to global memory ... this way we will avoid  thread divergence and keep local work queue in available shared memory space
 
     //goldpass
     if (getPredGoldPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue    , metaData, metaDataArr, linIdexMeta)) {
 
     //    printf("in meta pass gold linIdexMeta %d isPaddingPass %d  total meta %d \n", linIdexMeta, isPaddingPass, fbArgs.metaData.totalMetaLength);
 
-        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) ;
-        if (old < lengthOfMainShmem) {
-            mainShmem[old] = linIdexMeta + (isGoldOffset);
-        }
-        else {
-           // printf("not fit to main queue   \n");
-            old = atomicAdd(&(minMaxes[9]), 1);
-            workQueue[old] = linIdexMeta + (isGoldOffset) ;
-        }
+        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta + (isGoldOffset);
+
         if (isPaddingPass) {
             //setting to be activated to 0 
             metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11] = 0;
@@ -206,22 +183,12 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
     }
     //segm pass
-    //if (isPaddingPass && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12]==1) {
-    //    printf("shooould in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
-    //}
     if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue  , metaData, metaDataArr, linIdexMeta)) {
       //  printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 
 
-        auto old = atomicAdd_block(&localWorkQueueCounter[0], 1);
-        if (old < lengthOfMainShmem) {
-            mainShmem[old] = linIdexMeta;
-        }
-        else {
-           // printf("not fit to main queue segm  \n");
-            old = atomicAdd(&(minMaxes[9]), 1);
-            workQueue[old] = linIdexMeta;
-        }
+        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;
+
         if (isPaddingPass) {
             //setting to be activated to 0 
             metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12] = 0;

@@ -237,17 +237,17 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
    // for (int t = 0; t < 600 ;t++) {
     do{
-        if (threadIdx.x == 2 && threadIdx.y == 0) {
-    if (blockIdx.x == 0) {
-       printf("************  iter nuumb %d \n", iterationNumb[0]);
-      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
-    }
-};
-        if (blockIdx.x == 0) {
-            if (threadIdx.x == 2 && threadIdx.y == 0) {
-                printf("a iter nuumb %d \n", iterationNumb[0]);
-            }
-        }
+//        if (threadIdx.x == 2 && threadIdx.y == 0) {
+//    if (blockIdx.x == 0) {
+//       printf("************  iter nuumb %d \n", iterationNumb[0]);
+//      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
+//    }
+//};
+//        if (blockIdx.x == 0) {
+//            if (threadIdx.x == 2 && threadIdx.y == 0) {
+//                printf("a iter nuumb %d \n", iterationNumb[0]);
+//            }
+//        }
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -270,11 +270,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         );
 
         grid.sync();
-        if (blockIdx.x == 0) {
-            if (threadIdx.x == 2 && threadIdx.y == 0) {
-                printf("b iter nuumb %d \n", iterationNumb[0]);
-            }
-        }
+        //if (blockIdx.x == 0) {
+        //    if (threadIdx.x == 2 && threadIdx.y == 0) {
+        //        printf("b iter nuumb %d \n", iterationNumb[0]);
+        //    }
+        //}
         ///////////// loading work queue for padding dilatations
         metadataPass(fbArgs, true, 11, 7, 8,
             12, 9, 10
@@ -288,11 +288,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
         //////////// padding dilatations
         grid.sync();
-        if (blockIdx.x == 0) {
-            if (threadIdx.x == 2 && threadIdx.y == 0) {
-                printf("c iter nuumb %d \n", iterationNumb[0]);
-            }
-        }
+        //if (blockIdx.x == 0) {
+        //    if (threadIdx.x == 2 && threadIdx.y == 0) {
+        //        printf("c iter nuumb %d \n", iterationNumb[0]);
+        //    }
+        //}
         mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -316,11 +316,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
         grid.sync();
-        if (blockIdx.x == 0) {
-            if (threadIdx.x == 2 && threadIdx.y == 0) {
-                printf("d iter nuumb %d \n", iterationNumb[0]);
-            }
-        }
+        //if (blockIdx.x == 0) {
+        //    if (threadIdx.x == 2 && threadIdx.y == 0) {
+        //        printf("d iter nuumb %d \n", iterationNumb[0]);
+        //    }
+        //}
         ////////////////////////main metadata pass
         metadataPass(fbArgs, false, 7, 8, 8,
             9, 10, 8
