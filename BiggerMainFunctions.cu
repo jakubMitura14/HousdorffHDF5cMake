@@ -62,6 +62,35 @@ inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
     //}
 
 
+    //if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0 && isGoldForLocQueue[i] == 1) {
+
+    //    printf("something in loaded  in main load idX %d idY %d  \n", threadIdx.x, threadIdx.y);
+    //}
+
+
+    //if (getSourceReduced(fbArgs, iterationNumb)[
+     //   mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])+ threadIdx.x + threadIdx.y * 32] > 0 && isGoldForLocQueue[i] == 0) {
+    //if (isGoldForLocQueue[i] == 1) {
+    //    if ( threadIdx.x + threadIdx.y * 32 ==0 ) {
+    //        printf("in lin meta  %d looking for non zero  looking for index starting  %d  mainArrSection %d \n"
+    //            , mainShmem[startOfLocalWorkQ + i]
+    //            ,4* metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32
+    //        , metaData.mainArrSectionLength
+    //        , );
+    //    }
+    //    //printf("aaain main load idX %d idY vall  %d \n", threadIdx.x, threadIdx.y, fbArgs.mainArrBPointer[4 * metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32]);
+
+    //    for (int ii = 0; ii < 6; ii++) {
+    //        //if (fbArgs.mainArrBPointer[ii * metaData.mainArrSectionLength + metaData.mainArrXLength + threadIdx.x + threadIdx.y * 32] > 0) {
+    //        if (fbArgs.mainArrBPointer[ii * metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32] > 0) {
+
+    //            printf("something in traditionally loaded  in main load idX %d idY %d ii %d \n", threadIdx.x, threadIdx.y, ii);
+    //        }
+    //    }
+
+    //}
+
+
     mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
     //marking weather block is already full and no more dilatations are possible 
 
@@ -185,7 +214,7 @@ inline __device__  void processRight(ForBoolKernelArgs<TXPI>& fbArgs, thread_blo
     dilatateHelperForTransverse(fbArgs,(threadIdx.x == (fbArgs.dbXLength - 1)),
         3, (1), (0), mainShmem, isAnythingInPadding
         , threadIdx.y, 0
-        , 16, begfirstRegShmem, localBlockMetaData,i);
+        , 16, begfirstRegShmem, localBlockMetaData,i, isGoldForLocQueue);
 
     pipeline.consumer_release();
 }
@@ -224,7 +253,7 @@ inline __device__  void processLeft(ForBoolKernelArgs<TXPI>& fbArgs, thread_bloc
     dilatateHelperForTransverse(fbArgs,(threadIdx.x == 0),
         2, (-1), (0), mainShmem, isAnythingInPadding
         , threadIdx.y, 31
-        , 15, begSecRegShmem, localBlockMetaData,i);
+        , 15, begSecRegShmem, localBlockMetaData,i, isGoldForLocQueue);
 
     pipeline.consumer_release();
 }
@@ -259,7 +288,7 @@ inline __device__  void processAnterior(ForBoolKernelArgs<TXPI>& fbArgs, thread_
     dilatateHelperForTransverse(fbArgs,(threadIdx.y == (fbArgs.dbYLength - 1)), 4
         , (0), (1), mainShmem, isAnythingInPadding
         , 0, threadIdx.x
-        , 17, begfirstRegShmem, localBlockMetaData, i);
+        , 17, begfirstRegShmem, localBlockMetaData, i, isGoldForLocQueue);
     pipeline.consumer_release();
 }
 
@@ -332,7 +361,7 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
     dilatateHelperForTransverse(fbArgs, (threadIdx.y == 0), 5
         , (0), (-1), mainShmem, isAnythingInPadding
         , fbArgs.dbYLength - 1, threadIdx.x // we add offset depending on y dimension
-        , 18, begSecRegShmem, localBlockMetaData, i);
+        , 18, begSecRegShmem, localBlockMetaData, i, isGoldForLocQueue);
     //now all data should be properly dilatated we save it to global memory
     //try save target reduced via mempcy async ...
 
@@ -341,17 +370,18 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
         = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
 
     //TODO remove 
+    //if (blockIdx.x == 0) {
+    //    for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
+    //        if (threadIdx.x == 0 && threadIdx.y == 0) {
 
-    //for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
-    //    if (threadIdx.x == 0 && threadIdx.y == 0) {
+    //            //if any bit here is set it means it should be added to result list 
+    //            if (isBitAt(mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
+    //                if (mainShmem[startOfLocalWorkQ + i] * 32 + bitPos>200) {
+    //                printf("bit set loc %d isGold %d \n", mainShmem[startOfLocalWorkQ + i] * 32 + bitPos, isGoldForLocQueue[i]);
+    //            }
+    //             }
 
-    //    //if any bit here is set it means it should be added to result list 
-    //    if (isBitAt(mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
-    //        //if (mainShmem[startOfLocalWorkQ + i] * 32 + bitPos>130) {
-    //            printf("bit set loc %d isGold %d \n", mainShmem[startOfLocalWorkQ + i] * 32 + bitPos, isGoldForLocQueue[i]);
-    //        //}
-    //    }
-    //    
+    //        }
     //    }
     //}
     

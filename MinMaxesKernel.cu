@@ -52,6 +52,18 @@ __global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs
 
     if ((threadIdx.x == 7) && (threadIdx.y == 0)) { anyInGold[1] = false; };
 
+
+    if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
+        //printf("in minMaxes beg  totalMetaLength  %d Nx %d Ny %d Nz %d \n"
+        //    , fbArgs.metaData.totalMetaLength
+        //    , fbArgs.goldArr.Nx
+        //    , fbArgs.goldArr.Ny
+        //    , fbArgs.goldArr.Nz
+        //
+        //);
+
+    }
+
     __syncthreads();
 
     /////////////////////////
@@ -68,14 +80,18 @@ __global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs
             uint32_t x = xMeta * fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
                 uint32_t  y = yMeta * fbArgs.dbYLength + yLoc;//absolute position
-                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
+                //if (y == 0) {
+                //    printf("x %d  in min maxes \n ", x);
+
+                //}
+                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nx) {
 
                     // resetting 
 
 
                     for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
                         uint32_t z = zMeta * fbArgs.dbZLength + zLoc;//absolute position
-                        if (z < fbArgs.goldArr.Nx) {
+                        if (z < fbArgs.goldArr.Nz) {
                             //first array gold
                             uint8_t& zLocRef = zLoc; uint8_t& yLocRef = yLoc; uint8_t& xLocRef = xLoc;
 
@@ -84,9 +100,12 @@ __global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs
                             bool segmBool = segmArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor;
                              if (goldBool || segmBool) {
                                 anyInGold[0] = true;
-                            //    printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta,zMeta);
+                               // printf("seen as true  xMeta %d yMeta %d  zMeta %d \n", xMeta, yMeta,zMeta);
 
                             }
+
+
+
                         }
 
                     }
@@ -128,8 +147,8 @@ __global__ void getMinMaxes(ForBoolKernelArgs<TYO> fbArgs
     auto active = coalesced_threads();
 
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-        //printf("in minMaxes internal  %d \n", minMaxesInShmem[0]);
-        //getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, fbArgs.metaData.minMaxes.Ny, 0, 0)[0] = 61;
+            printf("\n in minMaxes internal  %d \n", minMaxesInShmem[1]);
+         //getTensorRow<unsigned int>(tensorslice, fbArgs.metaData.minMaxes, fbArgs.metaData.minMaxes.Ny, 0, 0)[0] = 61;
         atomicMax(&minMaxes[1], minMaxesInShmem[1]);
         //atomicMax(&minMaxes[1], 2);
        // minMaxes[1] = 0;

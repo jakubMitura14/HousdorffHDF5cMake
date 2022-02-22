@@ -163,7 +163,7 @@ if (tile.thread_rank() == 0 && tile.meta_group_rank() == 1) {
 sync(cta);
 
 //iterations 
-for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta <= metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
+for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x; linIdexMeta <= fbArgs.metaData.totalMetaLength; linIdexMeta += blockDim.x * blockDim.y * gridDim.x) {
     
     //if (metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 11]) {
     //    printf("in meta pass gold  linIdexMeta %d to be activated  1  isActiveGold %d  isFullGold %d \n"
@@ -187,7 +187,7 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
     //goldpass
     if (getPredGoldPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue    , metaData, metaDataArr, linIdexMeta)) {
 
-        //printf("in meta pass gold linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
+    //    printf("in meta pass gold linIdexMeta %d isPaddingPass %d  total meta %d \n", linIdexMeta, isPaddingPass, fbArgs.metaData.totalMetaLength);
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1) ;
         if (old < lengthOfMainShmem) {
@@ -205,9 +205,12 @@ for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y *
         }
     }
     //segm pass
+    if (isPaddingPass && metaDataArr[linIdexMeta * metaData.metaDataSectionLength + 12]==1) {
+        printf("shooould in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
+    }
     if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue  , metaData, metaDataArr, linIdexMeta)) {
+      //  printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 
-        //printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
 
         auto old = atomicAdd_block(&localWorkQueueCounter[0], 1);
         if (old < lengthOfMainShmem) {

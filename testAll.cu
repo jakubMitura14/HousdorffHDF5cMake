@@ -45,9 +45,9 @@ extern "C" inline void testMainPasswes() {
 
 
 	//metadata
-	const int metaXLength = 15;//8
-	const int MetaYLength = 15;//30
-	const int MetaZLength = 30;//8
+	const int metaXLength = 50;//8
+	const int MetaYLength = 4;//30
+	const int MetaZLength = 4;//8
 
 
 	const int totalLength = metaXLength * MetaYLength * MetaZLength;
@@ -119,80 +119,45 @@ extern "C" inline void testMainPasswes() {
 
 
 
+
+
+
+
 	//setArrCPU(arrGoldObj, 0, 0, 0, 2);//
 	//setArrCPU(arrGoldObj, 8, 8, 6, 2);//
 
-	////setArrCPU(arrSegmObj, 8, 8, 5, 2);//
+	int lenn = 500;
+	goldArr[0] = true;
+	segmArr[lenn] = true;
+	//goldArr[lenn] = true;
+	//segmArr[lenn] = true;
+	//segmArr[49*32] = true;
+
+
+
+	//int plane = mainXLength * mainYLength;
+
+	//for (int y = 0; y< mainXLength * (mainYLength/2);y++) {
+	//	goldArr[y] = true;
+
+	//}
+
+	////segmArr[plane+1] = true;
+
+	//int offset = plane * 3 * dbZLength;
+	////for (int y = offset; y < offset + mainXLength * (mainYLength / 2); y++) {
+	////	segmArr[y] = true;
+
+	////}
+
+
+
 	//
-	//
-	//
-	//
-	//setArrCPU(arrGoldObj, 32, 20, 32, 2);//
-	//setArrCPU(arrSegmObj, 31, 20, 32, 2);//
-	//setArrCPU(arrSegmObj, 32, 19, 32, 2);//
-	//setArrCPU(arrSegmObj, 32, 20, 31, 2);//
+	//offset = plane *20 * dbZLength;
+	//for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
+	//	segmArr[y] = true;
 
-	////setArrCPU(arrSegmObj, 38, 38, 35, 2);//
-	////setArrCPU(arrGoldObj, 38, 38, 36, 2);//
-	////setArrCPU(arrSegmObj, 38, 38, 37, 2);//
-	int plane = mainXLength * mainYLength;
-	for (int y = 0; y< mainXLength * (mainYLength/2);y++) {
-		goldArr[y] = true;
-
-	}
-
-	//segmArr[plane+1] = true;
-
-	
-	int offset = plane *10 * dbZLength;
-	for (int y = offset; y < offset+ mainXLength * (mainYLength / 2); y++) {
-		segmArr[y] = true;
-
-	}
-
-	//segmArr[0]=2;
-
-
-
-   //setArrCPU(arrGoldObj, 0, 0, 200, 2);//
-
-	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
-	//setArrCPU(arrSegmObj, 0, 0, 0, 2);//
-	//setArrCPU(arrGoldObj, 90, 0, 0, 2);//
-	//setArrCPU(arrSegmObj, 0, 0, 200, 2);//
-
-
-	//setArrCPU(arrGoldObj, 90, 1, 0, 2);//
-	//setArrCPU(arrGoldObj, 0, 8, 200, 2);//
-
-	//setArrCPU(arrGoldObj, 90, 9, 0, 2);//
-	//setArrCPU(arrGoldObj, 0, 19, 200, 2);//
-
-	//setArrCPU(arrGoldObj, 90, 20, 0, 2);//
-	//setArrCPU(arrGoldObj, 0, 2, 200, 2);//
-
-	//setArrCPU(arrGoldObj, 90, 8, 0, 2);//
-	//setArrCPU(arrGoldObj, 0, 7, 200, 2);//
-
-
-
-	//setArrCPU(arrGoldObj, 90, 0, 0, true);//
-	//setArrCPU(arrSegmObj, 0, 0, 0, true);//
-	//setArrCPU(arrGoldObj, 90, 0, 0, true);//
-	//setArrCPU(arrSegmObj, 0, 0, 200, true);//
-
-
-	//setArrCPU(arrGoldObj, 90, 1, 0, true);//
-	//setArrCPU(arrGoldObj, 0, 8, 200, true);//
-
-	//setArrCPU(arrGoldObj, 90, 9, 0, true);//
-	//setArrCPU(arrGoldObj, 0, 19, 200, true);//
-
-	//setArrCPU(arrGoldObj, 90, 20, 0, true);//
-	//setArrCPU(arrGoldObj, 0, 2, 200, true);//
-
-	//setArrCPU(arrGoldObj, 90, 8, 0, true);//
-	//setArrCPU(arrGoldObj, 0, 7, 200, true);//
+	//}
 
 
 
@@ -236,22 +201,40 @@ minZ 2  [6]
 		, metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, mainXLength, mainYLength, mainZLength
 	);
 
+	//for (int outer = 0; outer< ceil(lenn/ int(32)); outer++ ) {
+	//	for (int u = 0; u < 32; u++) {
+	//		int coord = outer * 32 + u;
+
+
+	//		//3printf("set %d in %d \n  ", (reducedResCPU[u] >0), u);
+	//	}
+	//}
+
+
+
+
+
+
+
 	//for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
 	//	//we get from linear index  the coordinates of the metadata block of intrest
 	//	uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
 	//	uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
 	//	uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
 
-	//	for (int locPos = 32 * fbArgs.dbYLength; locPos < 32 * 2 * fbArgs.dbYLength; locPos++) {
+	//	for (int locPos = 0; locPos < 32 * fbArgs.dbYLength; locPos++) {
 	//		auto col = reducedResCPU[linIdexMeta * fbArgs.metaData.mainArrSectionLength + locPos];
 	//		if (col > 0) {
 	//			for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
-	//				if (isBitAtCPU(col, bitPos)) {
-	//					int locPosB = locPos - 32 * fbArgs.dbYLength;
-	//					if (bitPos + zMeta * fbArgs.dbZLength>190) {
-	//						printf("point segm  set at x %d y %d z %d  \n"
-	//							, locPosB % 32 + xMeta * fbArgs.dbXLength
-	//							, int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength)
+	//				int x = locPos % 32 + xMeta * fbArgs.dbXLength;
+	//				int y = int(floor((float)(locPos / 32)) + yMeta * fbArgs.dbYLength);
+	//				int z = bitPos + zMeta * fbArgs.dbZLength;
+
+	//				if (y==0 && z==0) {
+	//					if (isBitAtCPU(col, bitPos)) {
+	//						printf("point gold set at x %d y %d z %d  \n"
+	//							, locPos % 32 + xMeta * fbArgs.dbXLength
+	//							, int(floor((float)(locPos / 32)) + yMeta * fbArgs.dbYLength)
 	//							, bitPos + zMeta * fbArgs.dbZLength
 	//						);
 	//					}
@@ -259,7 +242,45 @@ minZ 2  [6]
 	//			}
 	//		}
 	//	}
+
+
+	//	//for (int locPos = 32 * fbArgs.dbYLength; locPos < 32 * 2 * fbArgs.dbYLength; locPos++) {
+	//	//	auto col = reducedResCPU[linIdexMeta * fbArgs.metaData.mainArrSectionLength + locPos];
+	//	//	if (col > 0) {
+	//	//		for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
+	//	//			if (isBitAtCPU(col, bitPos)) {
+	//	//				int locPosB = locPos - 32 * fbArgs.dbYLength;
+	//	//				int x = locPosB % 32 + xMeta * fbArgs.dbXLength;
+	//	//				int y = int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength);
+	//	//				int z = bitPos + zMeta * fbArgs.dbZLength;
+	//	//				if (y == 0 && z == 0) {
+
+	//	//					printf("point segm  set at x %d y %d z %d  \n"
+	//	//						, locPosB % 32 + xMeta * fbArgs.dbXLength
+	//	//						, int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength)
+	//	//						, bitPos + zMeta * fbArgs.dbZLength
+	//	//					);
+	//	//				}
+	//	//			}
+	//	//		}
+	//	//	}
+	//	//}
+
+
 	//}
+
+
+
+
+
+
+
+
+
+	
+
+
+
 
 
 	//testDilatations(fbArgs, allPointsA, );

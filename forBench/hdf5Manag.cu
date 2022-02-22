@@ -140,6 +140,7 @@ void benchmarkMitura(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const i
     size_t size = sizeof(unsigned int) * 20;
     unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
     metaData.minMaxes = minMaxesCPU;
+
     ForFullBoolPrepArgs<bool> forFullBoolPrepArgs;
     forFullBoolPrepArgs.metaData = metaData;
     forFullBoolPrepArgs.numberToLookFor = true;

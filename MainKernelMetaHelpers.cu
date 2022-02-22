@@ -39,6 +39,8 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFul
     
     size_t sizeB = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
 
+    printf("size of reduced main arr %d total meta len %d mainArrSectionLen %d  \n", sizeB, metaData.totalMetaLength, metaData.mainArrSectionLength);
+
     cudaMallocAsync(&mainArrAPointer, sizeB, 0);
     cudaMemcpyAsync(mainArrAPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice,0);
 
@@ -63,7 +65,7 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFul
 #pragma once
 template <typename ZZR>
 inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFullBoolPrepArgs<ZZR>& cpuArgs,
-             uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU metaData, uint32_t*& origArr
+             uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU& metaData, uint32_t*& origArr
     , uint32_t*& metaDataArr) {
     ////reduced arrays
 
@@ -78,8 +80,12 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpu
     unsigned int xRange = cpuArgs.metaData.minMaxes[1] - cpuArgs.metaData.minMaxes[2]+1;
     unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4]+1;
     unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6]+1;
-    unsigned int totalMetaLength = xRange* yRange* zRange;
-    printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d   \n", totalMetaLength);
+    unsigned int totalMetaLength = (xRange)*(yRange)* (zRange);
+    printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d  xRange %d yRange %d zRange %d \n"
+        , totalMetaLength
+        , (xRange )
+        , (yRange )
+        , (zRange ));
  
     //updating size informations
     metaData.metaXLength = xRange;
@@ -87,10 +93,10 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpu
     metaData.MetaZLength = zRange;
     metaData.totalMetaLength = totalMetaLength;
 
-    cpuArgs.metaData.metaXLength = xRange;
-    cpuArgs.metaData.MetaYLength = yRange;
-    cpuArgs.metaData.MetaZLength = zRange;
-    cpuArgs.metaData.totalMetaLength = totalMetaLength;
+    //cpuArgs.metaData.metaXLength = xRange;
+    //cpuArgs.metaData.MetaYLength = yRange;
+    //cpuArgs.metaData.MetaZLength = zRange;
+    //cpuArgs.metaData.totalMetaLength = totalMetaLength;
     //saving min maxes
     metaData.maxX = cpuArgs.metaData.minMaxes[1];
     metaData.minX = cpuArgs.metaData.minMaxes[2];
@@ -103,18 +109,18 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpu
 
 
 
-    int i = 1;
-    printf("maxX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    i = 2;
-    printf("minX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    i = 3;
-    printf("maxY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    i = 4;
-    printf("minY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    i = 5;
-    printf("maxZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    i = 6;
-    printf("minZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    //int i = 1;
+    //printf("maxX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    //i = 2;
+    //printf("minX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    //i = 3;
+    //printf("maxY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    //i = 4;
+    //printf("minY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    //i = 5;
+    //printf("maxZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
+    //i = 6;
+    //printf("minZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
 
   /*  int ii = 7;
     printf("global FP count %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);

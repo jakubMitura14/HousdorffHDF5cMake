@@ -211,6 +211,22 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     };
     if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
         isSegmPassToContinue[0] = true;
+
+        if (blockIdx.x == 0) {
+            printf("maxX % d minX % d maxY % d  minY % d maxZ % d minZ % d global FP count % d global FN count % d  total meta len %d \n"
+                , fbArgs.minMaxes[1]
+                , fbArgs.minMaxes[2]
+                , fbArgs.minMaxes[3]
+                , fbArgs.minMaxes[4]
+                , fbArgs.minMaxes[5]
+                , fbArgs.minMaxes[6]
+                , fbArgs.minMaxes[7]
+                , fbArgs.minMaxes[8]
+                , fbArgs.metaData.totalMetaLength
+
+            );
+        }
+
     };
 
 
@@ -219,15 +235,17 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
-
-    do{
+    for (int t = 0; t < 600 ;t++) {
+//    do{
         if (threadIdx.x == 2 && threadIdx.y == 0) {
     if (blockIdx.x == 0) {
-     //   printf("iter nuumb %d \n", iterationNumb[0]);
+       printf("************  iter nuumb %d \n", iterationNumb[0]);
       //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
     }
 };
-
+        //if (blockIdx.x == 0) {
+        //     printf("a iter nuumb %d \n", iterationNumb[0]);
+        //}
         mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -250,7 +268,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         );
 
         grid.sync();
-
+        //if (blockIdx.x == 0) {
+        //    printf("b iter nuumb %d \n", iterationNumb[0]);
+        //}
         ///////////// loading work queue for padding dilatations
         metadataPass(fbArgs, true, 11, 7, 8,
             12, 9, 10
@@ -264,6 +284,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
         //////////// padding dilatations
         grid.sync();
+        //if (blockIdx.x == 0) {
+        //     printf("c iter nuumb %d \n", iterationNumb[0]);
+        //}
         mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
             , fbArgs.workQueuePointer
             , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
@@ -287,6 +310,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
         grid.sync();
+        //if (blockIdx.x == 0) {
+        //     printf("d iter nuumb %d \n", iterationNumb[0]);
+        //}
         ////////////////////////main metadata pass
         metadataPass(fbArgs, false, 7, 8, 8,
             9, 10, 8
@@ -297,9 +323,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
         grid.sync();
         //if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
         //    printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
-        //};
+        };
     
-    } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
+   // } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
     //grid.sync();
 
@@ -390,8 +416,8 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
 
 
    // warpsNumbForMainPass = 5;
-  //  blockForMainPass = 1;
-
+    blockForMainPass = 1;
+    blockSizeForMinMax = 1;
         
 
 
@@ -449,7 +475,6 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
 
     checkCuda(cudaDeviceSynchronize(), "a0b");
     ForBoolKernelArgs<T> fbArgs = getArgsForKernel<T>(fFArgs, goldArrPointer, segmArrPointer, minMaxes, warpsNumbForMainPass, blockForMainPass, WIDTH,HEIGHT, DEPTH);
-    MetaDataGPU metaData = fbArgs.metaData;
     fbArgs.metaData.minMaxes = minMaxes;
     fbArgs.minMaxes = minMaxes;
 
@@ -473,18 +498,18 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
 
     checkCuda(cudaDeviceSynchronize(), "a2a");
 
-    metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, workQueuePointer, minMaxes, metaData, origArrsPointer, metaDataArrPointer);
+    fbArgs.metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, workQueuePointer, minMaxes, fbArgs.metaData, origArrsPointer, metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a2b");
 
-   boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, metaData, origArrsPointer, metaDataArrPointer, goldArrPointer, segmArrPointer, minMaxes);
+   boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, fbArgs.metaData, origArrsPointer, metaDataArrPointer, goldArrPointer, segmArrPointer, minMaxes);
   //  //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
 
    checkCuda(cudaDeviceSynchronize(), "a3");
 
 
 
-  int fpPlusFn =  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, metaData,goldArr,segmArr);
+  int fpPlusFn =  allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, fbArgs.metaData,goldArr,segmArr);
 
 
 
@@ -494,7 +519,7 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
     //cudaFreeAsync(goldArrPointer, 0);
     //cudaFreeAsync(segmArrPointer, 0);
 
-    firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
+    firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, fbArgs.metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
 
    checkCuda(cudaDeviceSynchronize(), "a5");
     //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
@@ -503,7 +528,7 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
     
     //fbArgs.goldArr = goldArr;
     //fbArgs.segmArr = segmArr;
-    fbArgs.metaData = metaData;
+    //fbArgs.metaData = metaData;
 
     fbArgs.resultListPointerMeta = resultListPointerMeta;
     fbArgs.resultListPointerLocal = resultListPointerLocal;
@@ -527,13 +552,13 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
     checkCuda(cudaDeviceSynchronize(), "a6");
 
 
-
+    auto metaData = fbArgs.metaData;
     size_t sizeMinnMax  = sizeof(unsigned int) * 20;
 
     cudaMemcpy(fFArgs.metaData.minMaxes, minMaxes, sizeMinnMax, cudaMemcpyDeviceToHost);
 
     //copy to CPU
-    size_t sizeCPU = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
+    size_t sizeCPU = metaData.totalMetaLength *  fbArgs.metaData.mainArrSectionLength * sizeof(uint32_t);
     reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
     cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
 

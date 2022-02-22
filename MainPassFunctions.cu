@@ -116,18 +116,42 @@ inline __device__ void dilatateHelperForTransverse(ForBoolKernelArgs<TXPI>& fbAr
     const uint8_t  paddingPos, const   int8_t  normalXChange, const  int8_t normalYchange
 , uint32_t (&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6]
 ,const uint8_t forBorderYcoord,const  uint8_t forBorderXcoord
-,const uint8_t metaDataCoordIndex,const uint32_t targetShmemOffset , uint32_t (&localBlockMetaData)[40], uint32_t& i ) {
+,const uint8_t metaDataCoordIndex,const uint32_t targetShmemOffset , uint32_t (&localBlockMetaData)[40], uint32_t& i
+, bool(&isGoldForLocQueue)[localWorkQueLength]) {
  
        
     
+    //if (paddingPos == 3 && mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 0 ) {
+    if ( mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 1 ) {
+    
+        printf("something in loaded from right idX %d idY %d  paddingPos %d \n", threadIdx.x, threadIdx.y , paddingPos );
+    }
+
+
     // so we first check for corner cases 
     if (predicate) {
+
+
         // now we need to load the data from the neigbouring blocks
         //first checking is there anything to look to 
         if (localBlockMetaData[(i & 1) * 20+metaDataCoordIndex] < isGoldOffset) {
+            
+            //if (paddingPos == 2 && isGoldForLocQueue[i] == 0) {
+            //    printf("b padding begining  in processs left  \n"
+            //    );
+
+            //}
+
             //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
             if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
                 isAnythingInPadding[paddingPos] = true;
+
+                if (paddingPos == 3 && isGoldForLocQueue[i] == 0) {
+                    printf("c padding begining  in processs right  \n"
+                    );
+
+                }
+            
             };
 
 
@@ -165,6 +189,9 @@ uint32_t(&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6], uint32_t
            if (isBitAt(mainShmem[begSourceShmem+ threadIdx.x + threadIdx.y * 32], targetBit)) {
                               // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
                               isAnythingInPadding[paddingPos] = true;
+
+
+
            };
            // if in bit of intrest of neighbour block is set
            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
@@ -278,6 +305,15 @@ inline __device__  void afterBlockClean(thread_block& cta
             if (localBlockMetaData[(i & 1) * 20+   13+tile.thread_rank()] < isGoldOffset) {
 
                 if (isAnythingInPadding[tile.thread_rank()]) {
+
+                    if (tile.thread_rank() == 3   && isGoldForLocQueue[i]==1 ) {
+                        printf(" padding in end  processs right  at the end of linMeta %d  isGold %d \n"
+                        , localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()]
+                            , isGoldForLocQueue[i]
+                        );
+
+                    }
+
                     metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + tile.thread_rank()] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
 
                 }

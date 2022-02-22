@@ -36,11 +36,11 @@ inline MetaDataGPU allocateMetaDataOnGPU(MetaDataCPU metaDataCPU, unsigned int*&
 
 	//res.resultList = allocate3dInGPU(metaDataCPU.resultList);
 
-	res.metaXLength = metaDataCPU.metaXLength;
-	res.MetaYLength = metaDataCPU.MetaYLength;
-	res.MetaZLength = metaDataCPU.MetaZLength;
+	//res.metaXLength = metaDataCPU.metaXLength;
+	//res.MetaYLength = metaDataCPU.MetaYLength;
+	//res.MetaZLength = metaDataCPU.MetaZLength;
 
-	res.totalMetaLength = metaDataCPU.totalMetaLength;
+	//res.totalMetaLength = metaDataCPU.totalMetaLength;
 	//allocating on GPU and copying  cpu data onto GPU
 
 	return res;

@@ -86,6 +86,10 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 //    printf("\n linMeta beg %d is gold %d is padding pass %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i], isPaddingPass);
                 //};
 
+                // if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0 && isGoldForLocQueue[i]==0 ) {
+                //    printf("\n linMeta beg %d is gold %d is padding pass %d\n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i], isPaddingPass);
+                //};
+
 //////////////// step 0  load main data and final processing of previous block
                //loading main data for first dilatation
                 //IMPORTANT we need to keep a lot of variables constant here like is Anuthing in padding of fp count .. as the represent processing of previous block  - so do not modify them here ...
@@ -103,6 +107,7 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 }
 
                 pipeline.consumer_release();
+
 ///////// step 1 load top and process main data 
                //load top 
                 loadTop(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb);
@@ -127,10 +132,15 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 loadPosterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
                 processAnterior(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding);
 /////// step 7 
+// 
+                
+            //    sync(cta);
+
                 //load reference if needed or data for next iteration if there is such 
                 //process posterior, save data from res shmem to global memory also we mark weather block is full
                 lastLoad(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, origArrs, worQueueStep);
                 processPosteriorAndSaveResShmem(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull);
+                sync(cta);
 
  //////// step 8 basically in order to complete here anyting the count need to be bigger than counter
                // loading for next block if block is not to be validated it was already done earlier
@@ -151,7 +161,7 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 /////////
                 pipeline.consumer_release();
 
-                sync(cta);
+              //  sync(cta);
 
                 //pipeline.producer_acquire();
 

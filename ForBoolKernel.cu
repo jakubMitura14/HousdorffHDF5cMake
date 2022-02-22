@@ -21,7 +21,7 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC>& mainFun
     , TCC*& segmArrPointer
     ,unsigned int* minMaxes
     ,int& warpsNumbForMainPass,int& blockForMainPass
-    , const int WIDTH, const int HEIGHT, const int DEPTH
+    , const int xLen, const int yLen, const int zLen
 ) {
    // size_t sizeMainArr = sizeof(TCC) * WIDTH * HEIGHT * DEPTH;
    //cudaMallocAsync(&goldArrPointer, sizeMainArr, 0);
@@ -58,6 +58,13 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC>& mainFun
     res.dbYLength = warpsNumbForMainPass;
     res.dbZLength = 32;
 
+
+    res.metaData.metaXLength = ceil(xLen / res.dbXLength);
+    res.metaData.MetaYLength = ceil(yLen / res.dbYLength);;
+    res.metaData.MetaZLength = ceil(zLen / res.dbZLength);;
+    res.metaData.totalMetaLength = res.metaData.metaXLength* res.metaData.MetaYLength* res.metaData.MetaZLength;
+
+
     return res;
 }
 
@@ -66,11 +73,13 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC>& mainFun
 setting the linear index of metadata blocks that are in given direction if there is no such (out of range) we will save it as UINT32_MAX
 */
 template <typename TCC>
-__device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
+__device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs
+    ,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
     , uint32_t linIdexMeta , MetaDataGPU metaData, uint32_t localBlockMetaData[20]) {
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
+
 
             localBlockMetaData[inArrIndex] = (linIdexMeta + toAdd);
         }
@@ -150,7 +159,7 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             uint32_t x = (xMeta+ metaData.minX)* fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
                 uint32_t  y = (yMeta+ metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
-                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
+                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nx) {
 
                     // resetting 
                     sharedForGold[xLoc + yLoc * fbArgs.dbXLength] = 0;
@@ -159,7 +168,7 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
 
                     for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
                         uint32_t z = (zMeta+ metaData.minZ)* fbArgs.dbZLength + zLoc;//absolute position
-                        if (z < fbArgs.goldArr.Nx) {
+                        if (z < fbArgs.goldArr.Nz) {
                             //char* tensorslice;
 
                             //first array gold
@@ -212,7 +221,7 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             uint32_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
                 uint32_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
-                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nz) {
+                if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nx) {
                                       
                     origArrs[linIdexMeta * metaData.mainArrSectionLength + yLoc * 32 + xLoc] = sharedForGold[yLoc * 32 + xLoc];
                     origArrs[linIdexMeta * metaData.mainArrSectionLength + yLoc * 32 + xLoc + metaData.mainArrXLength] = sharedForSegm[yLoc * 32 + xLoc];
