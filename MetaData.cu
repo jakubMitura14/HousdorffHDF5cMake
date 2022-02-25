@@ -56,7 +56,7 @@ inline void copyMetaDataToCPU(MetaDataCPU metaDataCPU, MetaDataGPU metaDataGPU) 
 	//copyDeviceToHost3d(metaDataGPU.fnCount, metaDataCPU.fnCount);
 	size_t size = sizeof(unsigned int) * 20;
 
-	cudaMemcpy( metaDataCPU.minMaxes, metaDataGPU.minMaxes, size, cudaMemcpyDeviceToHost);
+	cudaMemcpy(metaDataCPU.minMaxes, metaDataGPU.minMaxes, size, cudaMemcpyDeviceToHost);
 
 
 

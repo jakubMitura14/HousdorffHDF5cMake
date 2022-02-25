@@ -109,11 +109,11 @@ extern "C" struct MetaDataGPU {
     unsigned int metaDataSectionLength = 20;
 
 
-   // int metaDataOffset = 0;
+    // int metaDataOffset = 0;
 
 
-    // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
-        //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
+     // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
+         //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
     unsigned int maxX;
     unsigned int minX;
     unsigned int maxY;
@@ -159,7 +159,7 @@ struct ForFullBoolPrepArgs {
     int threadsOtherMetaDataPasses;
     int blocksOtherMetaDataPasses;
     // will establish how many points we want to include in dilatation and how many we can ignore so typically set to 95% - so we will ignore only 5% most distant
-    float robustnessPercent = 0.95;
+    float robustnessPercent = 0.95;//0.95;
 
 };
 
@@ -189,7 +189,7 @@ struct ForBoolKernelArgs {
     uint32_t* resultListPointerIterNumb;
 
     uint32_t* origArrsPointer;
-uint32_t* mainArrAPointer;
+    uint32_t* mainArrAPointer;
     uint32_t* mainArrBPointer;
     uint32_t* metaDataArrPointer;
 
@@ -238,12 +238,12 @@ now what occupies what positions
 (x+1) - 2x : reducedSegm
 
 */
- //   uint32_t* mainArr;
+//   uint32_t* mainArr;
 
 
 
 
-    float robustnessPercent = 0.95;
+    float robustnessPercent = 0.95;//0.97; //0.95;
 
 };
 
@@ -269,17 +269,17 @@ extern "C"  struct forTestPointStruct {
 
     bool shouldBeInResAfterOneDil;
     bool shouldBeInResAfterTwoDil;
-    bool isFoundAndDilatated= false;
-    bool isFoundInResult= false;
-    
-        bool isFoundDilTop= false;
-        bool isFoundDilBottom= false;
-    
-        bool isFoundDilAnterior= false;
-        bool isFoundDilPosterior= false;
-    
-        bool isFoundDilLeft= false;
-        bool isFoundDilRight= false;
+    bool isFoundAndDilatated = false;
+    bool isFoundInResult = false;
+
+    bool isFoundDilTop = false;
+    bool isFoundDilBottom = false;
+
+    bool isFoundDilAnterior = false;
+    bool isFoundDilPosterior = false;
+
+    bool isFoundDilLeft = false;
+    bool isFoundDilRight = false;
 
 };
 

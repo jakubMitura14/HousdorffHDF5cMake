@@ -19,33 +19,33 @@ template <typename TCC>
 inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC>& mainFunArgs
     , TCC*& goldArrPointer
     , TCC*& segmArrPointer
-    ,unsigned int* minMaxes
-    ,int& warpsNumbForMainPass,int& blockForMainPass
+    , unsigned int* minMaxes
+    , int& warpsNumbForMainPass, int& blockForMainPass
     , const int xLen, const int yLen, const int zLen
 ) {
-   // size_t sizeMainArr = sizeof(TCC) * WIDTH * HEIGHT * DEPTH;
-   //cudaMallocAsync(&goldArrPointer, sizeMainArr, 0);
-   // cudaMallocAsync(&segmArrPointer, sizeMainArr, 0);
+    // size_t sizeMainArr = sizeof(TCC) * WIDTH * HEIGHT * DEPTH;
+    //cudaMallocAsync(&goldArrPointer, sizeMainArr, 0);
+    // cudaMallocAsync(&segmArrPointer, sizeMainArr, 0);
 
 
 
-   // cudaMalloc(&goldArrPointer, sizeMainArr);
-   // cudaMalloc(&segmArrPointer, sizeMainArr);
+    // cudaMalloc(&goldArrPointer, sizeMainArr);
+    // cudaMalloc(&segmArrPointer, sizeMainArr);
 
-   // array3dWithDimsGPU<TCC> goldArr;
-   // array3dWithDimsGPU<TCC> segmArr;
+    // array3dWithDimsGPU<TCC> goldArr;
+    // array3dWithDimsGPU<TCC> segmArr;
 
-   // goldArr.arrP = goldArrPointer;
-   // goldArr.Nx = WIDTH;
-   // goldArr.Ny = HEIGHT;
-   // goldArr.Nz = DEPTH;
+    // goldArr.arrP = goldArrPointer;
+    // goldArr.Nx = WIDTH;
+    // goldArr.Ny = HEIGHT;
+    // goldArr.Nz = DEPTH;
 
 
 
-   // segmArr.arrP = segmArrPointer;
-   // segmArr.Nx = WIDTH;
-   // segmArr.Ny = HEIGHT;
-   // segmArr.Nz = DEPTH;
+    // segmArr.arrP = segmArrPointer;
+    // segmArr.Nx = WIDTH;
+    // segmArr.Ny = HEIGHT;
+    // segmArr.Nz = DEPTH;
 
 
     ForBoolKernelArgs<TCC> res;
@@ -58,11 +58,19 @@ inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC>& mainFun
     res.dbYLength = warpsNumbForMainPass;
     res.dbZLength = 32;
 
+    printf("in setting bool args ylen %d dbYlen %d calculated meta %d  \n ", yLen, res.dbYLength, int(ceil(yLen / res.dbYLength)));
+    res.metaData.metaXLength = int(ceil(xLen / res.dbXLength));
+    res.metaData.MetaYLength = int(ceil(yLen / res.dbYLength));;
+    res.metaData.MetaZLength = int(ceil(zLen / res.dbZLength));;
+    res.metaData.minX = 0;
+    res.metaData.minY = 0;
+    res.metaData.minZ = 0;
+    res.metaData.maxX = res.metaData.metaXLength;
+    res.metaData.maxY = res.metaData.MetaYLength;
+    res.metaData.maxZ = res.metaData.MetaZLength;
 
-    res.metaData.metaXLength = ceil(xLen / res.dbXLength);
-    res.metaData.MetaYLength = ceil(yLen / res.dbYLength);;
-    res.metaData.MetaZLength = ceil(zLen / res.dbZLength);;
-    res.metaData.totalMetaLength = res.metaData.metaXLength* res.metaData.MetaYLength* res.metaData.MetaZLength;
+
+    res.metaData.totalMetaLength = res.metaData.metaXLength * res.metaData.MetaYLength * res.metaData.MetaZLength;
 
 
     return res;
@@ -74,8 +82,8 @@ setting the linear index of metadata blocks that are in given direction if there
 */
 template <typename TCC>
 __device__ inline void setNeighbourBlocks(ForBoolKernelArgs<TCC> fbArgs
-    ,uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
-    , uint32_t linIdexMeta , MetaDataGPU metaData, uint32_t localBlockMetaData[20]) {
+    , uint8_t idX, uint8_t inArrIndex, bool predicate, uint32_t toAdd
+    , uint32_t linIdexMeta, MetaDataGPU metaData, uint32_t localBlockMetaData[20]) {
 
     if ((threadIdx.x == idX) && (threadIdx.y == 0)) {
         if (predicate) {
@@ -101,12 +109,12 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
     bool goldBool = false;
     bool segmBool = false;
     bool isNotEmpty = false;
-  
+
     thread_block cta = this_thread_block();
     thread_block_tile<32> tile = tiled_partition<32>(cta);
     uint32_t sumFp = 0;
     uint32_t sumFn = 0;
-   
+
     //auto pipeline = cuda::make_pipeline();
 
 
@@ -132,7 +140,18 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
     if ((threadIdx.x == 1) && (threadIdx.y == 1)) { fpSFnS[0] = 0; };
     if ((threadIdx.x == 2) && (threadIdx.y == 1)) { fpSFnS[1] = 0; };
     if ((threadIdx.x == 3) && (threadIdx.y == 1)) { anyInGold[1] = false; };
-    if ((threadIdx.x == 4) && (threadIdx.y == 1)) { anyInSegm[1] = false; };
+    if ((threadIdx.x == 4) && (threadIdx.y == 1)) {
+        anyInSegm[1] = false;
+
+        if (blockIdx.x == 0) {
+            printf("in bool kernel  dims meta in bool kernel Meta X %d MetaY %d metaZ %d dbXSize %d dbYsize %d dbZsize %d minX %d minY %d minZ \n "
+                , metaData.metaXLength, metaData.MetaYLength, metaData.MetaZLength
+                , fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength
+                , metaData.minX, metaData.minY, metaData.minZ
+            );
+        }
+
+    };
 
 
 
@@ -144,9 +163,9 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
     //main metadata iteration
     for (uint32_t linIdexMeta = blockIdx.x; linIdexMeta < metaData.totalMetaLength; linIdexMeta += gridDim.x) {
         //we get from linear index  the coordinates of the metadata block of intrest
-        auto xMeta = linIdexMeta % metaData.metaXLength;
-        auto zMeta = floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength)));
-        auto yMeta = floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength));
+        int xMeta = int(linIdexMeta % (metaData.metaXLength));
+        int zMeta = int(floor((float)(linIdexMeta / (metaData.metaXLength * metaData.MetaYLength))));
+        int yMeta = int(floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength)));
         //reset
         isNotEmpty = false;
         sumFp = 0;
@@ -156,42 +175,46 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
         //iterating over data block
         sync(cta);
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
-            uint32_t x = (xMeta+ metaData.minX)* fbArgs.dbXLength + xLoc;//absolute position
+            uint32_t x = (xMeta + metaData.minX) * fbArgs.dbXLength + xLoc;//absolute position
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
-                uint32_t  y = (yMeta+ metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
+                uint32_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
                 if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nx) {
 
                     // resetting 
                     sharedForGold[xLoc + yLoc * fbArgs.dbXLength] = 0;
                     sharedForSegm[xLoc + yLoc * fbArgs.dbXLength] = 0;
-        
+
 
                     for (uint8_t zLoc = 0; zLoc < fbArgs.dbZLength; zLoc++) {
-                        uint32_t z = (zMeta+ metaData.minZ)* fbArgs.dbZLength + zLoc;//absolute position
+                        uint32_t z = (zMeta + metaData.minZ) * fbArgs.dbZLength + zLoc;//absolute position
                         if (z < fbArgs.goldArr.Nz) {
                             //char* tensorslice;
 
                             //first array gold
-                            bool goldBool = goldArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor; 
+                            bool goldBool = goldArr[x + y * fbArgs.goldArr.Nx + z * fbArgs.goldArr.Nx * fbArgs.goldArr.Ny] == fbArgs.numberToLookFor;
                             bool segmBool = segmArr[x + y * fbArgs.segmArr.Nx + z * fbArgs.segmArr.Nx * fbArgs.segmArr.Ny] == fbArgs.numberToLookFor;
                             //goldBool = true;
 
                             // setting bits
-                            sharedForGold[xLoc+yLoc* fbArgs.dbXLength] |= goldBool << zLoc;
-                            sharedForSegm[xLoc+yLoc* fbArgs.dbXLength] |= segmBool << zLoc;
+                            sharedForGold[xLoc + yLoc * fbArgs.dbXLength] |= goldBool << zLoc;
+                            sharedForSegm[xLoc + yLoc * fbArgs.dbXLength] |= segmBool << zLoc;
                             // setting value of local boolean marking that any of the entries was evaluated to true in either of arrays
                             isNotEmpty = (isNotEmpty || (goldBool || segmBool));
                             sumFp += (!goldBool && segmBool);
                             sumFn += (goldBool && !segmBool);
                             if (goldBool)  anyInGold[0] = true;
                             if (segmBool)  anyInSegm[0] = true;
-                           
+
                             //if (goldBool) {
-                            //    printf("in kernel  gold x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
+                            //    printf("in kernel  gold x %d y %d z %d    xMeta %d yMeta %d zMeta %d counted ymeta %d linmeta %d \n", x, y, z, xMeta, yMeta, zMeta
+                            //        , int(floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength)))
+                            //        , linIdexMeta);
                             //}
 
                             //if (segmBool) {
-                            //    printf("in kernel  segm  x %d y %d z %d linearLocal %d linIdexMeta %d\n", x, y, z, xLoc + yLoc * fbArgs.dbXLength, linIdexMeta);
+                            //    printf("in kernel  segm  x %d y %d z %d    xMeta %d yMeta %d zMeta %d counted ymeta %d linmeta %d \n", x, y, z, xMeta, yMeta, zMeta
+                            //        , int(floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength)))
+                            //        , linIdexMeta);
                             //}
 
 
@@ -209,12 +232,12 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             }
         }
         //reset local metadata
-        if ((threadIdx.x <20) && (threadIdx.y == 0)) {
-            localBlockMetaData[threadIdx.x]=0;
+        if ((threadIdx.x < 20) && (threadIdx.y == 0)) {
+            localBlockMetaData[threadIdx.x] = 0;
         }
-        
 
-    
+
+
         isNotEmpty = __syncthreads_or(isNotEmpty);
         //exporting to global memory
         for (uint8_t xLoc = threadIdx.x; xLoc < fbArgs.dbXLength; xLoc += blockDim.x) {
@@ -222,7 +245,7 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             for (uint8_t yLoc = threadIdx.y; yLoc < fbArgs.dbYLength; yLoc += blockDim.y) {
                 uint32_t  y = (yMeta + metaData.minY) * fbArgs.dbYLength + yLoc;//absolute position
                 if (y < fbArgs.goldArr.Ny && x < fbArgs.goldArr.Nx) {
-                                      
+
                     origArrs[linIdexMeta * metaData.mainArrSectionLength + yLoc * 32 + xLoc] = sharedForGold[yLoc * 32 + xLoc];
                     origArrs[linIdexMeta * metaData.mainArrSectionLength + yLoc * 32 + xLoc + metaData.mainArrXLength] = sharedForSegm[yLoc * 32 + xLoc];
 
@@ -231,33 +254,33 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             }
         }
 
-     //   sync(cta);
+        //   sync(cta);
 
 
 
-        //cuda::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength]) , (sharedForGold), sizeof(uint32_t) * cta.size(), barrier);
-        //barrier.arrive_and_wait(); // Waits for all copies to complete
+           //cuda::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength]) , (sharedForGold), sizeof(uint32_t) * cta.size(), barrier);
+           //barrier.arrive_and_wait(); // Waits for all copies to complete
 
-    
-       // cuda::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength]), (sharedForGoldB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
-       //barrier.arrive_and_wait(); // Waits for all copies to complete
 
-       //cuda::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength]), (sharedForSegmB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
-       //barrier.arrive_and_wait(); // Waits for all copies to complete
+          // cuda::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength]), (sharedForGoldB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
+          //barrier.arrive_and_wait(); // Waits for all copies to complete
 
-       //cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength ]), (sharedForGoldB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
-       // barrier.arrive_and_wait(); // Waits for all copies to complete
+          //cuda::memcpy_async(cta, (&origArrs[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength]), (sharedForSegmB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
+          //barrier.arrive_and_wait(); // Waits for all copies to complete
 
-       // cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*1]), (sharedForSegmB), (sizeof(uint32_t) * blockDim.x * blockDim.y) , barrier);
-       // barrier.arrive_and_wait(); // Waits for all copies to complete
+          //cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength ]), (sharedForGoldB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
+          // barrier.arrive_and_wait(); // Waits for all copies to complete
 
-       // cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*2]), (sharedForGoldB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
-       // barrier.arrive_and_wait(); // Waits for all copies to complete
+          // cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*1]), (sharedForSegmB), (sizeof(uint32_t) * blockDim.x * blockDim.y) , barrier);
+          // barrier.arrive_and_wait(); // Waits for all copies to complete
 
-       // cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*3]), (sharedForSegmB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
-       // barrier.arrive_and_wait(); // Waits for all copies to complete
+          // cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*2]), (sharedForGoldB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
+          // barrier.arrive_and_wait(); // Waits for all copies to complete
 
-       sync(cta);
+          // cuda::memcpy_async(cta, (&mainArr[linIdexMeta * metaData.mainArrSectionLength + metaData.mainArrXLength*3]), (sharedForSegmB), (sizeof(uint32_t) * blockDim.x * blockDim.y), barrier);
+          // barrier.arrive_and_wait(); // Waits for all copies to complete
+
+        sync(cta);
 
 
 
@@ -281,9 +304,9 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             sharedForGold[33] = 0;//reset
             for (int i = 0; i < tile.meta_group_size(); i += 1) {
                 sharedForGold[33] += sharedForGold[i];
- /*               if (sharedForGold[i]>0) {
-                    printf("adding sharedForGold[i] %d in gold \n ", sharedForGold[i]);
-                }*/
+                /*               if (sharedForGold[i]>0) {
+                                   printf("adding sharedForGold[i] %d in gold \n ", sharedForGold[i]);
+                               }*/
 
             };
             fpSFnS[0] += sharedForGold[33];// will be needed later for global set
@@ -291,7 +314,7 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
             localBlockMetaData[1] = sharedForGold[33];
 
         }
-       // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
+        // if (isToBeExecutedOnActive(active, 1) && isNotEmpty) {
         if ((threadIdx.x == 0) && (threadIdx.y == 1) && isNotEmpty) {
 
 
@@ -307,7 +330,7 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
 
         //marking as active 
 //FP pass
-        if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) { 
+        if ((threadIdx.x == 0) && (threadIdx.y == 0) && isNotEmpty && anyInGold[0]) {
             localBlockMetaData[7] = 1;
 
         };
@@ -324,20 +347,20 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
 
 
         setNeighbourBlocks(fbArgs, 3, 13, (zMeta > 0), (-(metaData.metaXLength * metaData.MetaYLength)), linIdexMeta, metaData, localBlockMetaData);//top
-        setNeighbourBlocks(fbArgs, 4, 14, (zMeta < (metaData.MetaZLength - 1)), (metaData.metaXLength* metaData.MetaYLength), linIdexMeta, metaData, localBlockMetaData);//bottom
+        setNeighbourBlocks(fbArgs, 4, 14, (zMeta < (metaData.MetaZLength - 1)), (metaData.metaXLength * metaData.MetaYLength), linIdexMeta, metaData, localBlockMetaData);//bottom
 
-        setNeighbourBlocks(fbArgs, 6 ,15, (xMeta > 0), (-1), linIdexMeta, metaData, localBlockMetaData);//left
+        setNeighbourBlocks(fbArgs, 6, 15, (xMeta > 0), (-1), linIdexMeta, metaData, localBlockMetaData);//left
         setNeighbourBlocks(fbArgs, 7, 16, (xMeta < (metaData.metaXLength - 1)), 1, linIdexMeta, metaData, localBlockMetaData);//right
 
         setNeighbourBlocks(fbArgs, 8, 17, (yMeta < (metaData.MetaYLength - 1)), metaData.metaXLength, linIdexMeta, metaData, localBlockMetaData);//anterior
         setNeighbourBlocks(fbArgs, 9, 18, (yMeta > 0), (-metaData.metaXLength), linIdexMeta, metaData, localBlockMetaData);//posterior
 
-  if ((threadIdx.x <20) && (threadIdx.y == 0)) {
-        metaDataArr[linIdexMeta * metaData.metaDataSectionLength+ threadIdx.x]= localBlockMetaData[threadIdx.x];
-    };
+        if ((threadIdx.x < 20) && (threadIdx.y == 0)) {
+            metaDataArr[linIdexMeta * metaData.metaDataSectionLength + threadIdx.x] = localBlockMetaData[threadIdx.x];
+        };
 
         sync(cta); // just to reduce the warp divergence
-        
+
         // copy metadata to global memory
 
         //cuda::memcpy_async(cta, &metaDataArr[linIdexMeta * metaData.metaDataSectionLength], (&localBlockMetaData[0]), (sizeof(uint32_t) * 20), barrier);
@@ -356,10 +379,10 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
     };
 
     if ((threadIdx.x == 1) && (threadIdx.y == 0)) {
-          atomicAdd(&(minMaxes[8]), fpSFnS[1]);
+        atomicAdd(&(minMaxes[8]), fpSFnS[1]);
 
     };
-   
+
 
 
 
