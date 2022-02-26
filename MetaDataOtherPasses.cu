@@ -1,15 +1,11 @@
-#include "CPUAllocations.cu"
 #include "MetaData.cu"
 #include "Structs.cu"
 
 #include "ExceptionManagUtils.cu"
-#include "CooperativeGroupsUtils.cu"
 #include "ForBoolKernel.cu"
 #include "FirstMetaPass.cu"
-#include "MainPassFunctions.cu"
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include "UnitTestUtils.cu"
 
 using namespace cooperative_groups;
 
@@ -20,6 +16,7 @@ using namespace cooperative_groups;
   We need to populate the worqueue
    We need to get count of the total FP, FN so we will know wheather we should start loop anew
 */
+
 
 
 
@@ -114,8 +111,6 @@ https://stackoverflow.com/questions/13548172/bitshifts-to-obtain-remainder
 #pragma once
 template <typename TKKI>
 inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, const bool isPaddingPass
-    , const uint8_t predicateAa, const uint8_t predicateAb, const uint8_t predicateAc
-    , const uint8_t predicateBa, const uint8_t predicateBb, const uint8_t predicateBc
     , uint32_t(&mainShmem)[lengthOfMainShmem], unsigned int(&globalWorkQueueOffset)[1], unsigned int(&globalWorkQueueCounter)[1]
     , unsigned int(&localWorkQueueCounter)[1], unsigned int(&localTotalLenthOfWorkQueue)[1], unsigned int(&localMinMaxes)[5]
     , unsigned int(&fpFnLocCounter)[1], bool(&isGoldPassToContinue)[1], bool(&isSegmPassToContinue)[1]
@@ -233,7 +228,9 @@ inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, const bool i
 
         }
 
-
+        //8 :isFullGold
+        //    9 : isActiveSegm
+        //    10 : isFullSegm
 
 
     }
@@ -256,7 +253,7 @@ inline __device__ void metadataPass(ForBoolKernelArgs<TKKI> fbArgs, const bool i
             if (getPredSegmPass(isPaddingPass, isGoldPassToContinue, isSegmPassToContinue, metaData, metaDataArr, linIdexMeta)) {
                 //  if (isPaddingPass) {
                 ////      printf("in meta pass segm linIdexMeta %d isPaddingPass %d \n", linIdexMeta, isPaddingPass);
-                //      printf("in meta pass segm linIdexMeta %d \n", linIdexMeta, isPaddingPass);
+               //      printf("in meta pass segm linIdexMeta %d \n", linIdexMeta, isPaddingPass);
                 //  }
                  // localWorkQueueCounter[0] += 1;
                 mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;

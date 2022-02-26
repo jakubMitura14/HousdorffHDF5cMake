@@ -1,10 +1,8 @@
 
 
-#include "CPUAllocations.cu"
 #include "MetaData.cu"
 
 #include "ExceptionManagUtils.cu"
-#include "CooperativeGroupsUtils.cu"
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 using namespace cooperative_groups;

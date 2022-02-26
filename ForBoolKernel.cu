@@ -1,80 +1,13 @@
 
 
-#include "CPUAllocations.cu"
 #include "MetaData.cu"
 #include "ExceptionManagUtils.cu"
-#include "CooperativeGroupsUtils.cu"
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 #include <cooperative_groups/memcpy_async.h>
 #include <cuda/barrier>
 
 using namespace cooperative_groups;
-
-/*
-given appropriate cudaPitchedPtr and ForFullBoolPrepArgs will return ForBoolKernelArgs
-*/
-#pragma once
-template <typename TCC>
-inline ForBoolKernelArgs<TCC> getArgsForKernel(ForFullBoolPrepArgs<TCC>& mainFunArgs
-    , TCC*& goldArrPointer
-    , TCC*& segmArrPointer
-    , unsigned int* minMaxes
-    , int& warpsNumbForMainPass, int& blockForMainPass
-    , const int xLen, const int yLen, const int zLen
-) {
-    // size_t sizeMainArr = sizeof(TCC) * WIDTH * HEIGHT * DEPTH;
-    //cudaMallocAsync(&goldArrPointer, sizeMainArr, 0);
-    // cudaMallocAsync(&segmArrPointer, sizeMainArr, 0);
-
-
-
-    // cudaMalloc(&goldArrPointer, sizeMainArr);
-    // cudaMalloc(&segmArrPointer, sizeMainArr);
-
-    // array3dWithDimsGPU<TCC> goldArr;
-    // array3dWithDimsGPU<TCC> segmArr;
-
-    // goldArr.arrP = goldArrPointer;
-    // goldArr.Nx = WIDTH;
-    // goldArr.Ny = HEIGHT;
-    // goldArr.Nz = DEPTH;
-
-
-
-    // segmArr.arrP = segmArrPointer;
-    // segmArr.Nx = WIDTH;
-    // segmArr.Ny = HEIGHT;
-    // segmArr.Nz = DEPTH;
-
-
-    ForBoolKernelArgs<TCC> res;
-    res.metaData = allocateMetaDataOnGPU(mainFunArgs.metaData, minMaxes);
-    //res.goldArr = goldArr;
-    //res.segmArr = segmArr;
-
-    res.numberToLookFor = mainFunArgs.numberToLookFor;
-    res.dbXLength = 32;
-    res.dbYLength = warpsNumbForMainPass;
-    res.dbZLength = 32;
-
-    printf("in setting bool args ylen %d dbYlen %d calculated meta %d  \n ", yLen, res.dbYLength, int(ceil(yLen / res.dbYLength)));
-    res.metaData.metaXLength = int(ceil(xLen / res.dbXLength));
-    res.metaData.MetaYLength = int(ceil(yLen / res.dbYLength));;
-    res.metaData.MetaZLength = int(ceil(zLen / res.dbZLength));;
-    res.metaData.minX = 0;
-    res.metaData.minY = 0;
-    res.metaData.minZ = 0;
-    res.metaData.maxX = res.metaData.metaXLength;
-    res.metaData.maxY = res.metaData.MetaYLength;
-    res.metaData.maxZ = res.metaData.MetaZLength;
-
-
-    res.metaData.totalMetaLength = res.metaData.metaXLength * res.metaData.MetaYLength * res.metaData.MetaZLength;
-
-
-    return res;
-}
 
 
 /*
@@ -206,13 +139,13 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
                             if (segmBool)  anyInSegm[0] = true;
 
                             //if (goldBool) {
-                            //    printf("in kernel  gold x %d y %d z %d    xMeta %d yMeta %d zMeta %d counted ymeta %d linmeta %d \n", x, y, z, xMeta, yMeta, zMeta
+                            //    printf("in kernel  gold x %d y %d z %d    xMeta %d yMeta %d zMeta %d counted ymeta %d linmeta %d \n", x, y, z,  xMeta, yMeta,zMeta
                             //        , int(floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength)))
-                            //        , linIdexMeta);
+                            //    , linIdexMeta);
                             //}
 
                             //if (segmBool) {
-                            //    printf("in kernel  segm  x %d y %d z %d    xMeta %d yMeta %d zMeta %d counted ymeta %d linmeta %d \n", x, y, z, xMeta, yMeta, zMeta
+                            //    printf("in kernel  segm  x %d y %d z %d    xMeta %d yMeta %d zMeta %d counted ymeta %d linmeta %d \n", x, y, z,  xMeta, yMeta, zMeta
                             //        , int(floor((float)((linIdexMeta - ((zMeta * metaData.metaXLength * metaData.MetaYLength) + xMeta)) / metaData.metaXLength)))
                             //        , linIdexMeta);
                             //}

@@ -1,7 +1,6 @@
 #include "cuda_runtime.h"
 #include <cstdint>
 #include "Structs.cu"
-#include "MemoryTransfers.cu"
 
 /*
 copy from host to device

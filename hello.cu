@@ -1,11 +1,10 @@
 
+
+
 #include "cuda_runtime.h"
-#include "CPUAllocations.cu"
 #include "MetaData.cu"
 
 #include "ExceptionManagUtils.cu"
-#include "CooperativeGroupsUtils.cu"
-#include "MainPassFunctions.cu"
 #include <cstdint>
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
@@ -13,41 +12,35 @@
 #include <cuda/pipeline>
 
 
-#include "CPUAllocations.cu"
 #include "MetaData.cu"
 #include "ExceptionManagUtils.cu"
-#include "CooperativeGroupsUtils.cu"
 #include "ForBoolKernel.cu"
 #include "FirstMetaPass.cu"
-#include "MainPassFunctions.cu"
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include "UnitTestUtils.cu"
 #include "MetaDataOtherPasses.cu"
-#include "DilatationKernels.cu"
 #include "MinMaxesKernel.cu"
 #include "MainKernelMetaHelpers.cu"
-#include "BiggerMainFunctions.cu"
 #include <cooperative_groups/memcpy_async.h>
-#include "testAll.cu"
 using namespace cooperative_groups;
 
-using namespace cooperative_groups;
 
+
+//#include "hdf5Manag.cu"
 #include <iostream>
 #include <string>
 #include <vector>
+#define H5_BUILT_AS_DYNAMIC_LIB 1
 #include <H5Cpp.h>
-using namespace H5;
-using std::cout;
-using std::endl;
-#include <string>
-#include "forBench/Volume.h"
-#include "forBench/HausdorffDistance.cuh"
-#include "forBench/HausdorffDistance.cu"
+//#include "forBenchHausdorffDistance.cuh"
+//#include "HausdorffDistance.cu"
+//#include "Volume.cuh"
+// 
+//#include <H5ACpublic.h>
+//#include <H5FDwindows.h>
+//#include <H5FDcore.h>
 
-
-
+//using namespace H5;
 
 
 //using std::cout;
@@ -60,180 +53,6 @@ using std::endl;
 //#include <iostream>
 //#include <string>
 //#include <vector>
-
-
-
-
-/*
-becouse we need a lot of the additional memory spaces to minimize memory consumption allocations will be postponed after first kernel run enabling
-*/
-#pragma once
-template <typename ZZR>
-inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFullBoolPrepArgs<ZZR>& cpuArgs,
-    uint32_t*& resultListPointerMeta
-    , uint32_t*& resultListPointerLocal
-    , uint32_t*& resultListPointerIterNumb,
-    uint32_t*& origArrsPointer,
-    uint32_t*& mainArrAPointer,
-    uint32_t*& mainArrBPointer, MetaDataGPU& metaData, array3dWithDimsGPU<ZZR>& goldArr, array3dWithDimsGPU<ZZR>& segmArr) {
-
-    //free no longer needed arrays
-    cudaFreeAsync(goldArr.arrP, 0);
-    cudaFreeAsync(segmArr.arrP, 0);
-
-    //copy on cpu
-    size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost);
-
-    unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
-
-
-    size = sizeof(uint32_t) * (fpPlusFn + 50);
-
-
-    cudaMallocAsync(&resultListPointerLocal, size, 0);
-    cudaMallocAsync(&resultListPointerIterNumb, size, 0);
-    cudaMallocAsync(&resultListPointerMeta, size, 0);
-
-
-    auto xRange = metaData.metaXLength;
-    auto yRange = metaData.MetaYLength;
-    auto zRange = metaData.MetaZLength;
-
-
-
-
-    size_t sizeB = metaData.totalMetaLength * metaData.mainArrSectionLength * sizeof(uint32_t);
-
-    //printf("size of reduced main arr %d total meta len %d mainArrSectionLen %d  \n", sizeB, metaData.totalMetaLength, metaData.mainArrSectionLength);
-
-    cudaMallocAsync(&mainArrAPointer, sizeB, 0);
-    cudaMemcpyAsync(mainArrAPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice, 0);
-
-
-    cudaMallocAsync(&mainArrBPointer, sizeB, 0);
-    cudaMemcpyAsync(mainArrBPointer, origArrsPointer, sizeB, cudaMemcpyDeviceToDevice, 0);
-
-    //just in order set it to 0
-    uint32_t* resultListPointerMetaCPU = (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-    cudaMemcpyAsync(resultListPointerMeta, resultListPointerMetaCPU, size, cudaMemcpyHostToDevice, 0);
-    free(resultListPointerMetaCPU);
-
-
-
-
-    return fpPlusFn;
-};
-
-
-
-
-#pragma once
-template <typename ZZR>
-inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFullBoolPrepArgs<ZZR>& cpuArgs,
-    uint32_t*& workQueue, unsigned int* minMaxes, MetaDataGPU& metaData, uint32_t*& origArr
-    , uint32_t*& metaDataArr) {
-    ////reduced arrays
-
-
-    //copy on cpu
-    size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, minMaxes, size, cudaMemcpyDeviceToHost);
-
-    //read an modify
-    //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
-    //7)global FP count; 8)global FN count
-    unsigned int xRange = cpuArgs.metaData.minMaxes[1] - cpuArgs.metaData.minMaxes[2] + 1;
-    unsigned int yRange = cpuArgs.metaData.minMaxes[3] - cpuArgs.metaData.minMaxes[4] + 1;
-    unsigned int zRange = cpuArgs.metaData.minMaxes[5] - cpuArgs.metaData.minMaxes[6] + 1;
-    unsigned int totalMetaLength = (xRange) * (yRange) * (zRange);
-    /* printf("in allocateMemoryAfterMinMaxesKernel totalMetaLength  %d  xRange %d yRange %d zRange %d \n"
-         , totalMetaLength
-         , (xRange)
-         , (yRange)
-         , (zRange));*/
-
-         //updating size informations
-    metaData.metaXLength = xRange;
-    metaData.MetaYLength = yRange;
-    metaData.MetaZLength = zRange;
-    metaData.totalMetaLength = totalMetaLength;
-
-    //cpuArgs.metaData.metaXLength = xRange;
-    //cpuArgs.metaData.MetaYLength = yRange;
-    //cpuArgs.metaData.MetaZLength = zRange;
-    //cpuArgs.metaData.totalMetaLength = totalMetaLength;
-    //saving min maxes
-    metaData.maxX = cpuArgs.metaData.minMaxes[1];
-    metaData.minX = cpuArgs.metaData.minMaxes[2];
-    metaData.maxY = cpuArgs.metaData.minMaxes[3];
-    metaData.minY = cpuArgs.metaData.minMaxes[4];
-    metaData.maxZ = cpuArgs.metaData.minMaxes[5];
-    metaData.minZ = cpuArgs.metaData.minMaxes[6];
-
-
-
-
-
-    //int i = 1;
-    //printf("maxX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    //i = 2;
-    //printf("minX %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    //i = 3;
-    //printf("maxY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    //i = 4;
-    //printf("minY %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    //i = 5;
-    //printf("maxZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-    //i = 6;
-    //printf("minZ %d  [%d]\n", cpuArgs.metaData.minMaxes[i], i);
-
-  /*  int ii = 7;
-    printf("global FP count %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
-    ii = 8;
-    printf("global FN count %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
-    ii = 9;
-    printf("workQueueCounter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
-    ii = 10;
-    printf("resultFP globalCounter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
-    ii = 11;
-    printf("resultFn globalCounter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);
-    ii = 12;
-    printf("global offset counter %d  [%d]\n", cpuArgs.metaData.minMaxes[ii], ii);*/
-
-
-
-
-
-
-
-
-
-
-    //allocating needed memory
-    // main array
-    unsigned int mainArrXLength = gpuArgs.dbXLength * gpuArgs.dbYLength;
-    unsigned int mainArrSectionLength = (mainArrXLength * 2);
-    metaData.mainArrXLength = mainArrXLength;
-    metaData.mainArrSectionLength = mainArrSectionLength;
-
-    size_t sizeB = totalMetaLength * mainArrSectionLength * sizeof(uint32_t);
-
-
-    //cudaMallocAsync(&mainArr, sizeB, 0);
-    size_t sizeorigArr = totalMetaLength * (mainArrXLength * 2) * sizeof(uint32_t);
-    cudaMallocAsync(&origArr, sizeorigArr, 0);
-    size_t sizemetaDataArr = totalMetaLength * (20) * sizeof(uint32_t) + 100;
-    cudaMallocAsync(&metaDataArr, sizemetaDataArr, 0);
-
-
-    size_t sizeC = (totalMetaLength * 2 * sizeof(uint32_t) + 50);
-    //cudaMallocAsync(&workQueue, size, 0);
-    cudaMallocAsync(&workQueue, sizeC, 0);
-    // printf("in allocateMemoryAfterMinMaxesKernel workQueu size  %d isGold constant value %d  \n", totalMetaLength * 2  + 50, isGoldOffset );
-
-    return metaData;
-};
 
 
 
@@ -444,31 +263,6 @@ inline __device__ void dilatateHelperTopDown(const uint8_t paddingPos,
 }
 
 
-//inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block cta//some needed CUDA objects
-//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[(i & 1) * 20+]
-//    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData
-//) {
-
-
-//
-///*
-//constitutes end of pipeline  where we load data for next iteration if such is present
-//*/
-//template <typename TXPPI>
-//inline __device__  void lastLoad(ForBoolKernelArgs<TXPPI> fbArgs, thread_block& cta//some needed CUDA objects
-//    , unsigned int worQueueStep[1], uint32_t localBlockMetaData[(i & 1) * 20+]
-//    , uint32_t mainShmem[], uint32_t i, MetaDataGPU metaData, uint32_t* metaDataArr
-//) {
-//
-//    if (i + 1 <= worQueueStep[0]) {
-//        cuda::memcpy_async(cta, (&localBlockMetaData[(i & 1) * 20+0]),
-//            (&metaDataArr[(mainShmem[startOfLocalWorkQ + i - isGoldOffset * (mainShmem[startOfLocalWorkQ + i] >= isGoldOffset))
-//                * metaData.metaDataSectionLength]])
-//            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-//    }
-//
-//
-//};
 
 /*
 we need to define here the function that will update the metadata result for the given block -
@@ -489,86 +283,74 @@ inline __device__  void afterBlockClean(thread_block& cta
     , unsigned int(&localFpConter)[1], unsigned int(&localFnConter)[1]
     , unsigned int(&blockFpConter)[1], unsigned int(&blockFnConter)[1]
     , uint32_t*& metaDataArr
-    , bool(&isAnythingInPadding)[6], bool(&isBlockFull)[1], const bool isPaddingPass, bool(&isGoldForLocQueue)[localWorkQueLength], uint32_t(&lastI)[1]
+    , bool(&isAnythingInPadding)[6], bool(&isBlockFull)[2], const bool isPaddingPass, bool(&isGoldForLocQueue)[localWorkQueLength], uint32_t(&lastI)[1]
 ) {
 
-
-
-    if (threadIdx.x == 7 && threadIdx.y == 0) {// this is how it is encoded wheather it is gold or segm block
-                    //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
-        if (localFpConter[0] >= 0) {
-            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
-            blockFpConter[0] += localFpConter[0];
-            localFpConter[0] = 0;
-        }
-    };
-    if (threadIdx.x == 8 && threadIdx.y == 3) {
-
-        if (localFnConter[0] >= 0) {
-            metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
-
-            blockFnConter[0] += localFnConter[0];
-            localFnConter[0] = 0;
-        }
-    };
-    if (threadIdx.x == 9 && threadIdx.y == 2) {// this is how it is encoded wheather it is gold or segm block
-
-        //executed in case of previous block
-        if (isBlockFull[0] && i > 0) {
-            //setting data in metadata that block is full
-           // metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
-        }
-        //resetting for some reason  block 0 gets as full even if it should not ...
-        isBlockFull[0] = true;// mainShmem[startOfLocalWorkQ + i]>0;//!isPaddingPass;
-    };
+    if (lastI[0] < UINT32_MAX) {
 
 
 
+        if (threadIdx.x == 7 && threadIdx.y == 0) {// this is how it is encoded wheather it is gold or segm block
+                        //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
+            if (localFpConter[0] >= 0) {
+                metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
+                blockFpConter[0] += localFpConter[0];
+                localFpConter[0] = 0;
+            }
+        };
+        if (threadIdx.x == 8 && threadIdx.y == 3) {
 
-    //we do it only for non padding pass
-    if (threadIdx.x < 6 && threadIdx.y == 1 && !isPaddingPass) {
-        //executed in case of previous block
-        if (i >= 0) {
-            auto metadataTarget = localBlockMetaData[(i & 1) * 20 + 13 + threadIdx.x];
+            if (localFnConter[0] >= 0) {
+                metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
 
-            if (metadataTarget < isGoldOffset) {
+                blockFnConter[0] += localFnConter[0];
+                localFnConter[0] = 0;
+            }
+        };
+        if (threadIdx.x == 9 && threadIdx.y == 2) {// this is how it is encoded wheather it is gold or segm block
 
-                if (isAnythingInPadding[threadIdx.x]) {
-                    // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
-
-                    //if (threadIdx.x == 4   ) {
-                    //    printf(" padding in end  processs anterior  at the end of linMeta %d  isGold %d \n"
-                    //    , metadataTarget
-                    //        , isGoldForLocQueue[i]
-                    //    );
-
-                    //}
-
-
-                    //if (threadIdx.x == 5) {
-                    //    printf(" padding in end  processs posterior  at the end of linMeta %d  isGold %d \n"
-                    //        , metadataTarget
-                    //        , isGoldForLocQueue[i]
-                    //    );
-
-                    //}
+            //executed in case of previous block
+            if (isBlockFull[i & 1] && i >= 0) {
+                //setting data in metadata that block is full
+              /*  printf("ssssssssssssssssssss et as full %d isGold %d \n"
+                    , mainShmem[startOfLocalWorkQ + i]
+                , isGoldForLocQueue[i]);
+                metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;*/
+            }
+            //resetting for some reason  block 0 gets as full even if it should not ...
+            isBlockFull[i & 1] = true;// mainShmem[startOfLocalWorkQ + i]>0;//!isPaddingPass;
+        };
 
 
 
-                   // printf( "in setting paddings metadata target %d  full index %d  \n", metadataTarget, metadataTarget * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]);
- /*                   if (metadataTarget>0 && metadataTarget < metaData.totalMetaLength) {
-                        metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + threadIdx.x] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
-                    }*/
-                    //if (metadataTarget > 0 && metadataTarget < metaData.totalMetaLength) {
-                    metaDataArr[metadataTarget * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
-                    //}
 
+        //we do it only for non padding pass
+        if (threadIdx.x < 6 && threadIdx.y == 1 && !isPaddingPass) {
+            //executed in case of previous block
+            if (i >= 0) {
+                auto metadataTarget = localBlockMetaData[(i & 1) * 20 + 13 + threadIdx.x];
+
+                if (metadataTarget < isGoldOffset) {
+
+                    if (isAnythingInPadding[threadIdx.x]) {
+                        // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
+
+                                        // printf( "in setting paddings metadata target %d  full index %d  \n", metadataTarget, metadataTarget * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]);
+     /*                   if (metadataTarget>0 && metadataTarget < metaData.totalMetaLength) {
+                            metaDataArr[localBlockMetaData[(i & 1) * 20 + 13 + threadIdx.x] * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
+                        }*/
+                        //if (metadataTarget > 0 && metadataTarget < metaData.totalMetaLength) {
+                        metaDataArr[metadataTarget * metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
+                        //}
+
+
+                    }
 
                 }
-
             }
-        }
-        isAnythingInPadding[tile.thread_rank()] = false;
+            isAnythingInPadding[tile.thread_rank()] = false;
+        };
+
     };
     //if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {// this is how it is encoded wheather it is gold or segm block
 
@@ -594,7 +376,7 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32>& tile,
     const  bool isPaddingPass, int(&iterationNumb)[1],
     unsigned int(&localWorkQueueCounter)[1], unsigned int(&blockFpConter)[1],
     unsigned int(&blockFnConter)[1], unsigned int(&localFpConter)[1],
-    unsigned int(&localFnConter)[1], bool(&isBlockFull)[1],
+    unsigned int(&localFnConter)[1], bool(&isBlockFull)[2],
     unsigned int(&fpFnLocCounter)[1],
     unsigned int(&localTotalLenthOfWorkQueue)[1], unsigned int(&globalWorkQueueOffset)[1]
     , unsigned int(&worQueueStep)[1], unsigned int*& minMaxes, unsigned int(&localMinMaxes)[5], uint32_t(&lastI)[1])
@@ -623,6 +405,10 @@ inline __device__  void dilBlockInitialClean(thread_block_tile<32>& tile,
     if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) {
         isBlockFull[0] = true;
     };
+    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 1) {
+        isBlockFull[1] = true;
+    };
+
     if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
         fpFnLocCounter[0] = 0;
     };
@@ -736,48 +522,14 @@ template <typename TXPI>
 inline __device__  void processMain(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& cta, uint32_t(&localBlockMetaData)[40]
     , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
-    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isBlockFull)[1]) {
+    , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isBlockFull)[2]) {
+
 
     pipeline.consumer_wait();
-    //if ((((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]))  > 0)
-//    || mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]==0
-//    ) {
-   // isBlockFull[0] = false;
-    //    }
-    //if (__popc(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32])<32) {
-    //
-    //    isBlockFull[0] = false;
-    //}
 
-
-    //if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0 && isGoldForLocQueue[i] == 1) {
-
-    //    printf("something in loaded  in main load idX %d idY %d  \n", threadIdx.x, threadIdx.y);
-    //}
-
-
-    //if (getSourceReduced(fbArgs, iterationNumb)[
-     //   mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])+ threadIdx.x + threadIdx.y * 32] > 0 && isGoldForLocQueue[i] == 0) {
-    //if (isGoldForLocQueue[i] == 1) {
-    //    if ( threadIdx.x + threadIdx.y * 32 ==0 ) {
-    //        printf("in lin meta  %d looking for non zero  looking for index starting  %d  mainArrSection %d \n"
-    //            , mainShmem[startOfLocalWorkQ + i]
-    //            ,4* metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32
-    //        , metaData.mainArrSectionLength
-    //        , );
-    //    }
-    //    //printf("aaain main load idX %d idY vall  %d \n", threadIdx.x, threadIdx.y, fbArgs.mainArrBPointer[4 * metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32]);
-
-    //    for (int ii = 0; ii < 6; ii++) {
-    //        //if (fbArgs.mainArrBPointer[ii * metaData.mainArrSectionLength + metaData.mainArrXLength + threadIdx.x + threadIdx.y * 32] > 0) {
-    //        if (fbArgs.mainArrBPointer[ii * metaData.mainArrSectionLength + threadIdx.x + threadIdx.y * 32] > 0) {
-
-    //            printf("something in traditionally loaded  in main load idX %d idY %d ii %d \n", threadIdx.x, threadIdx.y, ii);
-    //        }
-    //    }
-
-    //}
-
+    if (__popc(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) < 32) {
+        isBlockFull[i & 1] = false;
+    }
 
     mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
     //marking weather block is already full and no more dilatations are possible 
@@ -1036,12 +788,6 @@ inline __device__  void lastLoad(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
     }
     else {//if we are not validating we immidiately start loading data for next loop
         if (i + 1 < worQueueStep[0]) {
-            //auto metaDataIndex = mainShmem[startOfLocalWorkQ + 1 + i];
-            //printf(" metaDataIndex  to copy metadata for next %d \n", metaDataIndex);
-            //cuda::memcpy_async(cta, (&localBlockMetaData[((i + 1) & 1) * 20]),
-            //    (&metaDataArr[metaDataIndex * metaData.metaDataSectionLength])
-            //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-
             cuda::memcpy_async(cta, (&localBlockMetaData[((i + 1) & 1) * 20]),
                 (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1 + i])
                     * metaData.metaDataSectionLength])
@@ -1061,7 +807,7 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
     , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
     , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6],
-    bool(&isBlockFull)[1]) {
+    bool(&isBlockFull)[2]) {
 
     pipeline.consumer_wait();
     //dilatate posterior 
@@ -1105,6 +851,7 @@ inline __device__  void processPosteriorAndSaveResShmem(ForBoolKernelArgs<TXPI>&
 }
 
 
+
 //////////// validation
 #pragma once
 template <typename TXPI>
@@ -1112,7 +859,7 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
     , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
     , uint32_t*& metaDataArr, MetaDataGPU& metaData, uint32_t& i, thread_block_tile<32>& tile
     , bool(&isGoldForLocQueue)[localWorkQueLength], int(&iterationNumb)[1], bool(&isAnythingInPadding)[6]
-    , bool(&isBlockFull)[1]
+    , bool(&isBlockFull)[2]
     , unsigned int(&localFpConter)[1], unsigned int(&localFnConter)[1]
     , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb
 
@@ -1137,59 +884,29 @@ inline __device__  void validate(ForBoolKernelArgs<TXPI>& fbArgs, thread_block& 
                 && !isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)
                 && isBitAt(mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32], bitPos)
                 ) {
-                // if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)) {
-                     //first we add to the resList
-                     //TODO consider first passing it into shared memory and then async mempcy ...
-                     //we use offset plus number of results already added (we got earlier count from global memory now we just atomically add locally)
-                unsigned int old = 0;
+
+                //just re
+                mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = 0;
                 ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
                 if (isGoldForLocQueue[i]) {
-                    old = atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 3];
+                    mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = uint32_t(atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 3]);
                 }
                 else {
-                    old = atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4];
+                    mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = uint32_t(atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4]);
                     //    printf("local fn counter add \n");
 
                 };
                 //   add results to global memory    
                 //we add one gere jjust to distinguish it from empty result
-                resultListPointerMeta[old] = uint32_t(mainShmem[startOfLocalWorkQ + i] + (isGoldOffset * isGoldForLocQueue[i]) + 1);
-                resultListPointerLocal[old] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
-                resultListPointerIterNumb[old] = uint32_t(iterationNumb[0]);
+                resultListPointerMeta[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t(mainShmem[startOfLocalWorkQ + i] + (isGoldOffset * isGoldForLocQueue[i]) + 1);
+                resultListPointerLocal[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
+                resultListPointerIterNumb[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t(iterationNumb[0]);
 
-                //printf("rrrrresult i %d  meta %d isGold %d old %d localFpConter %d localFnConter %d fpOffset %d fnOffset %d linIndUpdated %d  localInd %d  xLoc %d yLoc %d zLoc %d \n"
-                //    ,i
-                //    ,mainShmem[startOfLocalWorkQ + i]
-                //    , isGoldForLocQueue[i]
-                //    , old
-                //    , localFpConter[0]
-                //    , localFnConter[0]
-                //    , localBlockMetaData[(i & 1) * 20+ 5]
-                //    , localBlockMetaData[(i & 1) * 20+6]
-                //    , uint32_t(mainShmem[startOfLocalWorkQ + i] + isGoldOffset * isGoldForLocQueue[i])
-                //    , uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x))
-                //    , threadIdx.x
-                //    , threadIdx.y
-                //    , bitPos
-                //);
-
-
-                //printf("\n rrrrresult meta %d isGold %d old %d  xLoc %d yLoc %d zLoc %d iterNumbb %d \n"
-                //    , mainShmem[startOfLocalWorkQ + i]
-                //    , isGoldForLocQueue[i]
-                //    , old
-                //    , threadIdx.x
-                //    , threadIdx.y
-                //    , bitPos
-                //    , iterationNumb[0]
-                //);
 
 
             }
 
         };
-        //mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = 0;
-        //mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = 0;
 
     }
 }
@@ -1211,7 +928,7 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
     , unsigned int*& minMaxes, uint32_t*& workQueue
     , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb,
     thread_block& cta, thread_block_tile<32>& tile, grid_group& grid, uint32_t(&mainShmem)[lengthOfMainShmem]
-    , bool(&isAnythingInPadding)[6], bool(&isBlockFull)[1], int(&iterationNumb)[1], unsigned int(&globalWorkQueueOffset)[1]
+    , bool(&isAnythingInPadding)[6], bool(&isBlockFull)[2], int(&iterationNumb)[1], unsigned int(&globalWorkQueueOffset)[1]
     , unsigned int(&globalWorkQueueCounter)[1]
     , unsigned int(&localWorkQueueCounter)[1], unsigned int(&localTotalLenthOfWorkQueue)[1]
     , unsigned int(&localFpConter)[1]
@@ -1248,19 +965,6 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
         ////##### pipeline Step 0
 
         sync(cta);
-        ////TODO(remove) krowa
-        //if (((bigloop) < localTotalLenthOfWorkQueue[0]) && ((bigloop) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-        //    if (cta.thread_rank()< worQueueStep[0]) {
-        //        printf("work que just after load %d index %d global index %d zerooLoc %d localTotalLenthOfWorkQueue[0] %d really in wor q 0 %d \n"
-        //            , mainShmem[startOfLocalWorkQ+ cta.thread_rank()]
-        //            , cta.thread_rank()
-        //            , bigloop + cta.thread_rank()
-        //            , mainShmem[startOfLocalWorkQ]
-        //            , localTotalLenthOfWorkQueue[0]
-        //            , workQueue[bigloop] - isGoldOffset * isGoldForLocQueue[0] );
-        //    }
-        //}
-        //sync(cta);
 
 
 
@@ -1311,7 +1015,7 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                     , blockFpConter, blockFnConter
                     , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
                 //needed for after block metadata update
-                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 3) {
+                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
                     lastI[0] = i;
                 }
 
@@ -1375,6 +1079,7 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
                 validate(fbArgs, cta, localBlockMetaData, mainShmem, pipeline, metaDataArr, metaData, i, tile, isGoldForLocQueue, iterationNumb, isAnythingInPadding, isBlockFull, localFpConter, localFnConter, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb);
                 /////////
                 pipeline.consumer_release();
+                sync(cta);
 
                 //  sync(cta);
 
@@ -1399,13 +1104,12 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
 //but we need to check weather any block was processed at all
         pipeline.consumer_wait();
 
-        if (lastI[0] < UINT32_MAX) {
-            afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
-                metaData, tile, localFpConter, localFnConter
-                , blockFpConter, blockFnConter
-                , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
+        afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
+            metaData, tile, localFpConter, localFnConter
+            , blockFpConter, blockFnConter
+            , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
 
-        }
+
         pipeline.consumer_release();
 
     }
@@ -1456,33 +1160,6 @@ inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArg
     d) also given any positive entry we set block as to be activated simple sum reduction should be sufficient
     e) sync grid
 */
-
-
-
-
-
-/*
-we need to
-Data
-- shared memory
-    -for uploaded data from reduced arrays
-    -for dilatation results
-    -for result paddings
-0) load data about what metadata blocks should be analyzed from work queue
-1) load data from given reduced arr into shared memory
-2) perform bit  dilatations in 6 directions
-    and save to result to result shared memory - additionally dilatations into its own shared memory
-3) given the block is to be validated (in case it is first main pass - all needs to be) we check  if
-    - if there is set bit (voxel) in res shmem but not in source shmem
-        - we establish is there anything of intrest in the primary given array of other type (so for gold we check segm and for segm gold - but original ones)
-        - if so we add this to the result list in a spot we established from offsets of metadata
-            - we set metadata's fp and fn result counters - so later we will be able to establish wheather block should be validated at all
-            - we also increment local counters of fp and fn - those will be used for later
-4) we save data from result shmem into reduced arrays and from paddings into padding store (both in global memory)
-
-*/
-
-
 
 
 
@@ -1539,7 +1216,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
     __shared__ bool isAnythingInPadding[6];
 
-    __shared__ bool isBlockFull[1];
+    __shared__ bool isBlockFull[2];
 
     __shared__ uint32_t lastI[1];
 
@@ -1634,21 +1311,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
         isSegmPassToContinue[0] = true;
 
-        if (blockIdx.x == 0) {
-            printf("maxX % d minX % d maxY % d  minY % d maxZ % d minZ % d global FP count % d global FN count % d  total meta len %d \n"
-                , fbArgs.minMaxes[1]
-                , fbArgs.minMaxes[2]
-                , fbArgs.minMaxes[3]
-                , fbArgs.minMaxes[4]
-                , fbArgs.minMaxes[5]
-                , fbArgs.minMaxes[6]
-                , fbArgs.minMaxes[7]
-                , fbArgs.minMaxes[8]
-                , fbArgs.metaData.totalMetaLength
-
-            );
-        }
-
     };
 
 
@@ -1659,118 +1321,63 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
    // for (int t = 0; t < 3; t++) {
     do {
+
         //if (threadIdx.x == 2 && threadIdx.y == 0) {
         //    if (blockIdx.x == 0) {
-        //        printf("************  iter nuumb %d \n", iterationNumb[0]);
+        //        printf("************  iter nuumb %d fpCounter %d fnCounter %d  \n"
+        //            , iterationNumb[0]
+        //            , fbArgs.minMaxes[10]
+        //            , fbArgs.minMaxes[11]
+        //        );
         //        //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
         //    }
         //};
+        //grid.sync();
 
-        mainDilatation(false, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
-            , fbArgs.workQueuePointer
-            , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
-            , cta, tile, grid, mainShmem
-            , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
-            , globalWorkQueueCounter
-            , localWorkQueueCounter
-            , localTotalLenthOfWorkQueue
-            , localFpConter
-            , localFnConter, blockFpConter
-            , blockFnConter
-            , resultfpOffset
-            , resultfnOffset, worQueueStep, localMinMaxes
-            , localBlockMetaData, fpFnLocCounter
-            , isGoldPassToContinue, isSegmPassToContinue
-            , fbArgs.origArrsPointer
-            , fbArgs.metaDataArrPointer, isGoldForLocQueue
-            , lastI, pipeline
+             //for (bool isPaddingPass = false; isPaddingPass; isPaddingPass = true) {
+        for (uint8_t isPaddingPass = 0; isPaddingPass < 2; isPaddingPass++) {
 
-        );
+            mainDilatation(isPaddingPass, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
+                , fbArgs.workQueuePointer
+                , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
+                , cta, tile, grid, mainShmem
+                , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
+                , globalWorkQueueCounter
+                , localWorkQueueCounter
+                , localTotalLenthOfWorkQueue
+                , localFpConter
+                , localFnConter, blockFpConter
+                , blockFnConter
+                , resultfpOffset
+                , resultfnOffset, worQueueStep, localMinMaxes
+                , localBlockMetaData, fpFnLocCounter
+                , isGoldPassToContinue, isSegmPassToContinue
+                , fbArgs.origArrsPointer
+                , fbArgs.metaDataArrPointer, isGoldForLocQueue
+                , lastI, pipeline
 
-        grid.sync();
-        /*  if (blockIdx.x == 0) {
-              if (threadIdx.x == 2 && threadIdx.y == 0) {
-                  printf("b iter nuumb %d \n", iterationNumb[0]);
-              }
-          }*/
-          ///////////// loading work queue for padding dilatations
-        metadataPass(fbArgs, true, 11, 7, 8,
-            12, 9, 10
-            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-            , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
+            );
 
+            grid.sync();
+
+            ///////////// loading work queue for padding dilatations
+            metadataPass(fbArgs, !isPaddingPass
+                , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
+                , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
+                , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
+                , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
 
 
 
-        //////////// padding dilatations
-        grid.sync();
-        //if (blockIdx.x == 0) {
-        //    if (threadIdx.x == 2 && threadIdx.y == 0) {
-        //        printf("c iter nuumb %d \n", iterationNumb[0]);
-        //    }
-        //}
-        mainDilatation(true, fbArgs, fbArgs.mainArrAPointer, fbArgs.mainArrBPointer, fbArgs.metaData, fbArgs.minMaxes
-            , fbArgs.workQueuePointer
-            , fbArgs.resultListPointerMeta, fbArgs.resultListPointerLocal, fbArgs.resultListPointerIterNumb
-            , cta, tile, grid, mainShmem
-            , isAnythingInPadding, isBlockFull, iterationNumb, globalWorkQueueOffset
-            , globalWorkQueueCounter
-            , localWorkQueueCounter
-            , localTotalLenthOfWorkQueue
-            , localFpConter
-            , localFnConter, blockFpConter
-            , blockFnConter
-            , resultfpOffset
-            , resultfnOffset, worQueueStep, localMinMaxes
-            , localBlockMetaData, fpFnLocCounter
-            , isGoldPassToContinue, isSegmPassToContinue
-            , fbArgs.origArrsPointer
-            , fbArgs.metaDataArrPointer, isGoldForLocQueue
-            , lastI, pipeline
 
-        );
-
-
-        grid.sync();
-        /*  if (blockIdx.x == 0) {
-              if (threadIdx.x == 2 && threadIdx.y == 0) {
-                  printf("d iter nuumb %d \n", iterationNumb[0]);
-              }
-          }*/
-          ////////////////////////main metadata pass
-        metadataPass(fbArgs, false, 7, 8, 8,
-            9, 10, 8
-            , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-            , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-            , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-            , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
-        grid.sync();
+            //////////// padding dilatations
+            grid.sync();
+        }
 
     } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
-    //}
-    //grid.sync();
-
-    ////for final result
-    //if (threadIdx.x == 2 && threadIdx.y == 0) {
-    //    if (blockIdx.x == 0) {
-
-    //      //  fbArgs.metaData.minMaxes[13] = iterationNumb[0];
-    //    }
-    //};
 
 
-    //grid.sync();
-
-
-    //if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
-    //    printf("  isGoldPassToContinue %d isSegmPassToContinue %d \n ", isGoldPassToContinue[0], isSegmPassToContinue[0]);
-    //};
-
-//  }// end while
-
-  //setting global iteration number to local one 
+    //setting global iteration number to local one 
     if (blockIdx.x == 0) {
         if (threadIdx.x == 2 && threadIdx.y == 0) {
             fbArgs.metaData.minMaxes[13] = iterationNumb[0];
@@ -1780,28 +1387,14 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
 
-
-
-#pragma once
+/*
+get data from occupancy calculator API used to get optimal number of thread blocks and threads per thread block
+*/
 template <typename T>
-ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& reducedResCPU
-    , uint32_t*& resultListPointerMetaCPU
-    , uint32_t*& resultListPointerLocalCPU
-    , uint32_t*& resultListPointerIterNumbCPU
-    , uint32_t*& metaDataArrPointerCPU
-    , uint32_t*& workQueuePointerCPU
-    , uint32_t*& origArrsCPU
-    , const int WIDTH, const int HEIGHT, const int DEPTH
-) {
+inline occupancyCalcData getOccupancy() {
 
-    //cudaDeviceReset();
-    cudaError_t syncErr;
-    cudaError_t asyncErr;
-    int device = 0;
-    unsigned int cpuIterNumb = -1;
-    cudaDeviceProp deviceProp;
-    cudaGetDevice(&device);
-    cudaGetDeviceProperties(&deviceProp, device);
+    occupancyCalcData res;
+
     int blockSize; // The launch configurator returned block size
     int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
     int gridSize; // The actual grid size needed, based on input size
@@ -1812,8 +1405,8 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
         &blockSize,
         (void*)getMinMaxes<T>,
         0);
-    int warpsNumbForMinMax = blockSize / 32;
-    int blockSizeForMinMax = minGridSize;
+    res.warpsNumbForMinMax = blockSize / 32;
+    res.blockSizeForMinMax = minGridSize;
 
     // for min maxes kernel 
     cudaOccupancyMaxPotentialBlockSize(
@@ -1821,238 +1414,122 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
         &blockSize,
         (void*)boolPrepareKernel<T>,
         0);
-    int warpsNumbForboolPrepareKernel = blockSize / 32;
-    int blockSizeFoboolPrepareKernel = minGridSize;
+    res.warpsNumbForboolPrepareKernel = blockSize / 32;
+    res.blockSizeFoboolPrepareKernel = minGridSize;
     // for first meta pass kernel
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
         (void*)boolPrepareKernel<T>,
         0);
-    int theadsForFirstMetaPass = blockSize;
-    int blockForFirstMetaPass = minGridSize;
+    res.theadsForFirstMetaPass = blockSize;
+    res.blockForFirstMetaPass = minGridSize;
     //for main pass kernel
     cudaOccupancyMaxPotentialBlockSize(
         &minGridSize,
         &blockSize,
         (void*)mainPassKernel<T>,
         0);
-    int warpsNumbForMainPass = blockSize / 32;
-    int blockForMainPass = minGridSize;
-    printf("warpsNumbForMainPass %d blockForMainPass %d  ", warpsNumbForMainPass, blockForMainPass);
+    res.warpsNumbForMainPass = blockSize / 32;
+    res.blockForMainPass = minGridSize;
 
-
-    // warpsNumbForMainPass = 5;
-    //blockForMainPass = 1;
-    blockSizeForMinMax = 1;
-
+    printf("warpsNumbForMainPass %d blockForMainPass %d  ", res.warpsNumbForMainPass, res.blockForMainPass);
+    return res;
+}
 
 
 
 
-    //pointers ...
-    uint32_t* resultListPointerMeta;
-    uint32_t* resultListPointerLocal;
-    uint32_t* resultListPointerIterNumb;
-
-    uint32_t* origArrsPointer;
-    uint32_t* mainArrAPointer;
-    uint32_t* mainArrBPointer;
-    uint32_t* metaDataArrPointer;
-
-    uint32_t* workQueuePointer;
-
-
-
-    //main arrays allocations
-    T* goldArrPointer;
-    T* segmArrPointer;
-    //size_t sizeMainArr = (sizeof(T) * WIDTH * HEIGHT * DEPTH);
-    size_t sizeMainArr = (sizeof(T) * WIDTH * HEIGHT * DEPTH);
-
-    cudaMallocAsync(&goldArrPointer, sizeMainArr, 0);
-    cudaMallocAsync(&segmArrPointer, sizeMainArr, 0);
-
-    cudaMemcpyAsync(goldArrPointer, fFArgs.goldArr.arrP, sizeMainArr, cudaMemcpyHostToDevice, 0);
-    cudaMemcpyAsync(segmArrPointer, fFArgs.segmArr.arrP, sizeMainArr, cudaMemcpyHostToDevice, 0);
-
-
-    array3dWithDimsGPU<T> goldArr;
-    array3dWithDimsGPU<T> segmArr;
-
-    goldArr.arrP = goldArrPointer;
-    goldArr.Nx = WIDTH;
-    goldArr.Ny = HEIGHT;
-    goldArr.Nz = DEPTH;
-
-
-
-    segmArr.arrP = segmArrPointer;
-    segmArr.Nx = WIDTH;
-    segmArr.Ny = HEIGHT;
-    segmArr.Nz = DEPTH;
-    checkCuda(cudaDeviceSynchronize(), "a0a");
-
-    unsigned int* minMaxes;
-    size_t sizeminMaxes = sizeof(unsigned int) * 20;
-    cudaMallocAsync(&minMaxes, sizeminMaxes, 0);
 
 
 
 
-    checkCuda(cudaDeviceSynchronize(), "a0b");
-    ForBoolKernelArgs<T> fbArgs = getArgsForKernel<T>(fFArgs, goldArrPointer, segmArrPointer, minMaxes, warpsNumbForMainPass, blockForMainPass, WIDTH, HEIGHT, DEPTH);
-    fbArgs.metaData.minMaxes = minMaxes;
-    fbArgs.minMaxes = minMaxes;
 
 
-    fbArgs.goldArr = goldArr;
-    fbArgs.segmArr = segmArr;
 
 
-    ////preparation kernel
 
-    // initialize, then launch
+/*
+TODO consider representing as a CUDA graph
+executing Algorithm as CUDA graph  based on official documentation and
+https://codingbyexample.com/2020/09/25/cuda-graph-usage/
+*/
+#pragma once
+template <typename T>
+ForBoolKernelArgs<T> executeHausdoffGraph(ForFullBoolPrepArgs<T> fFArgs, const int WIDTH, const int HEIGHT, const int DEPTH, occupancyCalcData occData) {
+
+    // For Graph
+    cudaStream_t streamForGraph;
+    cudaGraph_t graph;
+    std::vector<cudaGraphNode_t> nodeDependencies;
+    cudaGraphNode_t memcpyNode, kernelNode;
+    cudaKernelNodeParams kernelNodeParams = { 0 };
+    //  cudaMemcpyParams memcpyParams = { 0 };
+
+
+
+    ForBoolKernelArgs<T> fbArgs = getArgsForKernel<T>(fFArgs, occData.warpsNumbForMainPass, occData.blockForMainPass, WIDTH, HEIGHT, DEPTH);
 
     checkCuda(cudaDeviceSynchronize(), "a1");
 
-
     //getMinMaxes << <blockSizeForMinMax, dim3(32, warpsNumbForMinMax) >> > ( minMaxes);
-    getMinMaxes << <blockSizeForMinMax, dim3(32, warpsNumbForMinMax) >> > (fbArgs, minMaxes, goldArrPointer, segmArrPointer, fbArgs.metaData);
+    getMinMaxes << <occData.blockSizeForMinMax, dim3(32, occData.warpsNumbForMinMax) >> > (fbArgs, fbArgs.minMaxes, fbArgs.goldArr.arrP, fbArgs.segmArr.arrP, fbArgs.metaData);
 
     checkCuda(cudaDeviceSynchronize(), "a1b");
 
-
-    checkCuda(cudaDeviceSynchronize(), "a2a");
-
-    fbArgs.metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs, workQueuePointer, minMaxes, fbArgs.metaData, origArrsPointer, metaDataArrPointer);
+    fbArgs.metaData = allocateMemoryAfterMinMaxesKernel(fbArgs, fFArgs);
 
     checkCuda(cudaDeviceSynchronize(), "a2b");
 
-    boolPrepareKernel << <blockSizeFoboolPrepareKernel, dim3(32, warpsNumbForboolPrepareKernel) >> > (fbArgs, fbArgs.metaData, origArrsPointer, metaDataArrPointer, goldArrPointer, segmArrPointer, minMaxes);
-    //  //uint32_t* origArrs, uint32_t* metaDataArr     metaDataArr[linIdexMeta * metaData.metaDataSectionLength     metaDataOffset
+    boolPrepareKernel << <occData.blockSizeFoboolPrepareKernel, dim3(32, occData.warpsNumbForboolPrepareKernel) >> > (
+        fbArgs, fbArgs.metaData, fbArgs.origArrsPointer, fbArgs.metaDataArrPointer, fbArgs.goldArr.arrP, fbArgs.segmArr.arrP, fbArgs.minMaxes);
 
     checkCuda(cudaDeviceSynchronize(), "a3");
 
-
-
-    int fpPlusFn = allocateMemoryAfterBoolKernel(fbArgs, fFArgs, resultListPointerMeta, resultListPointerLocal, resultListPointerIterNumb, origArrsPointer, mainArrAPointer, mainArrBPointer, fbArgs.metaData, goldArr, segmArr);
-
-
-
+    int fpPlusFn = allocateMemoryAfterBoolKernel(fbArgs, fFArgs);
 
     checkCuda(cudaDeviceSynchronize(), "a4");
 
-    //cudaFreeAsync(goldArrPointer, 0);
-    //cudaFreeAsync(segmArrPointer, 0);
 
-    firstMetaPrepareKernel << <blockForFirstMetaPass, theadsForFirstMetaPass >> > (fbArgs, fbArgs.metaData, minMaxes, workQueuePointer, origArrsPointer, metaDataArrPointer);
+    firstMetaPrepareKernel << <occData.blockForFirstMetaPass, occData.theadsForFirstMetaPass >> > (fbArgs, fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.origArrsPointer, fbArgs.metaDataArrPointer);
 
     checkCuda(cudaDeviceSynchronize(), "a5");
-    //void* kernel_args[] = { &fbArgs, mainArrPointer,&metaData,minMaxes, workQueuePointer,resultListPointerMeta,resultListPointerLocal, resultListPointerIterNumb };
 
-
-
-    //fbArgs.goldArr = goldArr;
-    //fbArgs.segmArr = segmArr;
-    //fbArgs.metaData = metaData;
-
-    fbArgs.resultListPointerMeta = resultListPointerMeta;
-    fbArgs.resultListPointerLocal = resultListPointerLocal;
-    fbArgs.resultListPointerIterNumb = resultListPointerIterNumb;
-
-    fbArgs.origArrsPointer = origArrsPointer;
-    fbArgs.mainArrAPointer = mainArrAPointer;
-    fbArgs.mainArrBPointer = mainArrBPointer;
-
-
-    fbArgs.metaDataArrPointer = metaDataArrPointer;
-    fbArgs.workQueuePointer = workQueuePointer;
-    fbArgs.minMaxes = minMaxes;
     void* kernel_args[] = { &fbArgs };
+    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), occData.blockForMainPass, dim3(32, occData.warpsNumbForMainPass), kernel_args);
 
 
-    cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), blockForMainPass, dim3(32, warpsNumbForMainPass), kernel_args);
+    cudaFreeAsync(fbArgs.resultListPointerMeta, 0);
+    cudaFreeAsync(fbArgs.resultListPointerLocal, 0);
+    cudaFreeAsync(fbArgs.resultListPointerIterNumb, 0);
+    cudaFreeAsync(fbArgs.workQueuePointer, 0);
+    cudaFreeAsync(fbArgs.origArrsPointer, 0);
+    cudaFreeAsync(fbArgs.metaDataArrPointer, 0);
+    cudaFreeAsync(fbArgs.mainArrAPointer, 0);
+    cudaFreeAsync(fbArgs.mainArrBPointer, 0);
 
+    return fbArgs;
 
-
-    checkCuda(cudaDeviceSynchronize(), "a6");
-
-
-    auto metaData = fbArgs.metaData;
-    size_t sizeMinnMax = sizeof(unsigned int) * 20;
-
-    cudaMemcpy(fFArgs.metaData.minMaxes, minMaxes, sizeMinnMax, cudaMemcpyDeviceToHost);
-
-    //copy to CPU
-    size_t sizeCPU = metaData.totalMetaLength * fbArgs.metaData.mainArrSectionLength * sizeof(uint32_t);
-    reducedResCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-    cudaMemcpy(reducedResCPU, mainArrAPointer, sizeCPU, cudaMemcpyDeviceToHost);
-
-    origArrsCPU = (uint32_t*)calloc(metaData.totalMetaLength * metaData.mainArrSectionLength, sizeof(uint32_t));
-    cudaMemcpy(origArrsCPU, origArrsPointer, sizeCPU, cudaMemcpyDeviceToHost);
-
-
-    size_t sizeRes = sizeof(uint32_t) * (fpPlusFn + 50);
-
-
-    resultListPointerMetaCPU = (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-    resultListPointerLocalCPU = (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-    resultListPointerIterNumbCPU = (uint32_t*)calloc(fpPlusFn + 50, sizeof(uint32_t));
-    cudaMemcpy(resultListPointerMetaCPU, resultListPointerMeta, sizeRes, cudaMemcpyDeviceToHost);
-
-    cudaMemcpy(resultListPointerLocalCPU, resultListPointerLocal, sizeRes, cudaMemcpyDeviceToHost);
-
-    cudaMemcpy(resultListPointerIterNumbCPU, resultListPointerIterNumb, sizeRes, cudaMemcpyDeviceToHost);
-
-    size_t sizemetaDataArr = metaData.totalMetaLength * (20) * sizeof(uint32_t);
-    metaDataArrPointerCPU = (uint32_t*)calloc(metaData.totalMetaLength * (20), sizeof(uint32_t));
-    cudaMemcpy(metaDataArrPointerCPU, metaDataArrPointer, sizemetaDataArr, cudaMemcpyDeviceToHost);
-
-    size_t sizeC = (metaData.totalMetaLength * sizeof(uint32_t));
-
-    workQueuePointerCPU = (uint32_t*)calloc(metaData.totalMetaLength, sizeof(uint32_t));
-    cudaMemcpy(workQueuePointerCPU, workQueuePointer, sizeC, cudaMemcpyDeviceToHost);
+}
 
 
 
-    checkCuda(cudaDeviceSynchronize(), "a7");
+#pragma once
+template <typename T>
+ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, const int WIDTH, const int HEIGHT, const int DEPTH
+) {
+
+    //cudaDeviceReset();
+    cudaError_t syncErr;
+    cudaError_t asyncErr;
+
+    occupancyCalcData occData = getOccupancy<T>();
+
+    //pointers ...
 
 
+    ForBoolKernelArgs<T> fbArgs = executeHausdoffGraph(fFArgs, WIDTH, HEIGHT, DEPTH, occData);
 
-
-
-
-    //  //cudaLaunchCooperativeKernel((void*)mainPassKernel<int>, deviceProp.multiProcessorCount, fFArgs.threadsMainPass, fbArgs);
-
-
-
-
-    //  ////copyDeviceToHost3d(goldArr, fFArgs.goldArr);
-    //  ////copyDeviceToHost3d(segmArr, fFArgs.segmArr);
-    //  //// getting arrays allocated on  cpu to 
-
-
-    //  //copyMetaDataToCPU(fFArgs.metaData, fbArgs.metaData);
-
-    //  //// printForDebug(fbArgs, fFArgs, resultListPointer, mainArrPointer, workQueuePointer, metaData);
-
-
-    //  checkCuda(cudaDeviceSynchronize(), "just after copy device to host");
-    //  //cudaGetLastError();
-
-    //cudaFreeAsync(goldArrPointer, 0);
-    //cudaFreeAsync(segmArrPointer, 0);
-
-
-    cudaFreeAsync(resultListPointerMeta, 0);
-    cudaFreeAsync(resultListPointerLocal, 0);
-    cudaFreeAsync(resultListPointerIterNumb, 0);
-    cudaFreeAsync(workQueuePointer, 0);
-    cudaFreeAsync(origArrsPointer, 0);
-    cudaFreeAsync(metaDataArrPointer, 0);
-    cudaFreeAsync(mainArrAPointer, 0);
-    cudaFreeAsync(mainArrBPointer, 0);
 
 
 
@@ -2067,13 +1544,8 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, uint32_t*& re
 
     cudaDeviceReset();
 
-    ForBoolKernelArgs<T> res;
-    return res;
-    // return fbArgs;
+    return fbArgs;
 }
-
-
-
 
 
 
@@ -2086,634 +1558,38 @@ inline void setArrCPUB(bool* arrCPU, int x, int y, int z, int  Nx, int Ny) {
 
 
 
-//testing loopMeta function in order to execute test unhash proper function in loopMeta
-#pragma once
-extern "C" inline void testMainPasswes() {
-    // threads and blocks for bool kernel
-    const int blocks = 17;
-    const int xThreadDim = 32;
-    const int yThreadDim = 12;
-    const dim3 threads = dim3(xThreadDim, yThreadDim);
-    // threads and blocks for first metadata pass
-    int threadsFirstMetaDataPass = 32;
-    int blocksFirstMetaDataPass = 10;
-
-
-
-    //datablock dimensions
-    int dbXLength = xThreadDim;
-    int dbYLength = 5;
-    int dbZLength = 32;
-
-
-
-    //threads and blocks for main pass 
-    dim3 threadsMainPass = dim3(dbXLength, dbYLength);
-    int blocksMainPass = 7;
-    //threads and blocks for padding pass 
-    dim3 threadsPaddingPass = dim3(32, 11);
-    int blocksPaddingPass = 13;
-    //threads and blocks for non first metadata passes 
-    int threadsOtherMetaDataPasses = 32;
-    int blocksOtherMetaDataPasses = 7;
-
-
-    int minMaxesLength = 20;
-
-
-
-    //metadata
-    const int metaXLength = 5;//8
-    const int MetaYLength = 10;//30
-    const int MetaZLength = 30;//8
-
-
-    const int totalLength = metaXLength * MetaYLength * MetaZLength;
-
-    /*   int*** h_tensor;
-       h_tensor = alloc_tensorToZeros<int>(metaXLength, MetaYLength, MetaZLength);*/
-
-    int i, j, k, value = 0;
-
-    const int mainXLength = dbXLength * metaXLength;
-    const int mainYLength = 1200;//dbYLength * MetaYLength;
-    const int mainZLength = dbZLength * MetaZLength;
-
-
-    //main data arrays
-    bool* goldArr = alloc_tensorToZeros<bool>(mainXLength, mainYLength, mainZLength);
-
-    bool* segmArr = alloc_tensorToZeros<bool>(mainXLength, mainYLength, mainZLength);
-    MetaDataCPU metaData;
-    metaData.metaXLength = metaXLength;
-    metaData.MetaYLength = MetaYLength;
-    metaData.MetaZLength = MetaZLength;
-    metaData.totalMetaLength = totalLength;
-
-
-    size_t size = sizeof(unsigned int) * 20;
-    unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
-    metaData.minMaxes = minMaxesCPU;
-
-    int workQueueAndRLLength = 200;
-    int workQueueWidth = 4;
-    int resultListWidth = 5;
-    //allocating to semiarbitrrary size 
-    auto workQueuePointer = alloc_tensorToZeros<uint32_t>(workQueueAndRLLength, workQueueWidth, 1);
-
-
-
-
-    // arguments to pass
-    ForFullBoolPrepArgs<bool> forFullBoolPrepArgs;
-    forFullBoolPrepArgs.metaData = metaData;
-    forFullBoolPrepArgs.numberToLookFor = 2;
-    forFullBoolPrepArgs.dbXLength = dbXLength;
-    forFullBoolPrepArgs.dbYLength = dbYLength;
-    forFullBoolPrepArgs.dbZLength = dbZLength;
-    forFullBoolPrepArgs.goldArr = get3dArrCPU(goldArr, mainXLength, mainYLength, mainZLength);
-    forFullBoolPrepArgs.segmArr = get3dArrCPU(segmArr, mainXLength, mainYLength, mainZLength);
-    forFullBoolPrepArgs.threads = threads;
-    forFullBoolPrepArgs.blocks = blocks;
-
-    forFullBoolPrepArgs.threadsFirstMetaDataPass = threadsFirstMetaDataPass;
-    forFullBoolPrepArgs.blocksFirstMetaDataPass = blocksFirstMetaDataPass;
-
-    forFullBoolPrepArgs.threadsMainPass = threadsMainPass;
-    forFullBoolPrepArgs.blocksMainPass = blocksMainPass;
-
-    forFullBoolPrepArgs.threadsPaddingPass = threadsPaddingPass;
-    forFullBoolPrepArgs.blocksPaddingPass = blocksPaddingPass;
-
-    forFullBoolPrepArgs.threadsOtherMetaDataPasses = threadsOtherMetaDataPasses;
-    forFullBoolPrepArgs.blocksOtherMetaDataPasses = blocksOtherMetaDataPasses;
-
-    //populate segm  and gold Arr
-
-
-    auto arrGoldObj = forFullBoolPrepArgs.goldArr;
-    auto arrSegmObj = forFullBoolPrepArgs.segmArr;
-
-
-
-
-    for (int i = 0; i < 1; i++) {
-        setArrCPUB(segmArr, i, i, 0, mainXLength, mainYLength);//
-    }
-
-    for (int i = 0; i < 1; i++) {
-        setArrCPUB(goldArr, i, i, 900, mainXLength, mainYLength);//
-    }
-    /* int x = 0;
-     int y = 900;
-     int z = 0;
-     int Nx = 5 * 32;
-     goldArr[x + y * Nx] = true;*/
-
-
-     //900 - 720
-     //800 - 640
-
-    // goldArr[ 300 * 32 ] = true;
-
-
-    // goldArr[300 * 32] = true;
-
-     //int lenn = 900;
-     //goldArr[0] = true;
-     //segmArr[lenn] = true;
-     //goldArr[lenn] = true;
-     //segmArr[lenn] = true;
-     //segmArr[49*32] = true;
-
-
-
-     //int plane = mainXLength * mainYLength;
-
-     //for (int y = 0; y < mainXLength * (mainYLength / 2); y++) {
-     //    goldArr[y] = true;
-
-     //}
-
-     ////segmArr[plane+1] = true;
-
-     //int offset = plane * 3 * dbZLength;
-     ////for (int y = offset; y < offset + mainXLength * (mainYLength / 2); y++) {
-     ////	segmArr[y] = true;
-
-     ////}
-
-
-
-     ////
-     //offset = mainXLength * mainYLength * mainZLength - (plane * 4);
-     //for (int y = offset; y < offset + mainXLength * (mainYLength / 2); y++) {
-     //    segmArr[y] = true;
-
-     //}
-
-
-
-
-     //int pointsNumber = 0;
-     //int& pointsNumberRef = pointsNumber;
-     //forTestPointStruct allPointsA[] = {
-     //	// meta 2,2,2 only gold points not in result after 2 dilataions
-     //getTestPoint(
-     //2,2,2//x,y,z
-     //,true//isGold
-     //,0,0,0//xMeta,yMeta,Zmeta
-     //,dbXLength,dbYLength,dbZLength,pointsNumberRef)
-     //};
-
-     /*
-     maxX 2  [1]
- minX 1  [2]
- maxY 1  [3]
- minY 0  [4]
- maxZ 5  [5]
- minZ 2  [6]
-     */
-
-
-    printf("\n aaa \n");
-
-    uint32_t* resultListPointerMetaCPU;
-    uint32_t* resultListPointerLocalCPU;
-    uint32_t* resultListPointerIterNumbCPU;
-    uint32_t* metaDataArrPointerCPU;
-    uint32_t* workQueuePointerCPU;
-
-    uint32_t* reducedResCPU;
-    uint32_t* origArrsCPU;
-
-
-
-    ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
-        , resultListPointerLocalCPU, resultListPointerIterNumbCPU
-        , metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, mainXLength, mainYLength, mainZLength
-    );
-
-    //for (int outer = 0; outer< ceil(lenn/ int(32)); outer++ ) {
-    //	for (int u = 0; u < 32; u++) {
-    //		int coord = outer * 32 + u;
-
-
-    //		//3printf("set %d in %d \n  ", (reducedResCPU[u] >0), u);
-    //	}
-    //}
-
-
-
-
-
-
-
-    //for (uint32_t linIdexMeta = 0; linIdexMeta < fbArgs.metaData.totalMetaLength; linIdexMeta += 1) {
-    //	//we get from linear index  the coordinates of the metadata block of intrest
-    //	uint8_t xMeta = linIdexMeta % fbArgs.metaData.metaXLength;
-    //	uint8_t zMeta = floor((float)(linIdexMeta / (fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength)));
-    //	uint8_t yMeta = floor((float)((linIdexMeta - ((zMeta * fbArgs.metaData.metaXLength * fbArgs.metaData.MetaYLength) + xMeta)) / fbArgs.metaData.metaXLength));
-
-    //	for (int locPos = 0; locPos < 32 * fbArgs.dbYLength; locPos++) {
-    //		auto col = reducedResCPU[linIdexMeta * fbArgs.metaData.mainArrSectionLength + locPos];
-    //		if (col > 0) {
-    //			for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
-    //				int x = locPos % 32 + xMeta * fbArgs.dbXLength;
-    //				int y = int(floor((float)(locPos / 32)) + yMeta * fbArgs.dbYLength);
-    //				int z = bitPos + zMeta * fbArgs.dbZLength;
-
-    //				if (y==0 && z==0) {
-    //					if (isBitAtCPU(col, bitPos)) {
-    //						printf("point gold set at x %d y %d z %d  \n"
-    //							, locPos % 32 + xMeta * fbArgs.dbXLength
-    //							, int(floor((float)(locPos / 32)) + yMeta * fbArgs.dbYLength)
-    //							, bitPos + zMeta * fbArgs.dbZLength
-    //						);
-    //					}
-    //				}
-    //			}
-    //		}
-    //	}
-
-
-    //	//for (int locPos = 32 * fbArgs.dbYLength; locPos < 32 * 2 * fbArgs.dbYLength; locPos++) {
-    //	//	auto col = reducedResCPU[linIdexMeta * fbArgs.metaData.mainArrSectionLength + locPos];
-    //	//	if (col > 0) {
-    //	//		for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
-    //	//			if (isBitAtCPU(col, bitPos)) {
-    //	//				int locPosB = locPos - 32 * fbArgs.dbYLength;
-    //	//				int x = locPosB % 32 + xMeta * fbArgs.dbXLength;
-    //	//				int y = int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength);
-    //	//				int z = bitPos + zMeta * fbArgs.dbZLength;
-    //	//				if (y == 0 && z == 0) {
-
-    //	//					printf("point segm  set at x %d y %d z %d  \n"
-    //	//						, locPosB % 32 + xMeta * fbArgs.dbXLength
-    //	//						, int(floor((float)(locPosB / 32)) + yMeta * fbArgs.dbYLength)
-    //	//						, bitPos + zMeta * fbArgs.dbZLength
-    //	//					);
-    //	//				}
-    //	//			}
-    //	//		}
-    //	//	}
-    //	//}
-
-
-    //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //testDilatations(fbArgs, allPointsA, );
-
-
-
-
-
-
-    //printFromReduced(fbArgs, reducedResCPU);
-    //printIsBlockActiveEtc(fbArgs, metaDataArrPointerCPU, fbArgs.metaData);
-
-
-    //for (int wQi = 0; wQi < minMaxesCPU[9]; wQi ++ ) {
-    //	printf("in work q %d  \n ", workQueuePointerCPU[wQi] - isGoldOffset * (workQueuePointerCPU[wQi] >= isGoldOffset) );
-    //}
-
-    //for (int wQi = 0; wQi < 700; wQi++) {
-    //	if (metaDataArrPointerCPU[wQi]==1) {
-    //		printf("\n in metadaArr i %d  \n ", wQi);
-    //	}
-    //}
-
-    //info in padding AND range 14 linMeta 2 new block adress 30   inMetadataArrIndex 612
-    //	info in padding AND range 15 linMeta 2 new block adress 1   inMetadataArrIndex 32
-    //	info in padding AND range 14 linMeta 0 new block adress 28   inMetadataArrIndex 571
-
-//printf(" for cpu results ranges xMeta %d yMeta %d zMeta %d ", fbArgs.metaData.metaXLength, fbArgs.metaData.MetaYLength, fbArgs.metaData.MetaZLength);
-
-
-    unsigned int xRange = minMaxesCPU[1] - minMaxesCPU[2] + 1;
-    unsigned int yRange = minMaxesCPU[3] - minMaxesCPU[4] + 1;
-    unsigned int zRange = minMaxesCPU[5] - minMaxesCPU[6] + 1;
-
-    printf("before results xRange %d yRange %d zRange %d \n", xRange, yRange, zRange);
-    dbYLength = 12;
-    for (int i = 0; i < 5; i++) {
-        if (resultListPointerLocalCPU[i] > 0 || resultListPointerMetaCPU[i] > 0) {
-            uint32_t linIdexMeta = resultListPointerMetaCPU[i] - (isGoldOffset * (resultListPointerMetaCPU[i] >= isGoldOffset)) - 1;
-            uint32_t xMeta = linIdexMeta % xRange;
-            uint32_t zMeta = uint32_t(floor((float)(linIdexMeta / (xRange * yRange))));
-            uint32_t yMeta = uint32_t(floor((float)((linIdexMeta - ((zMeta * xRange * yRange) + xMeta)) / xRange)));
-
-            uint32_t linLocal = resultListPointerLocalCPU[i];
-            uint32_t xLoc = linLocal % 32;
-            uint32_t zLoc = uint32_t(floor((float)(linLocal / (32 * dbYLength))));
-            uint32_t yLoc = uint32_t(floor((float)((linLocal - ((zLoc * 32 * dbYLength) + xLoc)) / 32)));
-
-
-            uint32_t x = xMeta * 32 + xLoc;
-            uint32_t y = yMeta * dbYLength + yLoc;
-            uint32_t z = zMeta * 32 + zLoc;
-            uint32_t iterNumb = resultListPointerIterNumbCPU[i];
-
-            printf("resullt linIdexMeta %d x %d y %d z %d  xMeta %d yMeta %d zMeta %d xLoc %d yLoc %d zLoc %d linLocal %d  iterNumb %d \n"
-                , linIdexMeta
-                , x, y, z
-                , xMeta, yMeta, zMeta
-                , xLoc, yLoc, zLoc
-                , linLocal
-                , iterNumb
-
-
-            );
-
-
-
-        }
-    }
-
-
-
-
-
-    printf("\n **************************************** \n");
-
-    i = 1;
-    printf("maxX %d  [%d]\n", minMaxesCPU[i], i);
-    i = 2;
-    printf("minX %d  [%d]\n", minMaxesCPU[i], i);
-    i = 3;
-    printf("maxY %d  [%d]\n", minMaxesCPU[i], i);
-    i = 4;
-    printf("minY %d  [%d]\n", minMaxesCPU[i], i);
-    i = 5;
-    printf("maxZ %d  [%d]\n", minMaxesCPU[i], i);
-    i = 6;
-    printf("minZ %d  [%d]\n", minMaxesCPU[i], i);
-
-    int ii = 7;
-    printf("global FP count %d  [%d]\n", minMaxesCPU[ii], ii);
-    ii = 8;
-    printf("global FN count %d  [%d]\n", minMaxesCPU[ii], ii);
-    ii = 9;
-    printf("workQueueCounter %d  [%d]\n", minMaxesCPU[ii], ii);
-    ii = 10;
-    printf("resultFP globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
-    ii = 11;
-    printf("resultFn globalCounter %d  [%d]\n", minMaxesCPU[ii], ii);
-    ii = 12;
-    printf("global offset counter %d  [%d]\n", minMaxesCPU[ii], ii);
-
-    ii = 13;
-    printf("globalIterationNumb %d  [%d]\n", minMaxesCPU[ii], ii);
-    ii = 17;
-    printf("suum debug %d  [%d]\n", minMaxesCPU[ii], ii);
-
-
-
-
-
-    //i, j, k, value = 0;
-    //i = 31;
-    //j = 12;
-    //for (k = 0; k < MetaZLength; k++) {
-    //	goldArr[k][j][i] = 1;
-    //	if (reducedGold[k][j][i] > 0) {
-    //		for (int tt = 0; tt < 32; tt++) {
-    //			if ((reducedGold[k][j][i] & (1 << (tt)))) {
-    //				printf("found in reduced fp  [%d]\n", k * 32 + tt);
-
-    //			}
-    //		}
-
-    //	}
-    //}
-
-
-    //		i, j, k, value = 0;
-    //for (i = 0; i < mainXLength; i++) {
-    //	for (j = 0; j < mainYLength; j++) {
-    //		for (k = 0; k < MetaZLength; k++) {
-    //			//goldArr[k][j][i] = 1;
-    //			if (reducedGold[k][j][i] > 0) {
-    //				for (int tt = 0; tt < 32; tt++) {
-    //					if ((reducedGold[k][j][i] & (1 << (tt)))) {
-    //						printf("found in reduced fp  [%d][%d][%d]\n", i, j, k * 32 + tt);
-
-    //					}
-    //				}
-
-    //			}
-    //		}
-    //	}
-    //}
-
-
-
-
-
-
-    //minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]
-
-    //int sumDebug = 0;
-    //for (int ji = 0; ji < 8000; ji++) {
-    //	if (forDebugArr[0][0][ji]==1) {
-    //		sumDebug += forDebugArr[0][0][ji];
-    //		//printf("for debug %d i %d \n", forDebugArr[0][0][ji],ji);
-    //	}
-    //}
-    //printf("\n sumDebug %d \n", sumDebug);
-
-
-//
-//
-//	//	for (int ji = 0; ji < minMaxes.arrP[0][0][10] + minMaxes.arrP[0][0][11]; ji++) {
-//		for (int ji = 0; ji < 10; ji++) {
-//    if (forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji] + forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji]  > 0) {
-//   	 int x = forFullBoolPrepArgs.metaData.resultList.arrP[0][0][ji];
-//	 int y = forFullBoolPrepArgs.metaData.resultList.arrP[0][1][ji];
-//	 int z = forFullBoolPrepArgs.metaData.resultList.arrP[0][2][ji];
-//	 int isGold = forFullBoolPrepArgs.metaData.resultList.arrP[0][3][ji];
-//	 int iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[0][4][ji];
-//
-//	 //uint32_t x = forFullBoolPrepArgs.metaData.resultList.arrP[ji][0][0];
-//	 //uint32_t y = forFullBoolPrepArgs.metaData.resultList.arrP[ji][1][0];
-//	 //uint32_t z = forFullBoolPrepArgs.metaData.resultList.arrP[ji][2][0];
-//	 //uint32_t isGold = forFullBoolPrepArgs.metaData.resultList.arrP[ji][3][0];
-//	 //uint32_t iternumb = forFullBoolPrepArgs.metaData.resultList.arrP[ji][4][0];
-//
-//
-//   	 if (iternumb!=9) {
-//   		 printf("result  in point  %d %d %d isGold %d iteration %d \n "
-//   			 , x
-//   			 , y
-//   			 , z
-//   			 , isGold
-//   			 , iternumb);
-//   	 }
-//   	 else {
-//   		 printf("**");
-//   	 }
-//
-//    }
-//}
-
-
-
-
-
-
-     //for (int i = 0; i < workQueueAndRLLength; i++) {
-
-        // if (workQueuePointer[0][2][i] > 0) {
-        //	 printf("work queue [%d][%d][%d] = [%d][%d][%d][%d]\n"
-        //		 , 0, 0, i
-        //		 , workQueuePointer[0][0][i]
-        //		 , workQueuePointer[0][1][i]
-        //		 , workQueuePointer[0][2][i]
-        //		 , workQueuePointer[0][3][i]
-        //	 );
-        // }
-
-     //}
-
-
-
-
-
-
-    printf("cleaaning");
-
-
-
-    free(goldArr);
-    free(segmArr);
-
-
-    free(resultListPointerMetaCPU);
-    free(resultListPointerLocalCPU);
-    free(resultListPointerIterNumbCPU);
-    free(metaDataArrPointerCPU);
-    free(workQueuePointerCPU);
-
-    free(reducedResCPU);
-    free(origArrsCPU);
-
-
-
-}
-
-
-
-
-
-
-
 
 
 
 void loadHDFIntoBoolArr(H5std_string FILE_NAME, H5std_string DATASET_NAME, bool*& data) {
-    /*
-     * Open the specified file and the specified dataset in the file.
-     */
-    H5File file(FILE_NAME, H5F_ACC_RDONLY);
-    DataSet dset = file.openDataSet(DATASET_NAME);
+
+
+
+
+    H5::H5File file(FILE_NAME, H5F_ACC_RDONLY);
+    H5::DataSet dset = file.openDataSet(DATASET_NAME);
     /*
      * Get the class of the datatype that is used by the dataset.
      */
     H5T_class_t type_class = dset.getTypeClass();
-    DataSpace dspace = dset.getSpace();
+    H5::DataSpace dspace = dset.getSpace();
     int rank = dspace.getSimpleExtentNdims();
 
 
     hsize_t dims[2];
     rank = dspace.getSimpleExtentDims(dims, NULL); // rank = 1
-    cout << "Datasize: " << dims[0] << endl; // this is the correct number of values
+    printf("Datasize: %d \n ", dims[0]); // this is the correct number of values
 
-    // Define the memory dataspace
+     // Define the memory dataspace
     hsize_t dimsm[1];
     dimsm[0] = dims[0];
-    DataSpace memspace(1, dimsm);
-
-
+    H5::DataSpace memspace(1, dimsm);
 
     data = (bool*)calloc(dims[0], sizeof(bool));
 
-
-
-
-    dset.read(data, PredType::NATIVE_HBOOL, memspace, dspace);
-
-
-    //int sum = 0;
-    //for (int i = 0; i < dims[0]; i++) {
-    //    sum += data[i];
-    //}
-    //printf("suuum %d \n  ", sum);
-
+    dset.read(data, H5::PredType::NATIVE_HBOOL, memspace, dspace);
 
     file.close();
-
-}
-
-
-
-/*
-benchmark for original code from  https://github.com/Oyatsumi/HausdorffDistanceComparison
-*/
-void benchmarkOliviera(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const int WIDTH, const int HEIGHT, const int DEPTH) {
-    Volume img1 = Volume(WIDTH, HEIGHT, DEPTH), img2 = Volume(WIDTH, HEIGHT, DEPTH);
-
-    for (int x = 0; x < WIDTH; x++) {
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int z = 0; z < DEPTH; z++) {
-                img1.setVoxelValue(onlyLungsBoolFlat[x + y * WIDTH + z * WIDTH * HEIGHT], x, y, z);
-                img2.setVoxelValue(onlyBladderBoolFlat[x + y * WIDTH + z * WIDTH * HEIGHT], x, y, z);
-            }
-        }
-    }
-
-
-
-    auto begin = std::chrono::high_resolution_clock::now();
-
-
-    HausdorffDistance* hd = new HausdorffDistance();
-    int dist = (*hd).computeDistance(&img1, &img2);
-
-
-
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::cout << "Total elapsed time: ";
-    std::cout << (double)(std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / (double)1000000000) << "s" << std::endl;
-
-    printf("HD: %d \n", dist);
-
-    //freeing memory
-    img1.dispose(); img2.dispose();
-
-    //Datasize: 216530944
-    //Datasize : 216530944
-    //Total elapsed time : 2.62191s
-    //HD : 234 or 274 
-
-
-    //reversed args
-         //Total elapsed time : 1.44947s
-     //    HD : 146
 
 }
 
@@ -2733,34 +1609,18 @@ void benchmarkMitura(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const i
     forFullBoolPrepArgs.metaData = metaData;
     forFullBoolPrepArgs.numberToLookFor = true;
     forFullBoolPrepArgs.goldArr = get3dArrCPU(onlyBladderBoolFlat, WIDTH, HEIGHT, DEPTH);
-   // forFullBoolPrepArgs.goldArr = get3dArrCPU(onlyBladderBoolFlat, WIDTH, DEPTH, HEIGHT);
     forFullBoolPrepArgs.segmArr = get3dArrCPU(onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);
-   // forFullBoolPrepArgs.segmArr = get3dArrCPU(onlyLungsBoolFlat, WIDTH, DEPTH, HEIGHT);
-    /// for debugging
-    uint32_t* resultListPointerMetaCPU;
-    uint32_t* resultListPointerLocalCPU;
-    uint32_t* resultListPointerIterNumbCPU;
-    uint32_t* metaDataArrPointerCPU;
-    uint32_t* workQueuePointerCPU;
-    uint32_t* reducedResCPU;
-    uint32_t* origArrsCPU;
 
+    occupancyCalcData occData = getOccupancy<bool>();
+
+    //pointers ...
 
     //function invocation
     auto begin = std::chrono::high_resolution_clock::now();
 
-    ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
-        , resultListPointerLocalCPU, resultListPointerIterNumbCPU
-        , metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, WIDTH, HEIGHT, DEPTH
-    );
+    // ForBoolKernelArgs<bool> fbArgs = executeHausdoff(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH, occData);
 
-
-    //ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, reducedResCPU, resultListPointerMetaCPU
-    //    , resultListPointerLocalCPU, resultListPointerIterNumbCPU
-    //    , metaDataArrPointerCPU, workQueuePointerCPU, origArrsCPU, WIDTH,  DEPTH, HEIGHT
-    //);
-
-
+    ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH);
     auto end = std::chrono::high_resolution_clock::now();
 
     std::cout << "Total elapsed time: ";
@@ -2778,55 +1638,385 @@ void benchmarkMitura(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const i
     free(onlyLungsBoolFlat);
 
 
-    free(resultListPointerMetaCPU);
-    free(resultListPointerLocalCPU);
-    free(resultListPointerIterNumbCPU);
-    free(metaDataArrPointerCPU);
-    free(workQueuePointerCPU);
 
-    free(reducedResCPU);
-    free(origArrsCPU);
 
 }
 
 
+
+
+
+
+
+typedef unsigned char uchar;
+typedef unsigned int uint;
+#pragma once
+class Volume {
+
+private:
+    bool* volume;
+    int width, height, depth;
+    int getLinearIndex(int x, int y, int z);
+public:
+    bool getVoxelValue(int x, int y, int z);
+    bool getPixelValue(int x, int y);
+    uint getWidth();
+    uint getHeight();
+    uint getDepth();
+    bool* getVolume();
+    void setVoxelValue(bool value, int x, int y, int z);
+    void setPixelValue(bool value, int x, int y);
+    Volume(int width, int height, int depth);
+    Volume(int width, int height);
+    void dispose();
+
+};
+
+
+
+
+#define CUDA_DEVICE_INDEX 0 //setting the index of your CUDA device
+
+#define IS_3D 1 //setting this to 0 would grant a very slightly improvement on the performance if working with images only
+#define CHEBYSHEV 0 //if not set to 1, then this algorithm would use an Euclidean-like metric, it is just an approximation. 
+//It can be changed according to the structuring element
+#pragma once
+class HausdorffDistance {
+
+private:
+    void print(cudaError_t error, char* msg);
+
+public:
+    int computeDistance(Volume* img1, Volume* img2);
+
+};
+
+
+inline Volume::Volume(const int width, const int height, const int depth) {
+    this->width = width; this->height = height; this->depth = depth;
+    volume = (bool*)calloc(width * height * depth, sizeof(bool));
+}
+
+#pragma once
+inline Volume::Volume(const int width, const int height) {
+    this->width = width; this->height = height; this->depth = 1;
+    volume = (bool*)calloc(width * height * depth, sizeof(bool));
+}
+#pragma once
+inline int Volume::getLinearIndex(const int x, const int y, const int z) {
+    const int a = 1, b = width, c = (width) * (height);
+    return a * x + b * y + c * z;
+}
+
+inline uint Volume::getWidth() { return this->width; }
+inline uint Volume::getHeight() { return this->height; }
+inline uint Volume::getDepth() { return this->depth; }
+inline bool* Volume::getVolume() { return this->volume; }
+inline bool Volume::getPixelValue(int x, int y) { return this->volume[getLinearIndex(x, y, 0)]; }
+#pragma once
+inline bool Volume::getVoxelValue(int x, int y, int z) {
+    return volume[getLinearIndex(x, y, z)];
+}
+#pragma once
+inline void Volume::setPixelValue(bool value, const int x, const int y) {
+    volume[getLinearIndex(x, y, 0)] = value;
+}
+#pragma once
+inline void Volume::setVoxelValue(bool value, const int x, const int y, const int z) {
+    volume[getLinearIndex(x, y, z)] = value;
+}
+#pragma once
+inline void Volume::dispose() {
+    free(volume);
+}
+
+typedef unsigned char uchar;
+typedef unsigned int uint;
+
+#pragma once
+__device__ int finished; //global variable that contains a boolean which indicates when to stop the kernel processing
+#pragma once
+__constant__ __device__ int WIDTH, HEIGHT, DEPTH; //constant variables that contain the size of the volume
+
+
+#pragma once
+__global__ void dilate(const bool* IMG1, const bool* IMG2, const bool* img1Read, const bool* img2Read,
+    bool* img1Write, bool* img2Write) {
+
+    const int id = blockDim.x * blockIdx.x + threadIdx.x;
+#if !IS_3D
+    const int x = id % WIDTH, y = id / WIDTH;
+#else
+    const int x = id % WIDTH, y = (id / WIDTH) % HEIGHT, z = (id / WIDTH) / HEIGHT;
+#endif
+
+    if (id < WIDTH * HEIGHT * DEPTH) {
+
+
+        if (img1Read[id]) {
+            if (x + 1 < WIDTH) img1Write[id + 1] = true;
+            if (x - 1 >= 0) img1Write[id - 1] = true;
+            if (y + 1 < HEIGHT) img1Write[id + WIDTH] = true;
+            if (y - 1 >= 0) img1Write[id - WIDTH] = true;
+#if IS_3D //if working with 3d volumes, then the 3D part
+            if (z + 1 < DEPTH) img1Write[id + WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0) img1Write[id - WIDTH * HEIGHT] = true;
+#endif
+
+#if CHEBYSHEV
+            //diagonals
+            if (x + 1 < WIDTH && y - 1 >= 0) img1Write[id - WIDTH + 1] = true;
+            if (x - 1 >= 0 && y - 1 >= 0) img1Write[id - WIDTH - 1] = true;
+            if (x + 1 < WIDTH && y + 1 < HEIGHT) img1Write[id + WIDTH + 1] = true;
+            if (x - 1 >= 0 && y + 1 < HEIGHT) img1Write[id + WIDTH - 1] = true;
+#if IS_3D //if working with 3d volumes, then the 3D part
+            if (z + 1 < DEPTH && x + 1 < WIDTH && y - 1 >= 0) img1Write[id - WIDTH + 1 + WIDTH * HEIGHT] = true;
+            if (z + 1 < DEPTH && x - 1 >= 0 && y - 1 >= 0) img1Write[id - WIDTH - 1 + WIDTH * HEIGHT] = true;
+            if (z + 1 < DEPTH && x + 1 < WIDTH && y + 1 < HEIGHT) img1Write[id + WIDTH + 1 + WIDTH * HEIGHT] = true;
+            if (z + 1 < DEPTH && x - 1 >= 0 && y + 1 < HEIGHT) img1Write[id + WIDTH - 1 + WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x + 1 < WIDTH && y - 1 >= 0) img1Write[id - WIDTH + 1 - WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x - 1 >= 0 && y - 1 >= 0) img1Write[id - WIDTH - 1 - WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x + 1 < WIDTH && y + 1 < HEIGHT) img1Write[id + WIDTH + 1 - WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x - 1 >= 0 && y + 1 < HEIGHT) img1Write[id + WIDTH - 1 - WIDTH * HEIGHT] = true;
+#endif
+#endif
+        }
+
+
+        if (img2Read[id]) {
+            if (x + 1 < WIDTH) img2Write[id + 1] = true;
+            if (x - 1 >= 0) img2Write[id - 1] = true;
+            if (y + 1 < HEIGHT) img2Write[id + WIDTH] = true;
+            if (y - 1 >= 0) img2Write[id - WIDTH] = true;
+#if IS_3D //if working with 3d volumes, then the 3D part
+            if (z + 1 < DEPTH) img2Write[id + WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0) img2Write[id - WIDTH * HEIGHT] = true;
+#endif
+
+#if CHEBYSHEV
+            //diagonals
+            if (x + 1 < WIDTH && y - 1 >= 0) img2Write[id - WIDTH + 1] = true;
+            if (x - 1 >= 0 && y - 1 >= 0) img2Write[id - WIDTH - 1] = true;
+            if (x + 1 < WIDTH && y + 1 < HEIGHT) img2Write[id + WIDTH + 1] = true;
+            if (x - 1 >= 0 && y + 1 < HEIGHT) img2Write[id + WIDTH - 1] = true;
+#if IS_3D //if working with 3d volumes, then the 3D part
+            if (z + 1 < DEPTH && x + 1 < WIDTH && y - 1 >= 0) img2Write[id - WIDTH + 1 + WIDTH * HEIGHT] = true;
+            if (z + 1 < DEPTH && x - 1 >= 0 && y - 1 >= 0) img2Write[id - WIDTH - 1 + WIDTH * HEIGHT] = true;
+            if (z + 1 < DEPTH && x + 1 < WIDTH && y + 1 < HEIGHT) img2Write[id + WIDTH + 1 + WIDTH * HEIGHT] = true;
+            if (z + 1 < DEPTH && x - 1 >= 0 && y + 1 < HEIGHT) img2Write[id + WIDTH - 1 + WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x + 1 < WIDTH && y - 1 >= 0) img2Write[id - WIDTH + 1 - WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x - 1 >= 0 && y - 1 >= 0) img2Write[id - WIDTH - 1 - WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x + 1 < WIDTH && y + 1 < HEIGHT) img2Write[id + WIDTH + 1 - WIDTH * HEIGHT] = true;
+            if (z - 1 >= 0 && x - 1 >= 0 && y + 1 < HEIGHT) img2Write[id + WIDTH - 1 - WIDTH * HEIGHT] = true;
+#endif
+#endif
+        }
+
+
+        //this is an atomic and computed to the finished global variable, if image 1 contains all of image 2 and image 2 contains all pixels of
+        //image 1 then finished is true
+        atomicAnd(&finished, (img2Read[id] || !IMG1[id]) && (img1Read[id] || !IMG2[id]));
+    }
+}
+
+#pragma once
+int HausdorffDistance::computeDistance(Volume* img1, Volume* img2) {
+
+    const int height = (*img1).getHeight(), width = (*img1).getWidth(), depth = (*img1).getDepth();
+
+    size_t size = width * height * depth * sizeof(bool);
+
+    //getting details of your CUDA device
+    cudaDeviceProp props;
+    cudaGetDeviceProperties(&props, CUDA_DEVICE_INDEX); //device index = 0, you can change it if you have more CUDA devices
+    const int threadsPerBlock = props.maxThreadsPerBlock / 2;
+    const int blocksPerGrid = (height * width * depth + threadsPerBlock - 1) / threadsPerBlock;
+
+
+    //copying the dimensions to the GPU
+    cudaMemcpyToSymbolAsync(WIDTH, &width, sizeof(width));
+    cudaMemcpyToSymbolAsync(HEIGHT, &height, sizeof(height));
+    cudaMemcpyToSymbolAsync(DEPTH, &depth, sizeof(depth));
+
+
+    //allocating the input images on the GPU
+    bool* d_img1, * d_img2;
+    cudaMalloc(&d_img1, size);
+    cudaMalloc(&d_img2, size);
+
+
+    //copying the data to the allocated memory on the GPU
+    cudaMemcpyAsync(d_img1, (*img1).getVolume(), size, cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_img2, (*img2).getVolume(), size, cudaMemcpyHostToDevice);
+
+
+    //allocating the images that will be the processing ones
+    bool* d_img1Write, * d_img1Read, * d_img2Write, * d_img2Read;
+    cudaMalloc(&d_img1Write, size); cudaMalloc(&d_img1Read, size);
+    cudaMalloc(&d_img2Write, size); cudaMalloc(&d_img2Read, size);
+
+
+    //cloning the input images to these two image versions (write and read)
+    cudaMemcpyAsync(d_img1Read, d_img1, size, cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(d_img2Read, d_img2, size, cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(d_img1Write, d_img1, size, cudaMemcpyDeviceToDevice);
+    cudaMemcpyAsync(d_img2Write, d_img2, size, cudaMemcpyDeviceToDevice);
+
+
+
+    //required variables to compute the distance
+    int h_finished = false, t = true;
+    int distance = -1;
+
+    //where the magic happens
+    while (!h_finished) {
+        //reset the bool variable that verifies if the processing ended
+        cudaMemcpyToSymbol(finished, &t, sizeof(h_finished));
+
+
+        //lauching the verify kernel, which verifies if the processing finished
+        dilate << < blocksPerGrid, threadsPerBlock >> > (d_img1, d_img2, d_img1Read, d_img2Read, d_img1Write, d_img2Write);
+
+        //cudaDeviceSynchronize();
+
+        //updating the imgRead (cloning imgWrite to imgRead)
+        cudaMemcpy(d_img1Read, d_img1Write, size, cudaMemcpyDeviceToDevice);
+        cudaMemcpy(d_img2Read, d_img2Write, size, cudaMemcpyDeviceToDevice);
+
+
+
+        //copying the result back to host memory
+        cudaMemcpyFromSymbol(&h_finished, finished, sizeof(h_finished));
+
+
+        //incrementing the distance at each iteration
+        distance++;
+    }
+
+
+    //freeing memory
+    cudaFree(d_img1); cudaFree(d_img2);
+    cudaFree(d_img1Write); cudaFree(d_img1Read);
+    cudaFree(d_img2Write); cudaFree(d_img2Read);
+
+    //resetting device
+    cudaDeviceReset();
+
+    print(cudaGetLastError(), "processing CUDA. Something may be wrong with your CUDA device.");
+
+    return distance;
+
+}
+#pragma once
+inline void HausdorffDistance::print(cudaError_t error, char* msg) {
+    if (error != cudaSuccess)
+    {
+        printf("Error on %s ", msg);
+        fprintf(stderr, "Error code: %s!\n", cudaGetErrorString(error));
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+
+/*
+benchmark for original code from  https://github.com/Oyatsumi/HausdorffDistanceComparison
+*/
+void benchmarkOliviera(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const int WIDTH, const int HEIGHT
+    , const int DEPTH) {
+    Volume img1 = Volume(WIDTH, HEIGHT, DEPTH), img2 = Volume(WIDTH, HEIGHT, DEPTH);
+
+    for (int x = 0; x < WIDTH; x++) {
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int z = 0; z < DEPTH; z++) {
+                img1.setVoxelValue(onlyLungsBoolFlat[x + y * WIDTH + z * WIDTH * HEIGHT], x, y, z);
+                img2.setVoxelValue(onlyBladderBoolFlat[x + y * WIDTH + z * WIDTH * HEIGHT], x, y, z);
+            }
+        }
+    }
+
+    auto begin = std::chrono::high_resolution_clock::now();
+    HausdorffDistance* hd = new HausdorffDistance();
+    int dist = (*hd).computeDistance(&img1, &img2);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::cout << "Total elapsed time: ";
+    std::cout << (double)(std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / (double)1000000000) << "s" << std::endl;
+
+    printf("HD: %d \n", dist);
+
+    //freeing memory
+    img1.dispose(); img2.dispose();
+
+    //Datasize: 216530944
+    //Datasize : 216530944
+    //Total elapsed time : 2.62191s
+    //HD : 234
+
+}
 
 void loadHDF() {
     const int WIDTH = 512;
     const int HEIGHT = 512;
-    const int DEPTH = 826;
+    //    const int DEPTH = 536;
 
+    int DEPTH = 826;
 
+    const H5std_string FILE_NAMEonlyLungsBoolFlat("D:\\dataSets\\forMainHDF5\\forHausdorffTests.hdf5");
 
-
-
-	//main data arrays
-	//bool* onlyBladderBoolFlat = alloc_tensorToZeros<bool>(WIDTH, HEIGHT, DEPTH);
-
-	//bool* onlyLungsBoolFlat = alloc_tensorToZeros<bool>(WIDTH, HEIGHT, DEPTH);
-
- //   onlyBladderBoolFlat[0] = true;
- //   onlyLungsBoolFlat[500] = true;
-    const H5std_string FILE_NAMEonlyLungsBoolFlat("C:\\Users\\1\\PycharmProjects\\pythonProject3\\mytestfile.hdf5");
     const H5std_string DATASET_NAMEonlyLungsBoolFlat("onlyLungsBoolFlat");
+    //const H5std_string DATASET_NAMEonlyLungsBoolFlat("onlyLungsBoolFlatB");
     // create a vector the same size as the dataset
     bool* onlyLungsBoolFlat;
     loadHDFIntoBoolArr(FILE_NAMEonlyLungsBoolFlat, DATASET_NAMEonlyLungsBoolFlat, onlyLungsBoolFlat);
 
-    const H5std_string FILE_NAMEonlyBladderBoolFlat("C:\\Users\\1\\PycharmProjects\\pythonProject3\\mytestfile.hdf5");
+    const H5std_string FILE_NAMEonlyBladderBoolFlat("D:\\dataSets\\forMainHDF5\\forHausdorffTests.hdf5");
+
+
     const H5std_string DATASET_NAMEonlyBladderBoolFlat("onlyBladderBoolFlat");
+    //const H5std_string DATASET_NAMEonlyBladderBoolFlat("onlyBladderBoolFlatB");
     // create a vector the same size as the dataset
     bool* onlyBladderBoolFlat;
     loadHDFIntoBoolArr(FILE_NAMEonlyBladderBoolFlat, DATASET_NAMEonlyBladderBoolFlat, onlyBladderBoolFlat);
+    //onlyBladderBoolFlat = (bool*)calloc(WIDTH* HEIGHT* DEPTH, sizeof(bool));
 
-  //   benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);
-   //  benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, DEPTH, HEIGHT);
-    benchmarkMitura(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH,  DEPTH, HEIGHT);
+    //onlyBladderBoolFlat[0] = true;
+
+   //  benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//125 
+
+    benchmarkMitura(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//124 or 259
 
 
+    DEPTH = 536;
+    const H5std_string FILE_NAMEonlyLungsBoolFlatB("D:\\dataSets\\forMainHDF5\\forHausdorffTests.hdf5");
 
+    const H5std_string DATASET_NAMEonlyLungsBoolFlatB("onlyLungsBoolFlatB");
+    // create a vector the same size as the dataset
+    bool* onlyLungsBoolFlatB;
+    loadHDFIntoBoolArr(FILE_NAMEonlyLungsBoolFlatB, DATASET_NAMEonlyLungsBoolFlatB, onlyLungsBoolFlatB);
+
+
+    const H5std_string DATASET_NAMEonlyBladderBoolFlatB("onlyBladderBoolFlatB");
+    // create a vector the same size as the dataset
+    bool* onlyBladderBoolFlatB;
+    loadHDFIntoBoolArr(FILE_NAMEonlyBladderBoolFlat, DATASET_NAMEonlyBladderBoolFlatB, onlyBladderBoolFlatB);
+    //onlyBladderBoolFlat = (bool*)calloc(WIDTH* HEIGHT* DEPTH, sizeof(bool));
+
+    //onlyBladderBoolFlat[0] = true;
+
+   //  benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//125 
+
+    benchmarkMitura(onlyBladderBoolFlatB, onlyLungsBoolFlatB, WIDTH, HEIGHT, DEPTH);//124 or 259
 
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -2841,3 +2031,6 @@ int main(void) {
 
     return 0;  // successfully terminated
 }
+
+
+

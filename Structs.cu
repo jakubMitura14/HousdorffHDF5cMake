@@ -108,12 +108,8 @@ extern "C" struct MetaDataGPU {
 
     unsigned int metaDataSectionLength = 20;
 
-
-    // int metaDataOffset = 0;
-
-
-     // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
-         //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
+    // now we will store here also calculated by min maxes kernel values of minimum and maximumvalues 
+        //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ 
     unsigned int maxX;
     unsigned int minX;
     unsigned int maxY;
@@ -123,14 +119,18 @@ extern "C" struct MetaDataGPU {
 };
 
 
+
+
+
+
+
+
 /*
 * Basically holding the arguments for master functions controlling full preparation to get all for Housedorff kernel
 */
 #pragma once
 template <typename TFF>
 struct ForFullBoolPrepArgs {
-
-
 
     //metadata struct
     MetaDataCPU metaData;
@@ -159,12 +159,8 @@ struct ForFullBoolPrepArgs {
     int threadsOtherMetaDataPasses;
     int blocksOtherMetaDataPasses;
     // will establish how many points we want to include in dilatation and how many we can ignore so typically set to 95% - so we will ignore only 5% most distant
-    float robustnessPercent = 0.95;//0.95;
-
+    float robustnessPercent = 1.0;  // 0.95;
 };
-
-
-
 
 
 /*
@@ -243,7 +239,7 @@ now what occupies what positions
 
 
 
-    float robustnessPercent = 0.95;//0.97; //0.95;
+    float robustnessPercent = 1.0;// 0.95;
 
 };
 
@@ -318,4 +314,22 @@ extern "C" struct forTestMetaDataStruct {
     int fnConterAfterTwoDil;
 
 
+};
+
+
+/*
+data from occupancy calculator API used to get optimal number of thread blocks and threads per thread block
+*/
+struct occupancyCalcData {
+    int warpsNumbForMinMax;
+    int blockSizeForMinMax;
+
+    int warpsNumbForboolPrepareKernel;
+    int blockSizeFoboolPrepareKernel;
+
+    int theadsForFirstMetaPass;
+    int blockForFirstMetaPass;
+
+    int warpsNumbForMainPass;
+    int blockForMainPass;
 };
