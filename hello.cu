@@ -1,6 +1,4 @@
 
-
-
 #include "cuda_runtime.h"
 #include "MetaData.cu"
 
@@ -16,9 +14,10 @@
 #include "ExceptionManagUtils.cu"
 #include "ForBoolKernel.cu"
 #include "FirstMetaPass.cu"
+
+#include <cuda/annotated_ptr>
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
-#include "MetaDataOtherPasses.cu"
 #include "MinMaxesKernel.cu"
 #include "MainKernelMetaHelpers.cu"
 #include <cooperative_groups/memcpy_async.h>
@@ -45,7 +44,7 @@ wheather the iteration number is odd or even
 */
 #pragma once
 template <typename TXPI>
-inline __device__ uint32_t* getSourceReduced(ForBoolKernelArgs<TXPI>& fbArgs, int(&iterationNumb)[1]) {
+inline __device__ uint32_t* getSourceReduced(const ForBoolKernelArgs<TXPI>& fbArgs, const int(&iterationNumb)[1]) {
 
 
     if ((iterationNumb[0] & 1) == 0) {
@@ -65,7 +64,7 @@ gettinng target array for dilatations
 */
 #pragma once
 template <typename TXPPI>
-inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI>& fbArgs, int(&iterationNumb)[1]) {
+inline __device__ uint32_t* getTargetReduced(const ForBoolKernelArgs<TXPPI>& fbArgs, const  int(&iterationNumb)[1]) {
 
     if ((iterationNumb[0] & 1) == 0) {
         //printf(" BB ");
@@ -87,7 +86,7 @@ inline __device__ uint32_t* getTargetReduced(ForBoolKernelArgs<TXPPI>& fbArgs, i
 dilatation up and down - using bitwise operators
 */
 #pragma once
-inline __device__ uint32_t bitDilatate(uint32_t& x) {
+inline __device__ uint32_t bitDilatate(const uint32_t& x) {
     return ((x) >> 1) | (x) | ((x) << 1);
 }
 
@@ -95,12 +94,12 @@ inline __device__ uint32_t bitDilatate(uint32_t& x) {
 return 1 if at given position of given number bit is set otherwise 0
 */
 #pragma once
-inline __device__ uint32_t isBitAt(uint32_t& numb, const int pos) {
+inline __device__ uint32_t isBitAt(const uint32_t& numb, const int pos) {
     return (numb & (1 << (pos)));
 }
 
 #pragma once
-inline uint32_t isBitAtCPU(uint32_t& numb, const int pos) {
+inline uint32_t isBitAtCPU(const uint32_t& numb, const int pos) {
     return (numb & (1 << (pos)));
 }
 
@@ -108,108 +107,6 @@ inline uint32_t isBitAtCPU(uint32_t& numb, const int pos) {
 
 
 
-
-//
-///*
-//given source and target uint32 it will check the bit of intrest  of source and set the target to bit of target intrest
-//*/
-//#pragma once
-//inline __device__ void setBitTo(uint32_t source, uint8_t sourceBit, uint32_t resShared[32][32], uint8_t targetBit) {   
-//    resShared[threadIdx.x][threadIdx.y] |= ((source >> sourceBit) & 1) << targetBit;
-//   // return target;
-//}
-
-///////////////////////////////// new functions
-
-
-
-
-
-/*
-to iterate over the threads and given their position - checking edge cases do appropriate dilatations ...
-works only for anterior - posterior lateral an medial dilatations
-predicate - indicates what we consider border case here
-paddingPos = integer marking which padding we are currently talking about(top ? bottom ? anterior ? ...)
-padingVariedA, padingVariedB - eithr bitPos threadid X or Y depending what will be changing in this case
-
-normalXChange, normalYchange - indicating which wntries we are intrested in if we are not at the boundary so how much to add to xand y thread position
-metaDataCoordIndex - index where in the metadata of this block th linear index of neihjbouring block is present
-targetShmemOffset - offset where loaded data needed for dilatation of outside of the block is present for example defining  register shmem one or 2 ...
-*/
-#pragma once
-template <typename TXPI>
-inline __device__ void dilatateHelperForTransverse(ForBoolKernelArgs<TXPI>& fbArgs, const bool predicate,
-    const uint8_t  paddingPos, const   int8_t  normalXChange, const  int8_t normalYchange
-    , uint32_t(&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6]
-    , const uint8_t forBorderYcoord, const  uint8_t forBorderXcoord
-    , const uint8_t metaDataCoordIndex, const uint32_t targetShmemOffset, uint32_t(&localBlockMetaData)[40], uint32_t& i
-    , bool(&isGoldForLocQueue)[localWorkQueLength]) {
-
-
-
-    //if (paddingPos == 3 && mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 0 ) {
-    //if ( mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]>0 && isGoldForLocQueue[i] == 1 ) {
-    //
-    //    printf("something in loaded from right idX %d idY %d  paddingPos %d \n", threadIdx.x, threadIdx.y , paddingPos );
-    //}
-
-
-    // so we first check for corner cases 
-    if (predicate) {
-
-
-        // now we need to load the data from the neigbouring blocks
-        //first checking is there anything to look to 
-        if (localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex] < isGoldOffset) {
-
-
-            //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
-            if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
-                isAnythingInPadding[paddingPos] = true;
-
-            };
-
-
-
-            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
-                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
-                | mainShmem[targetShmemOffset + forBorderXcoord + forBorderYcoord * 32];
-
-        };
-    }
-    else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
-
-
-        mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
-            = mainShmem[begSourceShmem + (threadIdx.x + normalXChange) + (threadIdx.y + normalYchange) * 32]
-            | mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
-
-    }
-
-
-}
-
-
-#pragma once
-inline __device__ void dilatateHelperTopDown(const uint8_t paddingPos,
-    uint32_t(&mainShmem)[lengthOfMainShmem], bool(&isAnythingInPadding)[6], uint32_t(&localBlockMetaData)[40]
-    , const uint8_t metaDataCoordIndex
-    , const  uint8_t sourceBit
-    , const uint8_t targetBit
-    , const uint32_t targetShmemOffset, uint32_t& i
-) {
-    // now we need to load the data from the neigbouring blocks
-    //first checking is there anything to look to 
-    if (localBlockMetaData[(i & 1) * 20 + metaDataCoordIndex] < isGoldOffset) {
-        if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], targetBit)) {
-            // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
-            isAnythingInPadding[paddingPos] = true;
-        };
-        // if in bit of intrest of neighbour block is set
-        mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[targetShmemOffset + threadIdx.x + threadIdx.y * 32] >> sourceBit) & 1) << targetBit;
-    }
-
-}
 
 
 
@@ -221,35 +118,37 @@ isInPipeline - marks is it meant to be executed at the begining of the pipeline 
 finilizing operations for last block
 */
 #pragma once
-inline __device__  void afterBlockClean(thread_block& cta
-    , unsigned int(&worQueueStep)[1], uint32_t(&localBlockMetaData)[40]
-    , uint32_t(&mainShmem)[lengthOfMainShmem], const uint32_t i, MetaDataGPU& metaData
-    , thread_block_tile<32>& tile
+__device__  void afterBlockClean(thread_block& cta
+    , const unsigned int(&worQueueStep)[1], const uint32_t(&localBlockMetaData)[40]
+    , const uint32_t(&mainShmem)[lengthOfMainShmem], const uint32_t& i, const MetaDataGPU& metaData
     , unsigned int(&localFpConter)[1], unsigned int(&localFnConter)[1]
     , unsigned int(&blockFpConter)[1], unsigned int(&blockFnConter)[1]
     , uint32_t*& metaDataArr
     , bool(&isAnythingInPadding)[6], bool(&isBlockFull)[2], const bool isPaddingPass, bool(&isGoldForLocQueue)[localWorkQueLength], uint32_t(&lastI)[1]
 ) {
-
+    sync(cta);
     if (i < UINT32_MAX) {
 
-        if (threadIdx.x == 7 && threadIdx.y == 0) {// this is how it is encoded wheather it is gold or segm block
-                       //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
-            if (localFpConter[0] >= 0) {
-                metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
-                blockFpConter[0] += localFpConter[0];
-                localFpConter[0] = 0;
-            }
-        };
-        if (threadIdx.x == 8 && threadIdx.y == 3) {
 
-            if (localFnConter[0] >= 0) {
-                metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
+        //if (threadIdx.x == 7 && threadIdx.y == 0) {// this is how it is encoded wheather it is gold or segm block
+        //               //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
+        //    if (localFpConter[0] > 0) {
+        //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 3] += localFpConter[0];
+        //        blockFpConter[0] += localFpConter[0];
+        //        localFpConter[0] = 0;
+        //    }
+        //};
+        //if (threadIdx.x == 8 && threadIdx.y == 0) {
 
-                blockFnConter[0] += localFnConter[0];
-                localFnConter[0] = 0;
-            }
-        };
+        //    if (localFnConter[0] > 0) {
+        //        metaDataArr[mainShmem[startOfLocalWorkQ + i] * metaData.metaDataSectionLength + 4] += localFnConter[0];
+
+        //         blockFnConter[0] += localFnConter[0];
+        //        localFnConter[0] = 0;
+        //    }
+        //};
+
+
         if (threadIdx.x == 9 && threadIdx.y == 2) {// this is how it is encoded wheather it is gold or segm block
 
             //executed in case of previous block
@@ -279,445 +178,16 @@ inline __device__  void afterBlockClean(thread_block& cta
 
                 }
             }
-            isAnythingInPadding[tile.thread_rank()] = false;
+            isAnythingInPadding[threadIdx.x] = false;
         };
 
     };
 
+    sync(cta);
 
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-//template <typename TKKI, typename forPipeline >
-#pragma once
-template <typename TKKI >
-inline __device__ void mainDilatation(const bool isPaddingPass, ForBoolKernelArgs<TKKI>& fbArgs, uint32_t*& mainArrAPointer,
-    uint32_t*& mainArrBPointer, MetaDataGPU& metaData
-    , unsigned int*& minMaxes, uint32_t*& workQueue
-    , uint32_t*& resultListPointerMeta, uint32_t*& resultListPointerLocal, uint32_t*& resultListPointerIterNumb,
-    thread_block& cta, thread_block_tile<32>& tile, grid_group& grid, uint32_t(&mainShmem)[lengthOfMainShmem]
-    , bool(&isAnythingInPadding)[6], bool(&isBlockFull)[2], int(&iterationNumb)[1], unsigned int(&globalWorkQueueOffset)[1]
-    , unsigned int(&globalWorkQueueCounter)[1]
-    , unsigned int(&localWorkQueueCounter)[1], unsigned int(&localTotalLenthOfWorkQueue)[1]
-    , unsigned int(&localFpConter)[1]
-    , unsigned int(&localFnConter)[1], unsigned int(&blockFpConter)[1]
-    , unsigned int(&blockFnConter)[1], unsigned int(&resultfpOffset)[1]
-    , unsigned int(&resultfnOffset)[1], unsigned int(&worQueueStep)[1]
-    , unsigned int(&localMinMaxes)[5]
-    , uint32_t(&localBlockMetaData)[40]
-    , unsigned int(&fpFnLocCounter)[1]
-    , bool(&isGoldPassToContinue)[1], bool(&isSegmPassToContinue)[1]
-    , uint32_t*& origArrs, uint32_t*& metaDataArr, bool(&isGoldForLocQueue)[localWorkQueLength]
-    , uint32_t(&lastI)[1]
-    , cuda::pipeline<cuda::thread_scope_block>& pipeline
-) {
-
-
-    //initial cleaning  and initializations include loading min maxes
-    if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0 && !isPaddingPass) {
-        iterationNumb[0] += 1;
-    };
-
-    if (tile.thread_rank() == 6 && tile.meta_group_rank() == 0) {
-        localWorkQueueCounter[0] = 0;
-    };
-
-    if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
-        blockFpConter[0] = 0;
-    };
-    if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
-        blockFnConter[0] = 0;
-    };
-    if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
-        localFpConter[0] = 0;
-    };
-    if (tile.thread_rank() == 4 && tile.meta_group_rank() == 0) {
-        localFnConter[0] = 0;
-    };
-    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) {
-        isBlockFull[0] = true;
-    };
-    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 1) {
-        isBlockFull[1] = true;
-    };
-
-    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
-        fpFnLocCounter[0] = 0;
-    };
-
-
-    if (tile.thread_rank() == 10 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
-
-        lastI[0] = UINT32_MAX;
-    };
-
-
-    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
-        localTotalLenthOfWorkQueue[0] = minMaxes[9];
-        globalWorkQueueOffset[0] = floor((float)(localTotalLenthOfWorkQueue[0] / gridDim.x)) + 1;
-        worQueueStep[0] = min(localWorkQueLength, globalWorkQueueOffset[0]);
-    };
-
-    if (tile.meta_group_rank() == 1) {
-        cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
-    }
-
-    sync(cta);
-
-    /// load work QueueData into shared memory 
-    for (uint32_t bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
-        // grid stride loop - sadly most of threads will be idle 
-        /////////// loading to work queue
-        if (((bigloop) < localTotalLenthOfWorkQueue[0]) && ((bigloop) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-
-            for (uint16_t ii = cta.thread_rank(); ii < worQueueStep[0]; ii += cta.size()) {
-                mainShmem[startOfLocalWorkQ + ii] = workQueue[bigloop + ii];
-                isGoldForLocQueue[ii] = (mainShmem[startOfLocalWorkQ + ii] >= isGoldOffset);
-                mainShmem[startOfLocalWorkQ + ii] = mainShmem[startOfLocalWorkQ + ii] - isGoldOffset * isGoldForLocQueue[ii];
-
-            }
-
-        }
-        //now all of the threads in the block needs to have the same i value so we will increment by 1 we are preloading to the pipeline block metaData
-        ////##### pipeline Step 0
-
-        sync(cta);
-
-
-
-
-        //loading metadata
-        pipeline.producer_acquire();
-        if (((bigloop) < localTotalLenthOfWorkQueue[0]) && ((bigloop) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-
-            cuda::memcpy_async(cta, (&localBlockMetaData[0]),
-                (&metaDataArr[mainShmem[startOfLocalWorkQ] * metaData.metaDataSectionLength])
-                , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-
-        }
-        pipeline.producer_commit();
-
-
-
-        for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
-            if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
-                //////////////// step 0  load main data and final processing of previous block
-                              //loading main data for first dilatation
-                               //IMPORTANT we need to keep a lot of variables constant here like is Anuthing in padding of fp count .. as the represent processing of previous block  - so do not modify them here ...
-
-                pipeline.producer_acquire();
-                cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
-                    mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                    cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength), pipeline);
-                pipeline.producer_commit();
-
-                pipeline.consumer_wait();
-
-
-                afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i - 1,
-                    metaData, tile, localFpConter, localFnConter
-                    , blockFpConter, blockFnConter
-                    , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
-
-
-                //needed for after block metadata update
-                if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
-                    lastI[0] = i;
-                }
-
-                pipeline.consumer_release();
-
-                ///////// step 1 load top and process main data 
-                                //load top 
-                pipeline.producer_acquire();
-                if (localBlockMetaData[(i & 1) * 20 + 13] < isGoldOffset) {
-                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 13]
-                        * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
-                //process main
-                pipeline.consumer_wait();
-                //marking weather block is already full and no more dilatations are possible 
-                if (__popc(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) < 32) {
-                    isBlockFull[i & 1] = false;
-                }
-                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
-                pipeline.consumer_release();
-
-                ///////// step 2 load bottom and process top 
-                                //load bottom
-                pipeline.producer_acquire();
-                if (localBlockMetaData[(i & 1) * 20 + 14] < isGoldOffset) {
-                    cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 14]
-                        * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
-                //process top
-                pipeline.consumer_wait();
-
-                dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, localBlockMetaData, 13
-                    , 31, 0
-                    , begfirstRegShmem, i);
-
-                pipeline.consumer_release();
-
-                /////////// step 3 load right  process bottom  
-                pipeline.producer_acquire();
-                if (localBlockMetaData[(i & 1) * 20 + 16] < isGoldOffset) {
-                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 16] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
-                //process bototm
-                pipeline.consumer_wait();
-
-                dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, localBlockMetaData, 14
-                    , 0, 31
-                    , begSecRegShmem, i);
-
-                pipeline.consumer_release();
-                /////////// step 4 load left process right  
-                                //load left 
-                pipeline.producer_acquire();
-                if (mainShmem[startOfLocalWorkQ + i] > 0) {
-                    cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[(mainShmem[startOfLocalWorkQ + i] - 1) * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
-                //process right
-                pipeline.consumer_wait();
-
-                dilatateHelperForTransverse(fbArgs, (threadIdx.x == (fbArgs.dbXLength - 1)),
-                    3, (1), (0), mainShmem, isAnythingInPadding
-                    , threadIdx.y, 0
-                    , 16, begfirstRegShmem, localBlockMetaData, i, isGoldForLocQueue);
-
-                pipeline.consumer_release();
-
-                /////// step 5 load anterior process left 
-                                //load anterior
-                pipeline.producer_acquire();
-                if (localBlockMetaData[(i & 1) * 20 + 17] < isGoldOffset) {
-
-                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 17] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
-                //process left 
-                pipeline.consumer_wait();
-
-                dilatateHelperForTransverse(fbArgs, (threadIdx.x == 0),
-                    2, (-1), (0), mainShmem, isAnythingInPadding
-                    , threadIdx.y, 31
-                    , 15, begSecRegShmem, localBlockMetaData, i, isGoldForLocQueue);
-
-                pipeline.consumer_release();
-                /////// step 6 load posterior process anterior 
-                                //load posterior
-                pipeline.producer_acquire();
-                if (localBlockMetaData[(i & 1) * 20 + 18] < isGoldOffset) {
-
-
-                    cuda::memcpy_async(cta, (&mainShmem[begSecRegShmem]),
-                        &getSourceReduced(fbArgs, iterationNumb)[localBlockMetaData[(i & 1) * 20 + 18] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])],
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-                }
-                pipeline.producer_commit();
-
-                //process anterior
-                pipeline.consumer_wait();
-
-                dilatateHelperForTransverse(fbArgs, (threadIdx.y == (fbArgs.dbYLength - 1)), 4
-                    , (0), (1), mainShmem, isAnythingInPadding
-                    , 0, threadIdx.x
-                    , 17, begfirstRegShmem, localBlockMetaData, i, isGoldForLocQueue);
-                pipeline.consumer_release();
-
-                /////// step 7 
-                               //load reference if needed or data for next iteration if there is such 
-                                //process posterior, save data from res shmem to global memory also we mark weather block is full
-                pipeline.producer_acquire();
-
-                //if block should be validated we load data for validation
-                if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
-                > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
-                    cuda::memcpy_async(cta, (&mainShmem[begfirstRegShmem]),
-                        &origArrs[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (isGoldForLocQueue[i])], //we look for 
-                        cuda::aligned_size_t<128>(sizeof(uint32_t) * metaData.mainArrXLength)
-                        , pipeline);
-
-                }
-                else {//if we are not validating we immidiately start loading data for next loop
-                    if (i + 1 < worQueueStep[0]) {
-                        cuda::memcpy_async(cta, (&localBlockMetaData[((i + 1) & 1) * 20]),
-                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1 + i])
-                                * metaData.metaDataSectionLength])
-                            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-
-
-                    }
-                }
-
-
-                pipeline.producer_commit();
-
-                //processPosteriorAndSaveResShmem
-
-                pipeline.consumer_wait();
-                //dilatate posterior 
-                dilatateHelperForTransverse(fbArgs, (threadIdx.y == 0), 5
-                    , (0), (-1), mainShmem, isAnythingInPadding
-                    , fbArgs.dbYLength - 1, threadIdx.x // we add offset depending on y dimension
-                    , 18, begSecRegShmem, localBlockMetaData, i, isGoldForLocQueue);
-                //now all data should be properly dilatated we save it to global memory
-                //try save target reduced via mempcy async ...
-
-                getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * metaData.mainArrSectionLength + metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
-                    + threadIdx.x + threadIdx.y * 32]
-                    = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
-
-
-
-                pipeline.consumer_release();
-
-                sync(cta);
-
-                //////// step 8 basically in order to complete here anyting the count need to be bigger than counter
-                                              // loading for next block if block is not to be validated it was already done earlier
-                pipeline.producer_acquire();
-                if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
-                    > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
-                    if (i + 1 < worQueueStep[0]) {
-
-
-                        cuda::memcpy_async(cta, (&localBlockMetaData[((i + 1) & 1) * 20]),
-                            (&metaDataArr[(mainShmem[startOfLocalWorkQ + 1 + i])
-                                * metaData.metaDataSectionLength])
-                            , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-
-                    }
-                }
-                pipeline.producer_commit();
-
-
-                //validation - so looking for newly covered voxel for opposite array so new fps or new fns
-                pipeline.consumer_wait();
-
-                if (localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 1)] //fp for gold and fn count for not gold
-                    > localBlockMetaData[(i & 1) * 20 + ((1 - isGoldForLocQueue[i]) + 3)]) {// so count is bigger than counter so we should validate
-                        //mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = 
-                        //    ((~mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) 
-                        //        & mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]);
-
-
-
-                        //we now look for bits prasent in both reference arrays and current one
-                       // mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] = ((mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]) & mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32]);
-
-                        // now we look through bits and when some is set we call it a result 
-#pragma unroll
-                    for (uint8_t bitPos = 0; bitPos < 32; bitPos++) {
-                        //if any bit here is set it means it should be added to result list 
-                        if (isBitAt(mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32], bitPos)
-                            && !isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], bitPos)
-                            && isBitAt(mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32], bitPos)
-                            ) {
-
-                            //just re
-                            mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = 0;
-                            ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
-                            if (isGoldForLocQueue[i]) {
-                                mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = uint32_t(atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 3]);
-                            }
-                            else {
-                                mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = uint32_t(atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4]);
-                                //    printf("local fn counter add \n");
-
-                            };
-                            //   add results to global memory    
-                            //we add one gere jjust to distinguish it from empty result
-                            resultListPointerMeta[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t(mainShmem[startOfLocalWorkQ + i] + (isGoldOffset * isGoldForLocQueue[i]) + 1);
-                            resultListPointerLocal[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
-                            resultListPointerIterNumb[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t(iterationNumb[0]);
-
-
-
-                        }
-
-                    };
-
-                }
-                /////////
-                pipeline.consumer_release();
-                sync(cta);
-
-
-            }
-        }
-
-        //here we are after all of the blocks planned to be processed by this block are
-
-//updating local counters of last local block (normally it is done at the bagining of the next block)
-//but we need to check weather any block was processed at all
-        pipeline.consumer_wait();
-
-        afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
-            metaData, tile, localFpConter, localFnConter
-            , blockFpConter, blockFnConter
-            , metaDataArr, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
-
-
-        pipeline.consumer_release();
-
-    }
-
-    sync(cta);
-
-    //     updating global counters
-    if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
-        if (blockFpConter[0] > 0) {
-            atomicAdd(&(minMaxes[10]), (blockFpConter[0]));
-        }
-    };
-    if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
-        if (blockFnConter[0] > 0) {
-            atomicAdd(&(minMaxes[11]), (blockFnConter[0]));
-        }
-    };
-    // in first thread block we zero work queue counter
-    if (threadIdx.x == 2 && threadIdx.y == 0) {
-        if (blockIdx.x == 0) {
-
-            minMaxes[9] = 0;
-        }
-    };
-
-
-}
 
 
 
@@ -750,7 +220,6 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     thread_block cta = cooperative_groups::this_thread_block();
 
-    thread_block_tile<32> tile = tiled_partition<32>(cta);
     grid_group grid = cooperative_groups::this_grid();
 
     /*
@@ -763,7 +232,9 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
     4096-  4127: small 32 length resgister 3 space
     4128-4500 (372 length) : place for local work queue in dilatation kernels
     */
+    // __shared__ uint32_t mainShmem[lengthOfMainShmem];
     __shared__ uint32_t mainShmem[lengthOfMainShmem];
+    cuda::associate_access_property(&mainShmem, cuda::access_property::shared{});
 
 
 
@@ -854,14 +325,12 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     /*
  //now linear indexes of the previous block in all sides - if there is no block in given direction it will equal UINT32_MAX
-
  0 : top
  1 : bottom
  2 : left
  3 : right
  4 : anterior
  5 : posterior
-
     */
 
 
@@ -876,11 +345,11 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
 
     //initializations and loading    
-    if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) { iterationNumb[0] = -1; };
-    if (tile.thread_rank() == 11 && tile.meta_group_rank() == 0) {
+    if (threadIdx.x == 9 && threadIdx.y == 0) { iterationNumb[0] = -1; };
+    if (threadIdx.x == 11 && threadIdx.y == 0) {
         isGoldPassToContinue[0] = true;
     };
-    if (tile.thread_rank() == 12 && tile.meta_group_rank() == 0) {
+    if (threadIdx.x == 12 && threadIdx.y == 0) {
         isSegmPassToContinue[0] = true;
 
     };
@@ -888,13 +357,27 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
     //here we caclulate the offset for given block depending on length of the workqueue and number of the  available blocks in a grid
     // - this will give us number of work queue items per block - we will calculate offset on the basis of the block number
+    sync(cta);
 
-
-
-   // for (int t = 0; t < 3; t++) {
     do {
+        // for (int iii = 0; iii < 900; iii++) {
+             //sync(cta);
 
-        //for (bool isPaddingPass = false; isPaddingPass; isPaddingPass = true) {
+
+             //if (blockIdx.x==0 &&   threadIdx.x == 7 && threadIdx.y == 0) {
+             //    printf("fp count %d fn count %d fp counter  %d fnCounter %d fp left %d fn left %d  iter numb %d  \n"
+
+             //        , int(fbArgs.minMaxes[7])
+             //        , int(fbArgs.minMaxes[8])
+             //        , int(fbArgs.minMaxes[10])
+             //        , int(fbArgs.minMaxes[11])
+             //        , int(fbArgs.minMaxes[7] - fbArgs.minMaxes[10])
+             //        , int(fbArgs.minMaxes[8] - fbArgs.minMaxes[11])
+             //        , int(iterationNumb[0])
+             //    );
+             //};
+             //grid.sync();
+
         for (uint8_t isPaddingPass = 0; isPaddingPass < 2; isPaddingPass++) {
             /////////////////////////****************************************************************************************************************  
             /////////////////////////****************************************************************************************************************  
@@ -904,66 +387,75 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
             /// dilataions
 
     //initial cleaning  and initializations include loading min maxes
-            if (tile.thread_rank() == 7 && tile.meta_group_rank() == 0 && !isPaddingPass) {
+            if (threadIdx.x == 7 && threadIdx.y == 0 && !isPaddingPass) {
                 iterationNumb[0] += 1;
             };
 
-            if (tile.thread_rank() == 6 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 6 && threadIdx.y == 0) {
                 localWorkQueueCounter[0] = 0;
             };
 
-            if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 1 && threadIdx.y == 0) {
                 blockFpConter[0] = 0;
             };
-            if (tile.thread_rank() == 2 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 2 && threadIdx.y == 0) {
                 blockFnConter[0] = 0;
             };
-            if (tile.thread_rank() == 3 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 3 && threadIdx.y == 0) {
                 localFpConter[0] = 0;
             };
-            if (tile.thread_rank() == 4 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 4 && threadIdx.y == 0) {
                 localFnConter[0] = 0;
             };
-            if (tile.thread_rank() == 9 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 9 && threadIdx.y == 0) {
                 isBlockFull[0] = true;
             };
-            if (tile.thread_rank() == 9 && tile.meta_group_rank() == 1) {
+            if (threadIdx.x == 9 && threadIdx.y == 1) {
                 isBlockFull[1] = true;
             };
 
-            if (tile.thread_rank() == 10 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 10 && threadIdx.y == 0) {
                 fpFnLocCounter[0] = 0;
             };
 
 
-            if (tile.thread_rank() == 10 && tile.meta_group_rank() == 2) {// this is how it is encoded wheather it is gold or segm block
+            if (threadIdx.x == 10 && threadIdx.y == 2) {// this is how it is encoded wheather it is gold or segm block
 
                 lastI[0] = UINT32_MAX;
             };
 
 
-            if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 0 && threadIdx.y == 0) {
                 localTotalLenthOfWorkQueue[0] = fbArgs.minMaxes[9];
                 globalWorkQueueOffset[0] = floor((float)(localTotalLenthOfWorkQueue[0] / gridDim.x)) + 1;
                 worQueueStep[0] = min(localWorkQueLength, globalWorkQueueOffset[0]);
             };
 
-            if (tile.meta_group_rank() == 1) {
-                cooperative_groups::memcpy_async(tile, (&localMinMaxes[0]), (&fbArgs.minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
+            if (threadIdx.y == 1) {
+                cooperative_groups::memcpy_async(cta, (&localMinMaxes[0]), (&fbArgs.minMaxes[7]), cuda::aligned_size_t<4>(sizeof(unsigned int) * 5));
             }
 
             sync(cta);
 
             /// load work QueueData into shared memory 
             for (uint32_t bigloop = blockIdx.x * globalWorkQueueOffset[0]; bigloop < ((blockIdx.x + 1) * globalWorkQueueOffset[0]); bigloop += worQueueStep[0]) {
-                // grid stride loop - sadly most of threads will be idle 
-                /////////// loading to work queue
+                // sync(cta);
+
+                 //grid stride loop - sadly most of threads will be idle 
+                ///////// loading to work queue
                 if (((bigloop) < localTotalLenthOfWorkQueue[0]) && ((bigloop) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
 
                     for (uint16_t ii = cta.thread_rank(); ii < worQueueStep[0]; ii += cta.size()) {
                         mainShmem[startOfLocalWorkQ + ii] = fbArgs.workQueuePointer[bigloop + ii];
                         isGoldForLocQueue[ii] = (mainShmem[startOfLocalWorkQ + ii] >= isGoldOffset);
                         mainShmem[startOfLocalWorkQ + ii] = mainShmem[startOfLocalWorkQ + ii] - isGoldOffset * isGoldForLocQueue[ii];
+                        /* printf(" work q %d isGold %d block %d bigloop %d localTotalLenthOfWorkQueue[0] %d   (blockIdx.x + 1) * globalWorkQueueOffset[0])) %d  \n "
+                             , mainShmem[startOfLocalWorkQ + ii]
+                             , isGoldForLocQueue[ii]
+                             , blockIdx.x
+                             , bigloop
+                             ,localTotalLenthOfWorkQueue[0]
+                             , (blockIdx.x + 1) * globalWorkQueueOffset[0]);*/
 
                     }
 
@@ -988,12 +480,24 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                 pipeline.producer_commit();
 
 
+                sync(cta);
 
                 for (uint32_t i = 0; i < worQueueStep[0]; i += 1) {
+
+
+
+
                     if (((bigloop + i) < localTotalLenthOfWorkQueue[0]) && ((bigloop + i) < ((blockIdx.x + 1) * globalWorkQueueOffset[0]))) {
                         //////////////// step 0  load main data and final processing of previous block
                                       //loading main data for first dilatation
                                        //IMPORTANT we need to keep a lot of variables constant here like is Anuthing in padding of fp count .. as the represent processing of previous block  - so do not modify them here ...
+                        //sync(cta);
+
+                        //if (threadIdx.x == 0 && threadIdx.y == 0) {
+                        //    printf(" work q %d isGold %d block %d \n ", mainShmem[startOfLocalWorkQ + i], isGoldForLocQueue[i], blockIdx.x);
+                        //}
+                        sync(cta);
+
 
                         pipeline.producer_acquire();
                         cuda::memcpy_async(cta, &mainShmem[begSourceShmem], &getSourceReduced(fbArgs, iterationNumb)[
@@ -1004,18 +508,22 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         pipeline.consumer_wait();
 
 
-                        afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i - 1,
-                            fbArgs.metaData, tile, localFpConter, localFnConter
-                            , blockFpConter, blockFnConter
-                            , fbArgs.metaDataArrPointer, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
+
+
+
+                        //afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i - 1,
+                        //    fbArgs.metaData, localFpConter, localFnConter
+                        //    , blockFpConter, blockFnConter
+                        //    , fbArgs.metaDataArrPointer, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
 
 
                         //needed for after block metadata update
-                        if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+                        if (threadIdx.x == 0 && threadIdx.y == 0) {
                             lastI[0] = i;
                         }
 
                         pipeline.consumer_release();
+                        sync(cta);
 
                         ///////// step 1 load top and process main data 
                                         //load top 
@@ -1036,6 +544,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         }
                         mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] = bitDilatate(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32]);
                         pipeline.consumer_release();
+                        sync(cta);
 
                         ///////// step 2 load bottom and process top 
                                         //load bottom
@@ -1051,11 +560,18 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         //process top
                         pipeline.consumer_wait();
 
-                        dilatateHelperTopDown(0, mainShmem, isAnythingInPadding, localBlockMetaData, 13
-                            , 31, 0
-                            , begfirstRegShmem, i);
+
+                        if (localBlockMetaData[(i & 1) * 20 + 13] < isGoldOffset) {
+                            if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], 0)) {
+                                // printf("setting padding top val %d \n ", isAnythingInPadding[0]);
+                                isAnythingInPadding[0] = true;
+                            };
+                            // if in bit of intrest of neighbour block is set
+                            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[begfirstRegShmem + threadIdx.x + threadIdx.y * 32] >> 31) & 1) << 0;
+                        }
 
                         pipeline.consumer_release();
+                        sync(cta);
 
                         /////////// step 3 load right  process bottom  
                         pipeline.producer_acquire();
@@ -1069,11 +585,23 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         //process bototm
                         pipeline.consumer_wait();
 
-                        dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, localBlockMetaData, 14
-                            , 0, 31
-                            , begSecRegShmem, i);
+
+                        if (localBlockMetaData[(i & 1) * 20 + 14] < isGoldOffset) {
+                            if (isBitAt(mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32], 31)) {
+                                isAnythingInPadding[1] = true;
+                            };
+                            // if in bit of intrest of neighbour block is set
+                            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] |= ((mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] >> 0) & 1) << 31;
+                        }
+
+
+
+                        /*  dilatateHelperTopDown(1, mainShmem, isAnythingInPadding, localBlockMetaData, 14
+                              , 0, 31
+                              , begSecRegShmem, i);*/
 
                         pipeline.consumer_release();
+                        sync(cta);
                         /////////// step 4 load left process right  
                                         //load left 
                         pipeline.producer_acquire();
@@ -1087,13 +615,30 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         //process right
                         pipeline.consumer_wait();
 
-                        dilatateHelperForTransverse(fbArgs, (threadIdx.x == (fbArgs.dbXLength - 1)),
-                            3, (1), (0), mainShmem, isAnythingInPadding
-                            , threadIdx.y, 0
-                            , 16, begfirstRegShmem, localBlockMetaData, i, isGoldForLocQueue);
+                        if (threadIdx.x == (fbArgs.dbXLength - 1)) {
+                            // now we need to load the data from the neigbouring blocks
+                            //first checking is there anything to look to 
+                            if (localBlockMetaData[(i & 1) * 20 + 16] < isGoldOffset) {
+                                //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+                                if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
+                                    isAnythingInPadding[3] = true;
+
+                                };
+                                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+                                    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                    | mainShmem[begfirstRegShmem + (threadIdx.y * 32)];
+
+                            };
+                        }
+                        else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
+                            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                = mainShmem[begSourceShmem + (threadIdx.x + 1) + (threadIdx.y) * 32]
+                                | mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+                        }
 
                         pipeline.consumer_release();
-
+                        sync(cta);
                         /////// step 5 load anterior process left 
                                         //load anterior
                         pipeline.producer_acquire();
@@ -1108,12 +653,33 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         //process left 
                         pipeline.consumer_wait();
 
-                        dilatateHelperForTransverse(fbArgs, (threadIdx.x == 0),
-                            2, (-1), (0), mainShmem, isAnythingInPadding
-                            , threadIdx.y, 31
-                            , 15, begSecRegShmem, localBlockMetaData, i, isGoldForLocQueue);
+                        // so we first check for corner cases 
+                        if (threadIdx.x == 0) {
+                            // now we need to load the data from the neigbouring blocks
+                            //first checking is there anything to look to 
+                            if (localBlockMetaData[(i & 1) * 20 + 15] < isGoldOffset) {
+                                //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+                                if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
+                                    isAnythingInPadding[2] = true;
+
+                                };
+                                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+                                    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                    | mainShmem[begSecRegShmem + 31 + threadIdx.y * 32];
+
+                            };
+                        }
+                        else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
+                            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                = mainShmem[begSourceShmem + (threadIdx.x - 1) + (threadIdx.y) * 32]
+                                | mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+                        }
+
 
                         pipeline.consumer_release();
+                        sync(cta);
+
                         /////// step 6 load posterior process anterior 
                                         //load posterior
                         pipeline.producer_acquire();
@@ -1130,11 +696,32 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         //process anterior
                         pipeline.consumer_wait();
 
-                        dilatateHelperForTransverse(fbArgs, (threadIdx.y == (fbArgs.dbYLength - 1)), 4
-                            , (0), (1), mainShmem, isAnythingInPadding
-                            , 0, threadIdx.x
-                            , 17, begfirstRegShmem, localBlockMetaData, i, isGoldForLocQueue);
+                        // so we first check for corner cases 
+                        if (threadIdx.y == (fbArgs.dbYLength - 1)) {
+                            // now we need to load the data from the neigbouring blocks
+                            //first checking is there anything to look to 
+                            if (localBlockMetaData[(i & 1) * 20 + 17] < isGoldOffset) {
+                                //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+                                if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
+                                    isAnythingInPadding[4] = true;
+
+                                };
+                                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+                                    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                    | mainShmem[begfirstRegShmem + threadIdx.x];
+
+                            };
+                        }
+                        else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
+                            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                = mainShmem[begSourceShmem + (threadIdx.x) + (threadIdx.y + 1) * 32]
+                                | mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+                        }
+
+
                         pipeline.consumer_release();
+                        sync(cta);
 
                         /////// step 7 
                                        //load reference if needed or data for next iteration if there is such 
@@ -1168,16 +755,55 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 
                         pipeline.consumer_wait();
                         //dilatate posterior 
-                        dilatateHelperForTransverse(fbArgs, (threadIdx.y == 0), 5
-                            , (0), (-1), mainShmem, isAnythingInPadding
-                            , fbArgs.dbYLength - 1, threadIdx.x // we add offset depending on y dimension
-                            , 18, begSecRegShmem, localBlockMetaData, i, isGoldForLocQueue);
+
+
+                        // so we first check for corner cases 
+                        if (threadIdx.y == 0) {
+                            // now we need to load the data from the neigbouring blocks
+                            //first checking is there anything to look to 
+                            if (localBlockMetaData[(i & 1) * 20 + 18] < isGoldOffset) {
+                                //now we load - we already done earlier up and down so now we are considering only anterior, posterior , left , right possibilities
+                                if (mainShmem[begSourceShmem + threadIdx.x + threadIdx.y * 32] > 0) {
+                                    isAnythingInPadding[5] = true;
+
+                                };
+                                mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32] =
+                                    mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                    | mainShmem[begSecRegShmem + threadIdx.x + (fbArgs.dbYLength - 1) * 32];
+
+                            };
+                        }
+                        else {//given we are not in corner case we need just to do the dilatation using biwise or with the data inside the block
+                            mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32]
+                                = mainShmem[begSourceShmem + (threadIdx.x) + (threadIdx.y - 1) * 32]
+                                | mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+                        }
+
+
+
+                        //dilatateHelperForTransverse(fbArgs, (threadIdx.y == 0), 5
+                        //    , (0), (-1), mainShmem, isAnythingInPadding
+                        //    , fbArgs.dbYLength - 1, threadIdx.x // we add offset depending on y dimension
+                        //    , 18, begSecRegShmem, localBlockMetaData, i, isGoldForLocQueue);
+
                         //now all data should be properly dilatated we save it to global memory
                         //try save target reduced via mempcy async ...
 
-                        getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * fbArgs.metaData.mainArrSectionLength + fbArgs.metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
-                            + threadIdx.x + threadIdx.y * 32]
-                            = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+                        cuda::memcpy_async(cta,
+                            &getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * fbArgs.metaData.mainArrSectionLength + fbArgs.metaData.mainArrXLength * (1 - isGoldForLocQueue[i])]
+                            , (&mainShmem[begResShmem]),
+                            cuda::aligned_size_t<128>(sizeof(uint32_t) * fbArgs.metaData.mainArrXLength)
+                            , pipeline);
+
+
+
+                        //getTargetReduced(fbArgs, iterationNumb)[mainShmem[startOfLocalWorkQ + i] * fbArgs.metaData.mainArrSectionLength + fbArgs.metaData.mainArrXLength * (1 - isGoldForLocQueue[i])
+                        //    + threadIdx.x + threadIdx.y * 32]
+                        //    = mainShmem[begResShmem + threadIdx.x + threadIdx.y * 32];
+
+
 
 
 
@@ -1202,6 +828,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         }
                         pipeline.producer_commit();
 
+                        sync(cta);
 
                         //validation - so looking for newly covered voxel for opposite array so new fps or new fns
                         pipeline.consumer_wait();
@@ -1231,9 +858,17 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                                     ////// IMPORTANT for some reason in order to make it work resultfnOffset and resultfnOffset swith places
                                     if (isGoldForLocQueue[i]) {
                                         mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = uint32_t(atomicAdd_block(&(localFpConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 6] + localBlockMetaData[(i & 1) * 20 + 3]);
+                                        //TODO remove
+                                        //atomicAdd_block(&(blockFpConter[0]), 1);
+
                                     }
                                     else {
+
                                         mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32] = uint32_t(atomicAdd_block(&(localFnConter[0]), 1) + localBlockMetaData[(i & 1) * 20 + 5] + localBlockMetaData[(i & 1) * 20 + 4]);
+
+                                        //TODO remove
+                                        //atomicAdd_block(&(blockFnConter[0]), 1);
+
                                         //    printf("local fn counter add \n");
 
                                     };
@@ -1242,7 +877,7 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                                     fbArgs.resultListPointerMeta[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t(mainShmem[startOfLocalWorkQ + i] + (isGoldOffset * isGoldForLocQueue[i]) + 1);
                                     fbArgs.resultListPointerLocal[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t((fbArgs.dbYLength * 32 * bitPos) + (threadIdx.y * 32) + (threadIdx.x));
                                     fbArgs.resultListPointerIterNumb[mainShmem[begSecRegShmem + threadIdx.x + threadIdx.y * 32]] = uint32_t(iterationNumb[0]);
-
+                                    // printf("result in % d \n", mainShmem[startOfLocalWorkQ + i]);
 
 
                                 }
@@ -1252,8 +887,73 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                         }
                         /////////
                         pipeline.consumer_release();
+
+                        /// /// cleaning 
+
                         sync(cta);
 
+
+                        //afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, i,
+                        //    fbArgs.metaData, localFpConter, localFnConter
+                        //    , blockFpConter, blockFnConter
+                        //    , fbArgs.metaDataArrPointer, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
+
+
+                        if (threadIdx.x == 9 && threadIdx.y == 2) {// this is how it is encoded wheather it is gold or segm block
+
+         //executed in case of previous block
+                            if (isBlockFull[i & 1] && i >= 0) {
+                                //setting data in metadata that block is full
+                                fbArgs.metaDataArrPointer[mainShmem[startOfLocalWorkQ + i] * fbArgs.metaData.metaDataSectionLength + 10 - (isGoldForLocQueue[i] * 2)] = true;
+                            }
+                            //resetting for some reason  block 0 gets as full even if it should not ...
+                            isBlockFull[i & 1] = true;// mainShmem[startOfLocalWorkQ + i]>0;//!isPaddingPass;
+                        };
+
+
+
+
+                        //we do it only for non padding pass
+                        if (threadIdx.x < 6 && threadIdx.y == 1 && !isPaddingPass) {
+                            //executed in case of previous block
+                            if (i >= 0) {
+
+                                if (localBlockMetaData[(i & 1) * 20 + 13 + threadIdx.x] < isGoldOffset) {
+
+                                    if (isAnythingInPadding[threadIdx.x]) {
+                                        // holding data weather we have anything in padding 0)top  1)bottom, 2)left 3)right, 4)anterior, 5)posterior,
+                                        fbArgs.metaDataArrPointer[localBlockMetaData[(i & 1) * 20 + 13 + threadIdx.x] * fbArgs.metaData.metaDataSectionLength + 12 - isGoldForLocQueue[i]] = 1;
+                                    }
+
+                                }
+                            }
+                            isAnythingInPadding[threadIdx.x] = false;
+                        };
+
+
+
+
+
+
+                        if (threadIdx.x == 7 && threadIdx.y == 0) {
+                            //this will be executed only if fp or fn counters are bigger than 0 so not during first pass
+                            if (localFpConter[0] > 0) {
+                                fbArgs.metaDataArrPointer[mainShmem[startOfLocalWorkQ + i] * fbArgs.metaData.metaDataSectionLength + 3] += localFpConter[0];
+                                blockFpConter[0] += localFpConter[0];
+                                localFpConter[0] = 0;
+                            }
+                        };
+                        if (threadIdx.x == 8 && threadIdx.y == 0) {
+
+                            if (localFnConter[0] > 0) {
+                                fbArgs.metaDataArrPointer[mainShmem[startOfLocalWorkQ + i] * fbArgs.metaData.metaDataSectionLength + 4] += localFnConter[0];
+
+                                blockFnConter[0] += localFnConter[0];
+                                localFnConter[0] = 0;
+                            }
+                        };
+
+                        sync(cta);
 
                     }
                 }
@@ -1265,29 +965,35 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
                 sync(cta);
                 pipeline.consumer_wait();
 
-                afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
-                    fbArgs.metaData, tile, localFpConter, localFnConter
-                    , blockFpConter, blockFnConter
-                    , fbArgs.metaDataArrPointer, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
+                //afterBlockClean(cta, worQueueStep, localBlockMetaData, mainShmem, lastI[0],
+                //    fbArgs.metaData, localFpConter, localFnConter
+                //    , blockFpConter, blockFnConter
+                //    , fbArgs.metaDataArrPointer, isAnythingInPadding, isBlockFull, isPaddingPass, isGoldForLocQueue, lastI);
 
 
                 pipeline.consumer_release();
+                sync(cta);
 
             }
 
             sync(cta);
 
             //     updating global counters
-            if (tile.thread_rank() == 0 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 0 && threadIdx.y == 0) {
                 if (blockFpConter[0] > 0) {
                     atomicAdd(&(fbArgs.minMaxes[10]), (blockFpConter[0]));
                 }
             };
-            if (tile.thread_rank() == 1 && tile.meta_group_rank() == 0) {
+            if (threadIdx.x == 1 && threadIdx.y == 0) {
                 if (blockFnConter[0] > 0) {
+                    //if (blockFnConter[0]>10) {
+                    //    printf("Fn %d  ", blockFnConter[0]);
+                    //}
                     atomicAdd(&(fbArgs.minMaxes[11]), (blockFnConter[0]));
                 }
             };
+            grid.sync();
+
             // in first thread block we zero work queue counter
             if (threadIdx.x == 2 && threadIdx.y == 0) {
                 if (blockIdx.x == 0) {
@@ -1303,17 +1009,209 @@ inline __global__ void mainPassKernel(ForBoolKernelArgs<TKKI> fbArgs) {
 /////////////////////////****************************************************************************************************************  
 /////////////////////////****************************************************************************************************************  
 /// metadata pass
-            metadataPass(fbArgs, !isPaddingPass
-                , mainShmem, globalWorkQueueOffset, globalWorkQueueCounter
-                , localWorkQueueCounter, localTotalLenthOfWorkQueue, localMinMaxes
-                , fpFnLocCounter, isGoldPassToContinue, isSegmPassToContinue, cta, tile
-                , fbArgs.metaData, fbArgs.minMaxes, fbArgs.workQueuePointer, fbArgs.metaDataArrPointer);
+
+
+
+
+
+
+
+
+
+
+            // preparation loads
+            if (threadIdx.x == 0 && threadIdx.y == 0) {
+                fpFnLocCounter[0] = 0;
+            }
+            if (threadIdx.x == 1 && threadIdx.y == 0) {
+                localWorkQueueCounter[0] = 0;
+            }
+            if (threadIdx.x == 2 && threadIdx.y == 0) {
+                localWorkQueueCounter[0] = 0;
+            }
+            if (threadIdx.x == 3 && threadIdx.y == 0) {
+                localWorkQueueCounter[0] = 0;
+
+            }
+
+            if (threadIdx.x == 0 && threadIdx.y == 1) {
+
+                isGoldPassToContinue[0]
+                    = ((fbArgs.minMaxes[7] * fbArgs.robustnessPercent) > fbArgs.minMaxes[10]);
+
+            };
+
+            if (threadIdx.x == 0 && threadIdx.y == 1) {
+
+                isSegmPassToContinue[0]
+                    = ((fbArgs.minMaxes[8] * fbArgs.robustnessPercent) > fbArgs.minMaxes[11]);
+            };
+
+
+            __syncthreads();
+
+            /////////////////////////////////
+
+            for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x
+                ; linIdexMeta <= fbArgs.metaData.totalMetaLength
+                ; linIdexMeta += (blockDim.x * blockDim.y * gridDim.x)
+                ) {
+
+
+                if (isPaddingPass == 0) {
+
+                    //goldpass
+                    if (isGoldPassToContinue[0] && fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 11]
+                        && !fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 7]
+                        && !fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 8]) {
+
+                        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta + (isGoldOffset);
+                        //setting to be activated to 0 
+                        fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 11] = 0;
+                        //setting active to 1
+                        fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 7] = 1;
+
+                    };
+
+                }
+                //contrary to number it is when we are not in padding pass
+                else {
+                    //gold pass
+                    if (isGoldPassToContinue[0] && fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 7]
+                        && !fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 8]) {
+
+                        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta + (isGoldOffset);
+
+                    };
+
+                }
+            }
+
+            __syncthreads();
+
+            if (localWorkQueueCounter[0] > 0) {
+                if (threadIdx.x == 0 && threadIdx.y == 0) {
+                    globalWorkQueueCounter[0] = atomicAdd(&(fbArgs.minMaxes[9]), (localWorkQueueCounter[0]));
+
+
+                }
+                __syncthreads();
+                for (uint32_t linI = threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y) {
+                    fbArgs.workQueuePointer[globalWorkQueueCounter[0] + linI] = mainShmem[linI];
+                    //printf("adding to wq %d \n", linI);
+                }
+                __syncthreads();
+
+            }
+
+            __syncthreads();
+
+            if (threadIdx.x == 0 && threadIdx.y == 0) {
+
+                localWorkQueueCounter[0] = 0;
+            }
+            __syncthreads();
+
+            for (uint32_t linIdexMeta = blockIdx.x * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x
+                ; linIdexMeta <= fbArgs.metaData.totalMetaLength
+                ; linIdexMeta += (blockDim.x * blockDim.y * gridDim.x)
+                ) {
+
+
+                if (isPaddingPass == 0) {
+
+                    //segm pass
+                    if ((isSegmPassToContinue[0] && fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 12]
+                        && !fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 9]
+                        && !fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 10])) {
+
+                        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;
+
+                        //setting to be activated to 0 
+                        fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 12] = 0;
+                        //setting active to 1
+                        fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 9] = 1;
+
+                    }
+
+                }
+                //contrary to number it is when we are not in padding pass
+                else {
+                    //segm pass
+                    if ((isSegmPassToContinue[0] && fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 9]
+                        && !fbArgs.metaDataArrPointer[linIdexMeta * fbArgs.metaData.metaDataSectionLength + 10])) {
+
+                        mainShmem[atomicAdd_block(&localWorkQueueCounter[0], 1)] = linIdexMeta;
+                    }
+
+                }
+            }
+            __syncthreads();
+
+            if (localWorkQueueCounter[0] > 0) {
+                if (threadIdx.x == 0 && threadIdx.y == 0) {
+                    globalWorkQueueCounter[0] = atomicAdd(&(fbArgs.minMaxes[9]), (localWorkQueueCounter[0]));
+
+
+                }
+                __syncthreads();
+                for (uint32_t linI = threadIdx.y * blockDim.x + threadIdx.x; linI < localWorkQueueCounter[0]; linI += blockDim.x * blockDim.y) {
+                    fbArgs.workQueuePointer[globalWorkQueueCounter[0] + linI] = mainShmem[linI];
+                    // printf("adding to wq %d \n", linI);
+
+                }
+
+            }
+
+
+
+
+
+
+
+            ///////////////////////////////////////
+            //grid.sync();
+            ////TODO remove()
+
+            //if (blockIdx.x == 0) {
+            //    for (uint16_t ii = cta.thread_rank(); ii < fbArgs.minMaxes[9]; ii += cta.size()) {
+            //        mainShmem[cta.thread_rank()] = fbArgs.workQueuePointer[ii];
+            //        for (uint16_t innerI = 0; innerI < fbArgs.minMaxes[9]; innerI++) {
+            //            if (innerI!=ii) {
+            //                if (mainShmem[cta.thread_rank()] == fbArgs.workQueuePointer[innerI]) {
+            //                    atomicAdd(&(fbArgs.minMaxes[15]), 1);
+            //                }
+
+            //            }
+            //        }
+
+            //    }
+            //}
 
 
 
 
             grid.sync();
         }
+
+
+        // grid.sync();
+
+         //if (blockIdx.x == 0 && threadIdx.x == 7 && threadIdx.y == 0) {
+         //    printf("fp count %d fn count %d fp counter  %d fnCounter %d fp left %d fn left %d  iter numb %d  \n"
+
+         //        , int(fbArgs.minMaxes[7])
+         //        , int(fbArgs.minMaxes[8])
+         //        , int(fbArgs.minMaxes[10])
+         //        , int(fbArgs.minMaxes[11])
+         //        , int(fbArgs.minMaxes[7] - fbArgs.minMaxes[10])
+         //        , int(fbArgs.minMaxes[8] - fbArgs.minMaxes[11])
+         //        , int(iterationNumb[0])
+         //    );
+         //};
+        grid.sync();
+
+
 
     } while (isGoldPassToContinue[0] || isSegmPassToContinue[0]);
 
@@ -1374,6 +1272,9 @@ inline occupancyCalcData getOccupancy() {
     res.warpsNumbForMainPass = blockSize / 32;
     res.blockForMainPass = minGridSize;
 
+   // res.blockForMainPass = 130;
+    //res.warpsNumbForMainPass = 8;
+
     printf("warpsNumbForMainPass %d blockForMainPass %d  ", res.warpsNumbForMainPass, res.blockForMainPass);
     return res;
 }
@@ -1397,7 +1298,7 @@ https://codingbyexample.com/2020/09/25/cuda-graph-usage/
 */
 #pragma once
 template <typename T>
-ForBoolKernelArgs<T> executeHausdoffGraph(ForFullBoolPrepArgs<T> fFArgs, const int WIDTH, const int HEIGHT, const int DEPTH, occupancyCalcData occData) {
+ForBoolKernelArgs<T> executeHausdoff(ForFullBoolPrepArgs<T> fFArgs, const int WIDTH, const int HEIGHT, const int DEPTH, occupancyCalcData occData) {
 
     // For Graph
     cudaStream_t streamForGraph;
@@ -1439,6 +1340,7 @@ ForBoolKernelArgs<T> executeHausdoffGraph(ForFullBoolPrepArgs<T> fFArgs, const i
     void* kernel_args[] = { &fbArgs };
     cudaLaunchCooperativeKernel((void*)(mainPassKernel<int>), occData.blockForMainPass, dim3(32, occData.warpsNumbForMainPass), kernel_args);
 
+    checkCuda(cudaDeviceSynchronize(), "a6");
 
     cudaFreeAsync(fbArgs.resultListPointerMeta, 0);
     cudaFreeAsync(fbArgs.resultListPointerLocal, 0);
@@ -1467,12 +1369,7 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, const int WID
     occupancyCalcData occData = getOccupancy<T>();
 
     //pointers ...
-
-
-    ForBoolKernelArgs<T> fbArgs = executeHausdoffGraph(fFArgs, WIDTH, HEIGHT, DEPTH, occData);
-
-
-
+    ForBoolKernelArgs<T> fbArgs = executeHausdoff(fFArgs, WIDTH, HEIGHT, DEPTH, occData);
 
     checkCuda(cudaDeviceSynchronize(), "last ");
 
@@ -1492,20 +1389,10 @@ ForBoolKernelArgs<T> mainKernelsRun(ForFullBoolPrepArgs<T> fFArgs, const int WID
 
 
 
-inline void setArrCPUB(bool* arrCPU, int x, int y, int z, int  Nx, int Ny) {
-
-    arrCPU[x + y * Nx + z * Nx * Ny] = true;
-};
-
-
-
 
 
 
 void loadHDFIntoBoolArr(H5std_string FILE_NAME, H5std_string DATASET_NAME, bool*& data) {
-
-
-
 
     H5::H5File file(FILE_NAME, H5F_ACC_RDONLY);
     H5::DataSet dset = file.openDataSet(DATASET_NAME);
@@ -1516,20 +1403,16 @@ void loadHDFIntoBoolArr(H5std_string FILE_NAME, H5std_string DATASET_NAME, bool*
     H5::DataSpace dspace = dset.getSpace();
     int rank = dspace.getSimpleExtentNdims();
 
-
     hsize_t dims[2];
     rank = dspace.getSimpleExtentDims(dims, NULL); // rank = 1
     printf("Datasize: %d \n ", dims[0]); // this is the correct number of values
 
-     // Define the memory dataspace
+    // Define the memory dataspace
     hsize_t dimsm[1];
     dimsm[0] = dims[0];
     H5::DataSpace memspace(1, dimsm);
-
     data = (bool*)calloc(dims[0], sizeof(bool));
-
     dset.read(data, H5::PredType::NATIVE_HBOOL, memspace, dspace);
-
     file.close();
 
 }
@@ -1559,9 +1442,9 @@ void benchmarkMitura(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const i
     //function invocation
     auto begin = std::chrono::high_resolution_clock::now();
 
-    // ForBoolKernelArgs<bool> fbArgs = executeHausdoff(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH, occData);
+    ForBoolKernelArgs<bool> fbArgs = executeHausdoff(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH, occData);
 
-    ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH);
+    // ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH);
     auto end = std::chrono::high_resolution_clock::now();
 
     std::cout << "Total elapsed time: ";
@@ -1572,6 +1455,7 @@ void benchmarkMitura(bool* onlyBladderBoolFlat, bool* onlyLungsBoolFlat, const i
     cudaMemcpy(minMaxesCPU, fbArgs.metaData.minMaxes, sizeMinMax, cudaMemcpyDeviceToHost);
 
     printf("HD: %d \n", minMaxesCPU[13]);
+    printf("debug sum : %d \n", minMaxesCPU[15]);
 
 
     // freeee
@@ -1841,9 +1725,9 @@ int HausdorffDistance::computeDistance(Volume* img1, Volume* img2) {
     cudaFree(d_img2Write); cudaFree(d_img2Read);
 
     //resetting device
-    cudaDeviceReset();
+   // cudaDeviceReset();
 
-    print(cudaGetLastError(), "processing CUDA. Something may be wrong with your CUDA device.");
+    //print(cudaGetLastError(), "processing CUDA. Something may be wrong with your CUDA device.");
 
     return distance;
 
@@ -1904,6 +1788,7 @@ void loadHDF() {
     int DEPTH = 826;
 
     const H5std_string FILE_NAMEonlyLungsBoolFlat("D:\\dataSets\\forMainHDF5\\forHausdorffTests.hdf5");
+    const H5std_string FILE_NAMEonlyBladderBoolFlat("D:\\dataSets\\forMainHDF5\\forHausdorffTests.hdf5");
 
     const H5std_string DATASET_NAMEonlyLungsBoolFlat("onlyLungsBoolFlat");
     //const H5std_string DATASET_NAMEonlyLungsBoolFlat("onlyLungsBoolFlatB");
@@ -1911,7 +1796,6 @@ void loadHDF() {
     bool* onlyLungsBoolFlat;
     loadHDFIntoBoolArr(FILE_NAMEonlyLungsBoolFlat, DATASET_NAMEonlyLungsBoolFlat, onlyLungsBoolFlat);
 
-    const H5std_string FILE_NAMEonlyBladderBoolFlat("D:\\dataSets\\forMainHDF5\\forHausdorffTests.hdf5");
 
 
     const H5std_string DATASET_NAMEonlyBladderBoolFlat("onlyBladderBoolFlat");
@@ -1923,9 +1807,9 @@ void loadHDF() {
 
     //onlyBladderBoolFlat[0] = true;
 
-    // benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//125 
-
-    benchmarkMitura(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//124 or 259
+    //benchmarkOliviera(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//125 
+    //benchmarkMitura(onlyBladderBoolFlat, onlyLungsBoolFlat, WIDTH, HEIGHT, DEPTH);//124 or 259
+    benchmarkMitura(onlyLungsBoolFlat, onlyBladderBoolFlat, WIDTH, HEIGHT, DEPTH);//124 or 259
 
 
     DEPTH = 536;
@@ -1950,24 +1834,48 @@ void loadHDF() {
 
 
 
+void testAll() {
+    const int WIDTH = 512;
+    const int HEIGHT = 512;
+    //    const int DEPTH = 536;
+
+    int DEPTH = 826;
 
 
+    //// some preparations and configuring
+    MetaDataCPU metaData;
+    size_t size = sizeof(unsigned int) * 20;
+    unsigned int* minMaxesCPU = (unsigned int*)malloc(size);
+    metaData.minMaxes = minMaxesCPU;
+
+    bool* arrA = (bool*)calloc(WIDTH * HEIGHT * DEPTH, sizeof(bool));
+    bool* arrB = (bool*)calloc(WIDTH * HEIGHT * DEPTH, sizeof(bool));
 
 
+    arrA[0] = true;
+    arrB[500] = true;
+
+    ForFullBoolPrepArgs<bool> forFullBoolPrepArgs;
+    forFullBoolPrepArgs.metaData = metaData;
+    forFullBoolPrepArgs.numberToLookFor = true;
+    forFullBoolPrepArgs.goldArr = get3dArrCPU(arrA, WIDTH, HEIGHT, DEPTH);
+    forFullBoolPrepArgs.segmArr = get3dArrCPU(arrB, WIDTH, HEIGHT, DEPTH);
+
+    ForBoolKernelArgs<bool> fbArgs = mainKernelsRun(forFullBoolPrepArgs, WIDTH, HEIGHT, DEPTH);
+    free(arrA);
+    free(arrB);
+
+}
 
 
 
 int main(void) {
 
-    //  const int WIDTH = atoi(argv[1]), HEIGHT = WIDTH, DEPTH = 1;
-   //   Volume img1 = Volume(WIDTH, HEIGHT, DEPTH), img2 = Volume(WIDTH, HEIGHT, DEPTH);
-   // testMainPasswes();
-    loadHDF();
 
+    loadHDF();
+    // testAll();
 
 
     return 0;  // successfully terminated
 }
-
-
 

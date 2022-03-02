@@ -18,6 +18,7 @@ array3dWithDimsCPU<EEY>  get3dArrCPU(EEY* arrP, int Nx, int Ny, int Nz) {
     return res;
 }
 
+
 template <typename T >
 array3dWithDimsGPU<T> allocateMainArray(T*& gpuArrPointer, T*& cpuArrPointer, const int WIDTH, const int HEIGHT, const int DEPTH) {
     size_t sizeMainArr = (sizeof(T) * WIDTH * HEIGHT * DEPTH);
@@ -253,52 +254,6 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFul
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-loads metadata of given block to meta data
-*/
-#pragma once
-inline __device__  void loadMetaDataToShmem(thread_block& cta, uint32_t(&localBlockMetaData)[40]
-    , uint32_t(&mainShmem)[lengthOfMainShmem], cuda::pipeline<cuda::thread_scope_block>& pipeline
-    , uint32_t*& metaDataArr, MetaDataGPU& metaData, const uint8_t toAdd, uint32_t& ii) {
-
-    //cuda::memcpy_async(cta, (&localBlockMetaData[(ii&1)*20]),
-    //    (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd+ii])
-    //        * metaData.metaDataSectionLength])
-    //    , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-
-    cuda::memcpy_async(cta, (&localBlockMetaData[((ii + 1) & 1) * 20]),
-        (&metaDataArr[(mainShmem[startOfLocalWorkQ + toAdd + ii])
-            * metaData.metaDataSectionLength])
-        , cuda::aligned_size_t<4>(sizeof(uint32_t) * 20), pipeline);
-
-
-}
 
 
 

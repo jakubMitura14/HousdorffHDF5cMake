@@ -76,13 +76,13 @@ __global__ void boolPrepareKernel(ForBoolKernelArgs<TYO> fbArgs
     if ((threadIdx.x == 4) && (threadIdx.y == 1)) {
         anyInSegm[1] = false;
 
-     /*   if (blockIdx.x == 0) {
+        if (blockIdx.x == 0) {
             printf("in bool kernel  dims meta in bool kernel Meta X %d MetaY %d metaZ %d dbXSize %d dbYsize %d dbZsize %d minX %d minY %d minZ \n "
                 , metaData.metaXLength, metaData.MetaYLength, metaData.MetaZLength
                 , fbArgs.dbXLength, fbArgs.dbYLength, fbArgs.dbZLength
                 , metaData.minX, metaData.minY, metaData.minZ
-            );*/
-     //   }
+            );
+        }
 
     };
 

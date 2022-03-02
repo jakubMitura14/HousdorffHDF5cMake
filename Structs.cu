@@ -72,6 +72,15 @@ extern "C" struct MetaDataCPU {
     //array3dWithDimsCPU<unsigned int> minMaxes;
     unsigned int* minMaxes;
 
+    ////// counts of false positive and false negatives in given metadata blocks
+
+    ///// sizes of array below will be established on the basis of fp and fn values known after boolKernel finished execution
+
+    //work queue -  workqueue counter already present in minMaxes as entry 9 
+    //in practice it is matrix of length the same as FP+FN global count +1 and width of 5
+         //1) xMeta; 2)yMeta 3)zMeta 4)isGold 5)iteration number  
+    //we use one single long rewsult list - in order to avoid overwriting each block each block has established offset where it would write it's results 
+    uint32_t* resultList;
 
 };
 
@@ -166,6 +175,11 @@ struct ForBoolKernelArgs {
     array3dWithDimsGPU<TFB> goldArr;
     array3dWithDimsGPU<TFB> segmArr;
     TFB numberToLookFor;
+
+
+    // Frequent accesses to "a" and "b"; infrequent accesses to "x" and "y":
+    //cuda::annotated_ptr<int const, cuda::access_property::persisting> a_p{ a }, b_p{ b };
+    //cuda::annotated_ptr<int, cuda::access_property::streaming> x_s{ x }, y_s{ y };
 
     uint32_t* resultListPointerMeta;
     uint32_t* resultListPointerLocal;
