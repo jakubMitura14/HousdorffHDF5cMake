@@ -17,7 +17,6 @@ constexpr uint32_t begSourceShmem = 32;
 //as the pipeline is so asynchronous we need some additional storage for saving data related to the operations
 //will define how big is the  amount of space in order to be able to use fast version of modulo operator it should be power of 2 ... 
 constexpr uint32_t modForPipelineVars = 16;
-
 constexpr uint32_t fpLocCountBeg = 4460;
 
 
@@ -156,6 +155,11 @@ struct ForFullBoolPrepArgs {
     int blocksOtherMetaDataPasses;
     // will establish how many points we want to include in dilatation and how many we can ignore so typically set to 95% - so we will ignore only 5% most distant
     float robustnessPercent = 1.0;  // 0.95;
+
+    uint32_t* resultListPointerMeta;
+    uint32_t* resultListPointerLocalCPU;
+    uint32_t* resultListPointerIterNumb;
+
 };
 
 
