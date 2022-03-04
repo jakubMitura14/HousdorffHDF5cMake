@@ -7,19 +7,6 @@
 #include "Structs.cu"
 
 
-//#pragma once
-//template <typename EEY>
-//array3dWithDimsCPU<EEY>  get3dArrCPU(EEY* arrP, int Nx, int Ny, int Nz) {
-//    array3dWithDimsCPU<EEY> res;
-//    res.Nx = Nx;
-//    res.Ny = Ny;
-//    res.Nz = Nz;
-//    res.arrP = arrP;
-//
-//    return res;
-//}
-
-
 #pragma once
 template <typename EEY>
 array3dWithDimsCPU<EEY>  get3dArrCPU(EEY* arrP, int Nx, int Ny, int Nz) {
@@ -31,6 +18,8 @@ array3dWithDimsCPU<EEY>  get3dArrCPU(EEY* arrP, int Nx, int Ny, int Nz) {
 
     return res;
 }
+
+
 
 template <typename T >
 array3dWithDimsGPU<T> allocateMainArray(T*& gpuArrPointer, T*& cpuArrPointer, const int WIDTH, const int HEIGHT, const int DEPTH, cudaStream_t stream) {
@@ -112,7 +101,7 @@ inline MetaDataGPU allocateMemoryAfterMinMaxesKernel(ForBoolKernelArgs<ZZR>& gpu
     uint32_t* workQueue;
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.minMaxes, size, cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(cpuArgs.metaData.minMaxes, gpuArgs.minMaxes, size, cudaMemcpyDeviceToHost, stream);
 
     //read an modify
     //1)maxX 2)minX 3)maxY 4) minY 5) maxZ 6) minZ
@@ -176,7 +165,7 @@ inline int allocateMemoryAfterBoolKernel(ForBoolKernelArgs<ZZR>& gpuArgs, ForFul
 
     //copy on cpu
     size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost, stream);
 
     unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
     size = sizeof(uint32_t) * (fpPlusFn + 50);
@@ -234,7 +223,7 @@ inline void  copyResultstoCPU(ForBoolKernelArgs<T>& gpuArgs, ForFullBoolPrepArgs
 
     ////copy on cpu
     size_t size = sizeof(unsigned int) * 20;
-    cudaMemcpy(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(cpuArgs.metaData.minMaxes, gpuArgs.metaData.minMaxes, size, cudaMemcpyDeviceToHost, stream);
     unsigned int fpPlusFn = cpuArgs.metaData.minMaxes[7] + cpuArgs.metaData.minMaxes[8];
     size = sizeof(uint32_t) * (fpPlusFn + 50);
 

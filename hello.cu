@@ -25,6 +25,10 @@ using namespace cooperative_groups;
 
 
 
+//#include <torch/extension.h>
+//#include <iostream>
+
+
 //#include "hdf5Manag.cu"
 #include <iostream>
 #include <string>
@@ -33,8 +37,10 @@ using namespace cooperative_groups;
 #include <H5Cpp.h>
 
 
-//#include "xlsxwriter.h"
-
+//#include "xlsxwriter.h
+//#include "torch/torch.h"
+//#include <torch/extension.h>
+//#include <iostream>
 
 
 
@@ -1517,9 +1523,9 @@ int HausdorffDistance::computeDistance(Volume* img1, Volume* img2) {
 
 
     //copying the dimensions to the GPU
-    cudaMemcpyToSymbolAsync(WIDTH, &width, sizeof(width));
-    cudaMemcpyToSymbolAsync(HEIGHT, &height, sizeof(height));
-    cudaMemcpyToSymbolAsync(DEPTH, &depth, sizeof(depth));
+    cudaMemcpyToSymbolAsync(WIDTH, &width, sizeof(width),0);
+    cudaMemcpyToSymbolAsync(HEIGHT, &height, sizeof(height),0);
+    cudaMemcpyToSymbolAsync(DEPTH, &depth, sizeof(depth),0);
 
 
     //allocating the input images on the GPU
@@ -1565,8 +1571,6 @@ int HausdorffDistance::computeDistance(Volume* img1, Volume* img2) {
         //updating the imgRead (cloning imgWrite to imgRead)
         cudaMemcpy(d_img1Read, d_img1Write, size, cudaMemcpyDeviceToDevice);
         cudaMemcpy(d_img2Read, d_img2Write, size, cudaMemcpyDeviceToDevice);
-
-
 
         //copying the result back to host memory
         cudaMemcpyFromSymbol(&h_finished, finished, sizeof(h_finished));
