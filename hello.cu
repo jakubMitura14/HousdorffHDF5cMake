@@ -1859,7 +1859,8 @@ int main(void) {
         loadHDFB(stream2);
     }
 
-
+    cudaStreamDestroy(stream1);
+    cudaStreamDestroy(stream2);
     //  testAll();
 
 

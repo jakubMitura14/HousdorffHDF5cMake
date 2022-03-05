@@ -8,10 +8,7 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(hello LANGUAGES CXX CUDA)
 enable_language(CUDA)
 
-
 find_package(hdf5 CONFIG REQUIRED)
-
-
 
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -lineinfo  -rdc=true -lcudadevrt")
 set(CMAKE_CUDA_ARCHITECTURES 80)
@@ -20,10 +17,8 @@ include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
 
-
 #find_package(Python3 COMPONENTS Development REQUIRED)
 #target_link_libraries(hello PRIVATE Python3::Python)
-
 
 #find_package(Torch REQUIRED)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
