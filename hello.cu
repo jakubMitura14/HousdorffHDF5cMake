@@ -12,15 +12,11 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
 #include <cstdint>
 #include <cooperative_groups.h>
-//#include <cooperative_groups/reduce.h>
 #include <vector>
-//#include <cuda/annotated_ptr>
 #include <cooperative_groups/reduce.h>
 #include <cooperative_groups/memcpy_async.h>
-
 #include <cmath>
 #include <iostream>
 #include <cmath>
@@ -2028,7 +2024,7 @@ ForBoolKernelArgs<T> executeHausdoff(ForFullBoolPrepArgs<T>& fFArgs, const int W
 
 template <typename T>
 int getHausdorffDistance_CUDA_Generic(T* goldStandard,  T* algoOutput
-    , int WIDTH, int HEIGHT, int DEPTH, float robustnessPercent, bool resIterNeeded, T* numberToLookFor, bool res3DNeeded) {
+    , int WIDTH, int HEIGHT, int DEPTH, float robustnessPercent, bool resIterNeeded, T numberToLookFor, bool res3DNeeded) {
     //TODO() use https ://pytorch.org/cppdocs/notes/tensor_cuda_stream.html
     cudaStream_t stream1;
     cudaStreamCreate(&stream1);
@@ -2040,7 +2036,7 @@ int getHausdorffDistance_CUDA_Generic(T* goldStandard,  T* algoOutput
 
     ForFullBoolPrepArgs<T> forFullBoolPrepArgs;
     forFullBoolPrepArgs.metaData = metaData;
-    forFullBoolPrepArgs.numberToLookFor = numberToLookFor.item<T>();
+    forFullBoolPrepArgs.numberToLookFor = numberToLookFor;
     forFullBoolPrepArgs.goldArr = goldStandard;
     forFullBoolPrepArgs.segmArr = algoOutput;
 
@@ -2069,7 +2065,7 @@ int getHausdorffDistance_CUDA_Generic(T* goldStandard,  T* algoOutput
 template <typename T>
 T* getHausdorffDistance_CUDA_FullResList_local(T* goldStandard,
     T* algoOutput
-    , int WIDTH, int HEIGHT, int DEPTH, float robustnessPercent, T* numberToLookFor) {
+    , int WIDTH, int HEIGHT, int DEPTH, float robustnessPercent, T numberToLookFor) {
     //TODO() use https ://pytorch.org/cppdocs/notes/tensor_cuda_stream.html
     cudaStream_t stream1;
     cudaStreamCreate(&stream1);
@@ -2081,7 +2077,7 @@ T* getHausdorffDistance_CUDA_FullResList_local(T* goldStandard,
 
     ForFullBoolPrepArgs<T> forFullBoolPrepArgs;
     forFullBoolPrepArgs.metaData = metaData;
-    forFullBoolPrepArgs.numberToLookFor = numberToLookFor.item<T>();
+    forFullBoolPrepArgs.numberToLookFor = numberToLookFor;
     forFullBoolPrepArgs.goldArr = goldStandard;
     forFullBoolPrepArgs.segmArr = algoOutput;
 
@@ -2169,7 +2165,7 @@ voxelsNumber - number of voxel in resGold = resSegm
 template <typename T>
 __global__ void elementWiseAverage(ForBoolKernelArgs<T> fbArgs, T* resGold, T* resSegm, int voxelsNumber) {
     for (uint32_t i = blockIdx.x * blockDim.x + threadIdx.x; i < voxelsNumber; i += blockDim.x * gridDim.x) {
-        (float_t)resGold[i] = (((float_t)resGold[i]) + ((float_t)resSegm[i])) / 2;
+        resGold[i] = (resGold[i] + resSegm[i]) / 2;
     }
 }
 
@@ -2182,7 +2178,7 @@ __global__ void elementWiseAverage(ForBoolKernelArgs<T> fbArgs, T* resGold, T* r
 template <typename T>
 float* getHausdorffDistance_CUDA_3Dres_local(T* goldStandard,
     T* algoOutput
-    , int WIDTH, int HEIGHT, int DEPTH, float robustnessPercent, T* numberToLookFor) {
+    , int WIDTH, int HEIGHT, int DEPTH, float robustnessPercent, T numberToLookFor) {
     //TODO() use https ://pytorch.org/cppdocs/notes/tensor_cuda_stream.html
     cudaStream_t stream1;
     cudaStreamCreate(&stream1);
@@ -2194,7 +2190,7 @@ float* getHausdorffDistance_CUDA_3Dres_local(T* goldStandard,
 
     ForFullBoolPrepArgs<T> forFullBoolPrepArgs;
     forFullBoolPrepArgs.metaData = metaData;
-    forFullBoolPrepArgs.numberToLookFor = numberToLookFor.item<T>();
+    forFullBoolPrepArgs.numberToLookFor = numberToLookFor;
     forFullBoolPrepArgs.goldArr = goldStandard;
     forFullBoolPrepArgs.segmArr = algoOutput;
 
@@ -2245,3 +2241,7 @@ float* getHausdorffDistance_CUDA_3Dres_local(T* goldStandard,
 }
 
 
+int main(){
+
+    return 0;
+}
